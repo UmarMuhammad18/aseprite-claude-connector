@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aseprite-live-mcp"
+version = "0.1.1"
+description = "Unity-first MCP server for the live Aseprite editor (and headless batch)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Kyle Ocheltree", email = "hello@oaktree-games.com" }]
+keywords = ["aseprite", "mcp", "pixel-art", "unity", "gamedev", "model-context-protocol"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Multimedia :: Graphics :: Editors",
+]
+dependencies = [
+  "mcp>=1.6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/oaktreegames/aseprite-live-mcp"
+Repository = "https://github.com/oaktreegames/aseprite-live-mcp"
+Issues = "https://github.com/oaktreegames/aseprite-live-mcp/issues"
+
+[project.optional-dependencies]
+# The live relay (bridge/relay_server.py) needs websockets; the MCP server itself
+# is stdlib-only besides mcp.
+relay = ["websockets>=12"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+aseprite-live-mcp = "aseprite_live_mcp.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["aseprite_live_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local test scratch — never vendor real game art into this repo
+/scratch/
+/test-output/
+*.aseprite~
+*.bak
+
+# Logs
+*.log
+
+# MCP registry publisher CLI (downloaded locally to run `mcp-publisher publish`)
+mcp-publisher
+mcp-publisher.exe
+mcp-publisher*.tar.gz

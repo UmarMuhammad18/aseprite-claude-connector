@@ -1,0 +1,6 @@
+# Normalize line endings to LF across platforms; treat art assets as binary.
+* text=auto eol=lf
+*.png binary
+*.gif binary
+*.aseprite binary
+*.ase binary

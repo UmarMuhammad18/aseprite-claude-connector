@@ -98,9 +98,10 @@ each one. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it works.
 - *"Pull a 16-color palette out of concept.png and snap my sprite to it."*
 - *"Slice this atlas, set each slice's pivot, and export it to Unity with the pivots baked in."*
 
-Sanity check the whole surface: `python tests/smoke_headless.py` exercises all 77
-tools (plus resources + prompts) end-to-end against a throwaway sprite
-(`pip install -e ".[dev]"` then `pytest` for the unit + headless suite).
+Sanity check the whole surface: `python tests/smoke_headless.py` drives all 77
+tools (plus resources + prompts) in-process against a throwaway sprite, and
+`pytest` runs the unit suite plus wire-path tests that validate structured
+output through a real MCP client session (`pip install -e ".[dev]"` first).
 
 ## Where this sits (honest positioning)
 

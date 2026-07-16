@@ -75,6 +75,8 @@ def register(mcp):
         res = run(_SPRITE_INFO_LUA, file=file)
         if not isinstance(res, dict):
             raise ToolError("could not read sprite info")
+        if "error" in res:
+            raise ToolError(str(res["error"]))
         return res
 
     @mcp.tool(annotations=ToolAnnotations(title="Get pixel", readOnlyHint=True))

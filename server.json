@@ -8,12 +8,12 @@
     "url": "https://github.com/oaktreegames/aseprite-live-mcp",
     "source": "github"
   },
-  "version": "0.1.1",
+  "version": "0.1.2",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "aseprite-live-mcp",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "transport": { "type": "stdio" },
       "environmentVariables": [
         { "name": "ASEPRITE_MCP_BACKEND", "description": "live (default) or headless", "isRequired": false },

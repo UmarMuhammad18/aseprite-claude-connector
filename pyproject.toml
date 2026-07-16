@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aseprite-live-mcp"
-version = "0.1.1"
+version = "0.1.2"
 description = "Unity-first MCP server for the live Aseprite editor (and headless batch)."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -17,7 +17,12 @@ classifiers = [
   "Topic :: Multimedia :: Graphics :: Editors",
 ]
 dependencies = [
-  "mcp>=1.6.0",
+  # >=1.10: first SDK line with structured output (outputSchema/structuredContent),
+  # which the typed report tools depend on.
+  "mcp>=1.10.0",
+  # Imported directly by tools/_schemas.py (pydantic requires the
+  # typing_extensions TypedDict on Python < 3.12).
+  "typing-extensions>=4.9.0",
 ]
 
 [project.urls]

@@ -109,16 +109,19 @@ local b = s.selection.bounds
 return J({ empty = false, bounds = { x = b.x, y = b.y, width = b.width, height = b.height } })
 """
 
-# Erase an explicit rect, or (live) whatever is currently selected.
+# Erase an explicit rect, or (live) whatever is currently selected. On indexed
+# sprites "transparent" is the sprite's transparentColor index, not 0.
 _ERASE = """
 local s = app.activeSprite
 if not s then error("no active sprite") end
 return editCel(function(img, sp)
+  local EMPTY = 0
+  if sp.colorMode == ColorMode.INDEXED then EMPTY = sp.transparentColor end
   local cleared = 0
   if USE_RECT then
     for yy = math.max(0, Y), math.min(img.height - 1, Y + H - 1) do
       for xx = math.max(0, X), math.min(img.width - 1, X + W - 1) do
-        img:drawPixel(xx, yy, 0)
+        img:drawPixel(xx, yy, EMPTY)
         cleared = cleared + 1
       end
     end
@@ -128,7 +131,7 @@ return editCel(function(img, sp)
     for yy = math.max(0, b.y), math.min(img.height - 1, b.y + b.height - 1) do
       for xx = math.max(0, b.x), math.min(img.width - 1, b.x + b.width - 1) do
         if sp.selection:contains(xx, yy) then
-          img:drawPixel(xx, yy, 0)
+          img:drawPixel(xx, yy, EMPTY)
           cleared = cleared + 1
         end
       end

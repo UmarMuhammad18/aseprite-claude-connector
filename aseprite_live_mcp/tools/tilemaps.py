@@ -79,10 +79,27 @@ end
 local t = ts:tile(INDEX)
 local img = Image(t.image)
 local pc = app.pixelColor
+local pal = s.palettes[1]
+-- Convert per color mode explicitly: tile images share the sprite's mode, and
+-- raw rgba ints would land as bogus palette indices on indexed sprites.
+local function pixval(r, g, b, a)
+  if img.colorMode == ColorMode.RGB then return pc.rgba(r, g, b, a) end
+  if img.colorMode == ColorMode.GRAY then
+    return pc.graya(math.floor(0.299 * r + 0.587 * g + 0.114 * b + 0.5), a)
+  end
+  if a == 0 then return s.transparentColor end
+  local best, bestd = 0, math.huge
+  for i = 0, #pal - 1 do
+    local c = pal:getColor(i)
+    local d = (c.red - r) ^ 2 + (c.green - g) ^ 2 + (c.blue - b) ^ 2
+    if d < bestd then best, bestd = i, d end
+  end
+  return best
+end
 local drawn = 0
 for _, q in ipairs(PIX) do
   if q[1] >= 0 and q[2] >= 0 and q[1] < img.width and q[2] < img.height then
-    img:drawPixel(q[1], q[2], pc.rgba(q[3], q[4], q[5], q[6]))
+    img:drawPixel(q[1], q[2], pixval(q[3], q[4], q[5], q[6]))
     drawn = drawn + 1
   end
 end

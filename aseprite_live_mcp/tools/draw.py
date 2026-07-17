@@ -176,13 +176,32 @@ end)
 """
 )
 
-# PIXELS is a Lua array of {x, y, r, g, b, a}, prepended by Python.
+# PIXELS is a Lua array of {x, y, r, g, b, a}, prepended by Python. The pixel
+# value is converted per color mode explicitly (raw RGBA ints would be written
+# as bogus palette indices on indexed sprites; Color{} doesn't reliably resolve
+# an index in batch mode).
 _PIXELS = """
 return editCel(function(img, s)
+  local pc = app.pixelColor
+  local pal = s.palettes[1]
+  local function pixval(r, g, b, a)
+    if img.colorMode == ColorMode.RGB then return pc.rgba(r, g, b, a) end
+    if img.colorMode == ColorMode.GRAY then
+      return pc.graya(math.floor(0.299 * r + 0.587 * g + 0.114 * b + 0.5), a)
+    end
+    if a == 0 then return s.transparentColor end
+    local best, bestd = 0, math.huge
+    for i = 0, #pal - 1 do
+      local c = pal:getColor(i)
+      local d = (c.red - r) ^ 2 + (c.green - g) ^ 2 + (c.blue - b) ^ 2
+      if d < bestd then best, bestd = i, d end
+    end
+    return best
+  end
   local drawn, skipped = 0, 0
   for _, p in ipairs(PIXELS) do
     if p[1] >= 0 and p[2] >= 0 and p[1] < s.width and p[2] < s.height then
-      img:drawPixel(p[1], p[2], app.pixelColor.rgba(p[3], p[4], p[5], p[6]))
+      img:drawPixel(p[1], p[2], pixval(p[3], p[4], p[5], p[6]))
       drawn = drawn + 1
     else
       skipped = skipped + 1
@@ -261,7 +280,7 @@ def _pixels_lua(pixels) -> str:
 def _points_lua(points) -> str:
     try:
         return "{" + ",".join(f"{{{int(p[0])},{int(p[1])}}}" for p in points) + "}"
-    except (TypeError, IndexError, ValueError):
+    except (TypeError, KeyError, IndexError, ValueError):
         raise ToolError("points must be a list of [x, y] pairs") from None
 
 

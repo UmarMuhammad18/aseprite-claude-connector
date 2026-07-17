@@ -47,8 +47,8 @@ local function __enc(v)
   return "null"
 end
 local function J(v) return __enc(v) end
--- Depth-first layer lookup: matches top-level layers, then descends into
--- groups. Accepts either a bare name ("Arm") or a group path ("Body/Arm").
+-- Depth-first layer lookup: exact name first (so a layer literally named
+-- "A/B" still resolves), then "Group/Layer" path interpretation.
 local function findLayer(s, name)
   local function walk(layers, want)
     for _, l in ipairs(layers) do
@@ -60,9 +60,12 @@ local function findLayer(s, name)
     end
     return nil
   end
+  local exact = walk(s.layers, name)
+  if exact then return exact end
   if name:find("/", 1, true) then
     local node, container = nil, s
     for part in name:gmatch("[^/]+") do
+      if node ~= nil and not node.isGroup then return nil end
       node = nil
       for _, l in ipairs(container.layers) do
         if l.name == part then node = l; break end
@@ -72,7 +75,7 @@ local function findLayer(s, name)
     end
     return node
   end
-  return walk(s.layers, name)
+  return nil
 end
 local function findSlice(s, name)
   for _, sl in ipairs(s.slices) do if sl.name == name then return sl end end
@@ -149,7 +152,11 @@ def build_lua(body: str, *, mutates: bool = False, undo_label: str = "AI edit") 
     if mutates:
         return (
             LUA_PRELUDE
-            + "\nlocal __r\n"
+            # Every mutating body targets an existing sprite; failing here (not
+            # inside app.transaction) keeps the error message readable.
+            + "\nif not app.activeSprite then"
+            + ' error("no active sprite (headless: pass file=)") end\n'
+            + "local __r\n"
             # Name the transaction so the editor's undo entry reads "Undo <label>"
             # rather than a generic one — the one-edit-one-named-undo discipline.
             + "app.transaction("

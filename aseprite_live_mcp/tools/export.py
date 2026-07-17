@@ -129,7 +129,11 @@ def _resolve_written(out_path: str, frames: int) -> list[str]:
 
 
 def register(mcp):
-    @mcp.tool(annotations=ToolAnnotations(title="Export sprite", readOnlyHint=True))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Export sprite", destructiveHint=False, openWorldHint=True
+        )
+    )
     def export_sprite(out_path: str, file: str | None = None) -> dict:
         """Export the active sprite to a file; format is chosen by ``out_path``
         extension (.png, .gif, ...). A multi-frame sprite saved to a single-image
@@ -146,7 +150,11 @@ def register(mcp):
             "files": _resolve_written(out_path, frames),
         }
 
-    @mcp.tool(annotations=ToolAnnotations(title="Export spritesheet", readOnlyHint=True))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Export spritesheet", destructiveHint=False, openWorldHint=True
+        )
+    )
     def export_spritesheet(
         out_path: str,
         data_path: str | None = None,
@@ -170,7 +178,9 @@ def register(mcp):
         return out
 
     @mcp.tool(
-        annotations=ToolAnnotations(title="Export layers", readOnlyHint=True, openWorldHint=True)
+        annotations=ToolAnnotations(
+            title="Export layers", destructiveHint=False, openWorldHint=True
+        )
     )
     def export_layers(out_dir: str, file: str | None = None) -> dict:
         """Export every image layer (recursing into groups) as its own PNG in
@@ -191,7 +201,7 @@ def register(mcp):
         return {"layers": res.get("layers"), "frames": frames, "files": files}
 
     @mcp.tool(
-        annotations=ToolAnnotations(title="Export tags", readOnlyHint=True, openWorldHint=True)
+        annotations=ToolAnnotations(title="Export tags", destructiveHint=False, openWorldHint=True)
     )
     def export_tags(out_dir: str, format: str = "gif", file: str | None = None) -> dict:
         """Export each animation tag's frame range as its own file in

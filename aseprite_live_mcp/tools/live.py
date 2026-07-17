@@ -248,12 +248,10 @@ def register(mcp):
         _require_live()
         if not options or len(options) > 4:
             raise ToolError("options must have 1-4 entries")
-        opts = [str(o)[:40] for o in options]
-        opts_lua = (
-            "local OPTS = {"
-            + ",".join('"' + o.replace("\\", "").replace('"', "'") + '"' for o in opts)
-            + "}\n"
-        )
+        from ..lua import lua_str
+
+        opts = [" ".join(str(o).split())[:40] for o in options]
+        opts_lua = "local OPTS = {" + ",".join(lua_str(o) for o in opts) + "}\n"
         body = opts_lua + lua_locals(TITLE=title, MESSAGE=message) + _SHOW_DIALOG
         return run(body)
 

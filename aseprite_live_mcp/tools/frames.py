@@ -163,9 +163,14 @@ def register(mcp):
         """Reverse frame order (cels on every layer, plus durations) — the whole
         sprite by default, or the inclusive [from_frame..to_frame] range. One
         undo step."""
+        for v in (from_frame, to_frame):
+            if v is not None and v < 1:
+                raise ToolError("frame numbers are 1-based")
         body_range = (
-            "local FROM = " + (str(int(from_frame)) if from_frame else "1") + "\n"
-            "local TO = " + (str(int(to_frame)) if to_frame else "#app.activeSprite.frames") + "\n"
+            "local FROM = " + (str(int(from_frame)) if from_frame is not None else "1") + "\n"
+            "local TO = "
+            + (str(int(to_frame)) if to_frame is not None else "#app.activeSprite.frames")
+            + "\n"
         )
         guard = 'if not app.activeSprite then error("no active sprite") end\n'
         return run(

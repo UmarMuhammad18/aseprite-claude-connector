@@ -117,6 +117,7 @@ return J({ smearFrame = fr.frameNumber, frames = #s.frames })
 _DIFF = """
 local s = app.activeSprite
 if not s then error("no active sprite") end
+if s.width * s.height > 1048576 then error("sprite too large for frame_diff (cap 1024x1024)") end
 if FA < 1 or FA > #s.frames or FB < 1 or FB > #s.frames then
   error("frame out of range (sprite has " .. #s.frames .. " frames)")
 end
@@ -277,7 +278,11 @@ def register(mcp):
         body = lua_locals(FA=int(frame_a), FB=int(frame_b)) + _DIFF
         return run(body, file=file)
 
-    @mcp.tool(annotations=ToolAnnotations(title="Render onion-skin composite", readOnlyHint=True))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Render onion-skin composite", destructiveHint=False, openWorldHint=True
+        )
+    )
     def render_onion_composite(
         frame: int,
         output_path: str,

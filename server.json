@@ -32,6 +32,11 @@
           "name": "ASEPRITE_RELAY_URL",
           "description": "Relay HTTP base for the live backend (default http://127.0.0.1:9878)",
           "isRequired": false
+        },
+        {
+          "name": "ASEPRITE_MCP_NO_UPDATE_CHECK",
+          "description": "Set to disable the daily PyPI update check",
+          "isRequired": false
         }
       ]
     }

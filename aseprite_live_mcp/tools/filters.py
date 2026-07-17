@@ -20,6 +20,9 @@ from ._common import ToolError, run
 _GUARD = """
 local __s = app.activeSprite
 if not __s then error("no active sprite") end
+if __s.colorMode ~= ColorMode.RGB then
+  error("filters require an RGB sprite (convert with set_color_mode first)")
+end
 if __s.width * __s.height > 1048576 then error("sprite too large for this filter (cap 1024x1024)") end
 """
 

@@ -43,7 +43,7 @@ return J({ stamped = #PTS, stamp_width = stamp.width, stamp_height = stamp.heigh
 def _points_lua(points) -> str:
     try:
         return "{" + ",".join(f"{{{int(p[0])},{int(p[1])}}}" for p in points) + "}"
-    except (TypeError, IndexError, ValueError):
+    except (TypeError, KeyError, IndexError, ValueError):
         raise ToolError("points must be a list of [x, y] pairs") from None
 
 

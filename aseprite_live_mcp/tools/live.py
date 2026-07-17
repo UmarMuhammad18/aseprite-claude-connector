@@ -206,9 +206,7 @@ def register(mcp):
         return run(body)
 
     @mcp.tool(annotations=ToolAnnotations(title="Set symmetry", idempotentHint=True))
-    def set_symmetry(
-        mode: str, x_axis: float | None = None, y_axis: float | None = None
-    ) -> dict:
+    def set_symmetry(mode: str, x_axis: float | None = None, y_axis: float | None = None) -> dict:
         """Live editor only: set mirror-painting symmetry — ``mode`` is ``none``,
         ``horizontal`` (mirror across a vertical axis), ``vertical``, or
         ``both``; optionally place the axis lines. Affects the artist's
@@ -243,9 +241,7 @@ def register(mcp):
         return run(_CANCEL_POINT)
 
     @mcp.tool(annotations=ToolAnnotations(title="Show choice dialog", openWorldHint=True))
-    def show_choice_dialog(
-        message: str, options: list, title: str = "Claude asks"
-    ) -> dict:
+    def show_choice_dialog(message: str, options: list, title: str = "Claude asks") -> dict:
         """Live editor only: pop a small dialog IN Aseprite with a message and
         up to 4 option buttons (e.g. approve/redo). Non-blocking — call
         ``get_dialog_choice`` to collect the artist's pick."""
@@ -253,9 +249,11 @@ def register(mcp):
         if not options or len(options) > 4:
             raise ToolError("options must have 1-4 entries")
         opts = [str(o)[:40] for o in options]
-        opts_lua = "local OPTS = {" + ",".join(
-            '"' + o.replace("\\", "").replace('"', "'") + '"' for o in opts
-        ) + "}\n"
+        opts_lua = (
+            "local OPTS = {"
+            + ",".join('"' + o.replace("\\", "").replace('"', "'") + '"' for o in opts)
+            + "}\n"
+        )
         body = opts_lua + lua_locals(TITLE=title, MESSAGE=message) + _SHOW_DIALOG
         return run(body)
 

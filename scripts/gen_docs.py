@@ -122,9 +122,7 @@ def main() -> int:
 
     if check:
         if updated != readme:
-            print(
-                "README tool docs are stale — run: python scripts/gen_docs.py", file=sys.stderr
-            )
+            print("README tool docs are stale — run: python scripts/gen_docs.py", file=sys.stderr)
             return 1
         print(f"README tool docs are current ({total} tools).")
         return 0

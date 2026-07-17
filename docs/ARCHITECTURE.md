@@ -58,7 +58,7 @@ The WebSocket listens on `127.0.0.1:9877`.
 | 9876 | Blender MCP bridge; also Dizzd/Shexiaoyun Aseprite tools — **avoid** |
 | 6515 | Aseprite MCP Pro (commercial) |
 
-## The MCP layer (Phase 1)
+## The MCP layer
 
 Wrapping the relay as a real MCP server, per the current best-practice set:
 

@@ -88,7 +88,7 @@ def _set_latest(latest: str, announce: bool) -> None:
     if announce and is_newer(latest):
         print(
             f"[aseprite-live-mcp] update available: {__version__} -> {latest} "
-            f"(pip install -U aseprite-live-mcp; uvx picks it up automatically). "
+            f"(pip install -U aseprite-live-mcp / uvx aseprite-live-mcp@latest). "
             f"Set ASEPRITE_MCP_NO_UPDATE_CHECK=1 to silence this check.",
             file=sys.stderr,
         )
@@ -130,5 +130,8 @@ def get_update_info() -> dict:
         return {"current": __version__, "check": "pending"}
     info: dict = {"current": __version__, "latest": latest, "update_available": is_newer(latest)}
     if info["update_available"]:
-        info["how"] = "pip install -U aseprite-live-mcp (uvx users get it automatically)"
+        info["how"] = (
+            "pip install -U aseprite-live-mcp (uvx users: run uvx aseprite-live-mcp@latest "
+            "once — uvx reuses its cached version otherwise)"
+        )
     return info

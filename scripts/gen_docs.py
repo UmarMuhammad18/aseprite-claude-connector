@@ -76,9 +76,15 @@ def collect():
 
 
 def first_sentence(text: str) -> str:
+    """First sentence of a docstring, without breaking on common abbreviations."""
     text = " ".join((text or "").split())
-    m = re.match(r"(.+?\.)(\s|$)", text)
-    return (m.group(1) if m else text)[:200]
+    # Mask abbreviation periods so the sentence split can't fire on them.
+    masked = text
+    for abbr in ("e.g.", "i.e.", "vs.", "Rec.", "approx.", "etc."):
+        masked = masked.replace(abbr, abbr.replace(".", "\x00"))
+    m = re.match(r"(.+?\.)(\s|$)", masked)
+    out = (m.group(1) if m else masked).replace("\x00", ".")
+    return out[:240]
 
 
 def render(by_module: dict, total: int) -> str:

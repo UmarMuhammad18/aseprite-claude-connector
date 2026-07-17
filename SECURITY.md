@@ -39,5 +39,7 @@ deliberately simple and explicit.
 
 ## Reporting
 
-This is a solo-maintained studio tool. For anything security-relevant, open a
-private issue rather than a public one.
+This is a solo-maintained tool. For anything security-relevant, use GitHub's
+private vulnerability reporting (the repo's Security tab → "Report a
+vulnerability"), or email hello@oaktree-games.com — please don't open a public
+issue for security problems.

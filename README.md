@@ -162,13 +162,14 @@ PyPI — whether a newer release exists. Your agent sees it, so *you* see it:
 ```json
 { "backend": "live", "connected": true,
   "server": { "current": "0.2.0", "latest": "0.2.1", "update_available": true,
-              "how": "pip install -U aseprite-live-mcp (uvx users get it automatically)" } }
+              "how": "pip install -U aseprite-live-mcp (uvx users: run uvx aseprite-live-mcp@latest once — uvx reuses its cached version otherwise)" } }
 ```
 
 Also surfaced as the `aseprite://update` resource, one stderr log line, and the
 real version in the MCP `serverInfo` handshake. Disable with
 `ASEPRITE_MCP_NO_UPDATE_CHECK=1` (auto-disabled in CI). No telemetry — the check
-is a read of PyPI's public JSON, nothing is sent anywhere.
+is an HTTP GET of PyPI's public JSON; nothing about you, your machine, or your
+art is sent.
 
 <!-- TOOLS:START -->
 ## Tools (139)
@@ -192,7 +193,7 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 - **`open_sprite`** — Open a sprite file and make it the active document; returns its filename, size, and frame/layer counts.
 - **`save_sprite`** — Save the active sprite to disk: to ``path`` if given (save-as; the document's filename follows it), else to its own filename — errors if the sprite is untitled and no ``path`` is given.
 - **`close_sprite`** — Close the active sprite.
-- **`set_active_sprite`** — Live editor only: make one of the open documents active, found by exact filename or basename match (e.g.
+- **`set_active_sprite`** — Live editor only: make one of the open documents active, found by exact filename or basename match (e.g. "turret.aseprite").
 - **`list_sprites`** — Live editor only: list every open document — filename (or "(unsaved)"), size, frame/layer counts, unsaved-changes flag, and which one is active.
 
 </details>
@@ -273,7 +274,7 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 - **`palette_from_sprite`** — Derive the palette FROM the sprite's actual pixels (Aseprite's color quantization) — the inverse of ``quantize_to_palette``.
 - **`load_palette`** — Replace the sprite's palette from a palette file (.gpl, .pal, .ase, .png strip — anything Aseprite reads).
 - **`save_palette`** — Write the sprite's palette to a file (.gpl, .pal, .png — by extension).
-- **`apply_bundled_palette`** — Apply one of Aseprite's bundled extension palettes by resource ID — e.g.
+- **`apply_bundled_palette`** — Apply one of Aseprite's bundled extension palettes by resource ID — e.g. DB16, DB32, ARQ4, EDG16 (availability depends on the installed palette extensions).
 
 </details>
 <details>
@@ -297,7 +298,7 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 
 - **`adjust_brightness_contrast`** — Adjust the active cel's brightness and contrast, each -100..100 (0 = unchanged).
 - **`invert_colors`** — Invert the active cel's RGB (alpha untouched).
-- **`desaturate`** — Convert the active cel to grayscale (Rec.
+- **`desaturate`** — Convert the active cel to grayscale (Rec. 601 luma), keeping alpha.
 - **`box_blur`** — Blur the active cel with an alpha-weighted box kernel.
 - **`sharpen`** — Sharpen the active cel (unsharp mask over a 3x3 neighborhood).
 
@@ -370,7 +371,7 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 - **`add_tile`** — Append an empty tile to a tilemap layer's tileset; returns the new tile's index and the tileset size.
 - **`draw_on_tile`** — Set pixels on one tile of a tilemap layer's tileset.
 - **`set_tiles`** — Place tile references on a tilemap layer's cel.
-- **`get_tilemap_info`** — Read a tilemap layer: tile size, tileset length, and the cel's grid size, pixel position, and tile-index grid (``tiles`` as rows of columns, flip flags stripped; capped at 64x64 with ``truncated`` set
+- **`get_tilemap_info`** — Read a tilemap layer: tile size, tileset length, and the cel's grid size, pixel position, and tile-index grid (``tiles`` as rows of columns, flip flags stripped; capped at 64x64 with ``truncated`` set).
 - **`export_tileset`** — Export a tilemap layer's tileset as a horizontal PNG strip (plus an Aseprite JSON atlas if ``data_path`` is given).
 
 </details>
@@ -381,7 +382,7 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 - **`tween_cel_opacity`** — Fade a layer's cels across [from_frame..to_frame]: opacity interpolates from ``from_opacity`` to ``to_opacity`` (0-255) with the chosen easing.
 - **`smear_frame`** — Append a motion-smear frame blending ``from_frame`` and ``to_frame``: overlapping pixels averaged, single-frame areas ghosted at half alpha — a pixel-content smear.
 - **`frame_diff`** — Pixel-exact diff of two composited frames: changed-pixel count and ratio, the bounding box of the change, and whether they're identical.
-- **`render_onion_composite`** — Write a PNG of ``frame`` with up to ``prev`` earlier frames ghosted in red and ``next`` later frames ghosted in blue (Aseprite's onion-skin convention) at the given ghost ``opacity`` — so you can *see
+- **`render_onion_composite`** — Write a PNG of ``frame`` with up to ``prev`` earlier frames ghosted in red and ``next`` later frames ghosted in blue (Aseprite's onion-skin convention) at the given ghost ``opacity`` — so you can *see* the motion arc in one image.
 
 </details>
 <details>
@@ -397,7 +398,7 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 <summary><b>Unity export</b> (2)</summary>
 
 - **`export_unity_sprite`** — Export a horizontal sprite sheet AND write the Unity ``.meta`` beside it, pre-sliced into named Multiple-mode sprites (one per frame) — one action, no manual Sprite Editor pass.
-- **`export_unity_slices`** — Export the sprite as a single PNG AND write a Unity ``.meta`` with one Multiple-mode sprite **per named slice**, each carrying that slice's pivot — so an atlas laid out with slices imports into Unity 
+- **`export_unity_slices`** — Export the sprite as a single PNG AND write a Unity ``.meta`` with one Multiple-mode sprite **per named slice**, each carrying that slice's pivot — so an atlas laid out with slices imports into Unity already sliced *and* pivoted.
 
 </details>
 <details>
@@ -426,12 +427,12 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 <summary><b>Live editor (interactive)</b> (11)</summary>
 
 - **`get_editor_state`** — Live editor only: current zoom, scroll, and which sprite pixel the mouse is over — lets an agent know what the artist is looking at.
-- **`set_editor_view`** — Live editor only: set the viewport zoom (1.0 = 100%) and/or scroll — e.g.
+- **`set_editor_view`** — Live editor only: set the viewport zoom (1.0 = 100%) and/or scroll — e.g. zoom to the region you're about to edit so the artist can watch.
 - **`set_symmetry`** — Live editor only: set mirror-painting symmetry — ``mode`` is ``none``, ``horizontal`` (mirror across a vertical axis), ``vertical``, or ``both``; optionally place the axis lines.
 - **`ask_point`** — Live editor only: ask the ARTIST to click a point on the canvas (pivot, anchor, paint origin).
 - **`get_asked_point`** — Poll the result of ``ask_point``: ``done`` false while waiting, then the clicked ``x``/``y`` (or ``cancelled`` if the artist pressed Esc).
-- **`cancel_ask_point`** — Withdraw a pending ``ask_point`` request (e.g.
-- **`show_choice_dialog`** — Live editor only: pop a small dialog IN Aseprite with a message and up to 4 option buttons (e.g.
+- **`cancel_ask_point`** — Withdraw a pending ``ask_point`` request (e.g. the artist stepped away and you're moving on).
+- **`show_choice_dialog`** — Live editor only: pop a small dialog IN Aseprite with a message and up to 4 option buttons (e.g. approve/redo).
 - **`get_dialog_choice`** — Poll the result of ``show_choice_dialog``: ``done`` false while the dialog is open, then the chosen button text.
 - **`watch_changes`** — Live editor only: start counting edits the ARTIST makes to the active sprite (via ``Sprite.events``).
 - **`get_watched_changes`** — Poll the change counter started by ``watch_changes`` (``reset=True`` zeroes it after reading).
@@ -476,9 +477,10 @@ One-call "skills" that chain the tools into finished art tasks:
   layers, frames, palettes, tilemaps, metadata: all persist (they're in the file).
 - **The interactive tools need the live editor** — dialogs, point picking,
   watching, viewport control error cleanly under `headless`.
-- **Windows is the primary dev platform.** CI runs the suite on Linux/macOS/Windows,
-  but the live bridge is hand-tested on Windows; treat live-on-mac/linux as
-  expected-to-work, not proven.
+- **Windows is the primary dev platform.** CI runs the unit + wire-validation
+  suite on Linux/macOS/Windows, but CI has no Aseprite binary — anything that
+  touches a real Aseprite (headless batch or the live bridge) is hand-tested on
+  Windows. Treat mac/linux as expected-to-work, not proven.
 - **`run_lua` is local code execution** by design (it's the escape hatch). The
   relay binds to `127.0.0.1` only. Read [`SECURITY.md`](SECURITY.md).
 - **No generative art.** This server draws what it's told with deterministic

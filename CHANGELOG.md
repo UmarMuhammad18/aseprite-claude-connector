@@ -7,16 +7,17 @@ All notable changes to this project are documented here. The format follows
 
 **How you'll know it's time to update:** the `status` tool reports your installed
 version and whether a newer release exists (checked against PyPI at most once a
-day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). `uvx aseprite-live-mcp`
-users pick up new releases automatically.
+day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
+`pip install -U aseprite-live-mcp`, or for uvx run `uvx aseprite-live-mcp@latest`
+once (uvx reuses its cached version otherwise).
 
 ## [Unreleased]
 
 ## [0.2.0] — 2026-07-16
 
-The "true competitor" release: the tool surface grows past every gap the
-competitive recon found, the live editor becomes a two-way surface, and the
-server learns to tell you when it's out of date.
+The tool surface closes the gaps we found surveying the other Aseprite MCP
+servers, the live editor becomes a two-way surface, and the server learns to
+tell you when it's out of date.
 
 ### Added — update awareness
 - `status` now reports the server version and (checked against PyPI at most

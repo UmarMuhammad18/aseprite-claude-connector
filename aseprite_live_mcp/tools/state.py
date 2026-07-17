@@ -5,6 +5,7 @@ reads it so a client can poll ``aseprite://qa/last`` / ``aseprite://export/last`
 without spending a fresh tool call. Process-local and best-effort — it resets when
 the server restarts.
 """
+
 from __future__ import annotations
 
 from typing import Any

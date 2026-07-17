@@ -8,6 +8,7 @@ the agent; it names the exact tools to call and where to stop and ask the human.
 
 Prompt arguments are strings (the MCP prompt contract); formats are noted inline.
 """
+
 from __future__ import annotations
 
 
@@ -16,7 +17,9 @@ def register(mcp):
         title="Unity QA gate",
         description="Run the ship-ready QA gate on the active sprite and export a Unity sheet + .meta.",
     )
-    def unity_qa_gate(expected_size: str = "64x64", grid: str = "16", max_colors: str = "16") -> str:
+    def unity_qa_gate(
+        expected_size: str = "64x64", grid: str = "16", max_colors: str = "16"
+    ) -> str:
         return (
             "Run the Unity-ready QA gate on the active Aseprite sprite. Do this in order:\n"
             f"1. Call `qa_sweep` with expected_width/expected_height parsed from '{expected_size}', "
@@ -35,7 +38,10 @@ def register(mcp):
         description="Build a game-ready 2:1 isometric building sprite from a footprint spec.",
     )
     def iso_building_to_spec(
-        footprint: str = "1x1", height: str = "24", base_color: str = "#8a94a0", ports: str = "front"
+        footprint: str = "1x1",
+        height: str = "24",
+        base_color: str = "#8a94a0",
+        ports: str = "front",
     ) -> str:
         return (
             f"Build a 2:1 isometric building for a {footprint}-tile footprint, ~{height}px tall, base "

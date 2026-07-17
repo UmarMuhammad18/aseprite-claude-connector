@@ -15,6 +15,7 @@ exact bug in ``get_sprite_info`` and the Unity exports.) Nested shapes like
 ``SizeReport`` stay non-nullable-valued because they are always fully populated
 when present.
 """
+
 from __future__ import annotations
 
 from typing import Any

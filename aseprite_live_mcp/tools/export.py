@@ -1,4 +1,5 @@
 """Export tools (read-only with respect to the sprite)."""
+
 from __future__ import annotations
 
 import os
@@ -43,7 +44,9 @@ def _resolve_written(out_path: str, frames: int) -> list[str]:
         return [out_path]
     root, ext = os.path.splitext(out_path)
     if frames > 1 and ext.lower() in _SINGLE_IMAGE_EXTS:
-        return [f"{root}{i}{ext}" for i in range(1, frames + 1) if os.path.isfile(f"{root}{i}{ext}")]
+        return [
+            f"{root}{i}{ext}" for i in range(1, frames + 1) if os.path.isfile(f"{root}{i}{ext}")
+        ]
     return []
 
 
@@ -58,7 +61,11 @@ def register(mcp):
         body = lua_locals(OUT=out_path) + _EXPORT_LUA
         res = run(body, mutates=False, file=file, save=False)
         frames = res.get("frames", 1) if isinstance(res, dict) else 1
-        return {"requested": out_path, "frames": frames, "files": _resolve_written(out_path, frames)}
+        return {
+            "requested": out_path,
+            "frames": frames,
+            "files": _resolve_written(out_path, frames),
+        }
 
     @mcp.tool(annotations=ToolAnnotations(title="Export spritesheet", readOnlyHint=True))
     def export_spritesheet(

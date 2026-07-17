@@ -5,6 +5,7 @@ unbounded 'run arbitrary code' tool. We keep one, clearly annotated as destructi
 and open-world, for the long tail the typed tools don't cover — but the typed
 tools are the intended interface.
 """
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations

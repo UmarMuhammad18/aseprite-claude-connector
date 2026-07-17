@@ -1,4 +1,5 @@
 """Whole-sprite transform tools."""
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations

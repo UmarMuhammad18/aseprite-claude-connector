@@ -5,6 +5,7 @@ The headless integration test drives real tools through the MCP layer and is
 skipped automatically when Aseprite isn't installed. For the full multi-tool
 sweep, run ``python tests/smoke_headless.py``.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -17,7 +18,7 @@ from aseprite_live_mcp import backends
 from aseprite_live_mcp.config import _default_aseprite
 from aseprite_live_mcp.lua import build_lua, lua_locals
 from aseprite_live_mcp.server import build_server
-from aseprite_live_mcp.tools._common import parse_color
+from aseprite_live_mcp.tools._common import ToolError, parse_color
 from aseprite_live_mcp.tools.export import _resolve_written
 from aseprite_live_mcp.tools.unity_export import _gen_meta
 
@@ -37,13 +38,21 @@ def _text(res) -> str:
 
 # --- unit tests (no Aseprite) ---------------------------------------------------
 
+
 def test_tools_registered():
     names = {t.name for t in _run(build_server().list_tools())}
     assert len(names) >= 48
     for t in (
-        "status", "create_sprite", "draw_rectangle", "export_sprite",
-        "export_unity_sprite", "measure_padding", "qa_sweep", "palette_ramp_walk",
-        "smear_frame", "run_lua",
+        "status",
+        "create_sprite",
+        "draw_rectangle",
+        "export_sprite",
+        "export_unity_sprite",
+        "measure_padding",
+        "qa_sweep",
+        "palette_ramp_walk",
+        "smear_frame",
+        "run_lua",
     ):
         assert t in names, f"missing tool {t}"
 
@@ -58,9 +67,9 @@ def test_tool_annotations_present():
 def test_parse_color():
     assert parse_color("#ff0000") == (255, 0, 0, 255)
     assert parse_color("00ff0080") == (0, 255, 0, 128)
-    with pytest.raises(Exception):
+    with pytest.raises(ToolError):
         parse_color("#nothex")
-    with pytest.raises(Exception):
+    with pytest.raises(ToolError):
         parse_color("#fff")
 
 
@@ -97,6 +106,7 @@ def test_resolve_written(tmp_path):
 
 # --- headless integration (needs Aseprite) --------------------------------------
 
+
 @pytest.mark.skipif(not HAS_ASEPRITE, reason="Aseprite not installed")
 def test_headless_roundtrip(tmp_path, monkeypatch):
     monkeypatch.setenv("ASEPRITE_MCP_BACKEND", "headless")
@@ -105,8 +115,13 @@ def test_headless_roundtrip(tmp_path, monkeypatch):
     ase = str(tmp_path / "t.aseprite")
 
     async def go():
-        await mcp.call_tool("create_sprite", {"width": 20, "height": 20, "color_mode": "rgb", "file": ase})
-        await mcp.call_tool("draw_rectangle", {"x": 7, "y": 7, "width": 6, "height": 6, "color": "#ffffff", "file": ase})
+        await mcp.call_tool(
+            "create_sprite", {"width": 20, "height": 20, "color_mode": "rgb", "file": ase}
+        )
+        await mcp.call_tool(
+            "draw_rectangle",
+            {"x": 7, "y": 7, "width": 6, "height": 6, "color": "#ffffff", "file": ase},
+        )
         return await mcp.call_tool("measure_padding", {"file": ase})
 
     data = json.loads(_text(_run(go())))

@@ -3,6 +3,7 @@
 Talks to bridge/relay_server.py over localhost HTTP (stdlib only, no extra deps).
 Operates on the editor's active document; ``file``/``save`` are ignored here.
 """
+
 from __future__ import annotations
 
 import json

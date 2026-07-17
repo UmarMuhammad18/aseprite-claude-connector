@@ -1,4 +1,5 @@
 """Layer tools."""
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations
@@ -8,12 +9,25 @@ from ._common import ToolError, run
 
 # User-facing blend-mode name -> Aseprite BlendMode enum key.
 _BLEND_MODES = {
-    "normal": "NORMAL", "multiply": "MULTIPLY", "screen": "SCREEN", "overlay": "OVERLAY",
-    "darken": "DARKEN", "lighten": "LIGHTEN", "color_dodge": "COLOR_DODGE",
-    "color_burn": "COLOR_BURN", "hard_light": "HARD_LIGHT", "soft_light": "SOFT_LIGHT",
-    "difference": "DIFFERENCE", "exclusion": "EXCLUSION", "hue": "HSL_HUE",
-    "saturation": "HSL_SATURATION", "color": "HSL_COLOR", "luminosity": "HSL_LUMINOSITY",
-    "addition": "ADDITION", "subtract": "SUBTRACT", "divide": "DIVIDE",
+    "normal": "NORMAL",
+    "multiply": "MULTIPLY",
+    "screen": "SCREEN",
+    "overlay": "OVERLAY",
+    "darken": "DARKEN",
+    "lighten": "LIGHTEN",
+    "color_dodge": "COLOR_DODGE",
+    "color_burn": "COLOR_BURN",
+    "hard_light": "HARD_LIGHT",
+    "soft_light": "SOFT_LIGHT",
+    "difference": "DIFFERENCE",
+    "exclusion": "EXCLUSION",
+    "hue": "HSL_HUE",
+    "saturation": "HSL_SATURATION",
+    "color": "HSL_COLOR",
+    "luminosity": "HSL_LUMINOSITY",
+    "addition": "ADDITION",
+    "subtract": "SUBTRACT",
+    "divide": "DIVIDE",
 }
 
 _ADD = """
@@ -174,7 +188,9 @@ def register(mcp):
         exclusion, hue, saturation, color, luminosity, addition, subtract, divide."""
         key = _BLEND_MODES.get(mode.strip().lower())
         if not key:
-            raise ToolError(f"unknown blend mode '{mode}' (have: {', '.join(sorted(_BLEND_MODES))})")
+            raise ToolError(
+                f"unknown blend mode '{mode}' (have: {', '.join(sorted(_BLEND_MODES))})"
+            )
         body = lua_locals(NAME=name, MODE=key) + _BLEND
         return run(body, mutates=True, undo_label="Layer blend mode", file=file)
 
@@ -202,7 +218,11 @@ def register(mcp):
 
     @mcp.tool(annotations=ToolAnnotations(title="Import image as layer"))
     def import_image_as_layer(
-        image_path: str, layer_name: str | None = None, x: int = 0, y: int = 0, file: str | None = None
+        image_path: str,
+        layer_name: str | None = None,
+        x: int = 0,
+        y: int = 0,
+        file: str | None = None,
     ) -> dict:
         """Import an external image file (PNG, etc.) into a new layer at (x, y) — a
         reference/trace layer for concept-art intake. One undo step. Headless: pass

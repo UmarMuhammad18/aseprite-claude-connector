@@ -1,4 +1,5 @@
 """Palette tools."""
+
 from __future__ import annotations
 
 import colorsys
@@ -56,12 +57,40 @@ return J({ size = #COLORS })
 PRESETS = {
     "gameboy": ["#0f380f", "#306230", "#8bac0f", "#9bbc0f"],
     "pico8": [
-        "#000000", "#1d2b53", "#7e2553", "#008751", "#ab5236", "#5f574f", "#c2c3c7", "#fff1e8",
-        "#ff004d", "#ffa300", "#ffec27", "#00e436", "#29adff", "#83769c", "#ff77a8", "#ffccaa",
+        "#000000",
+        "#1d2b53",
+        "#7e2553",
+        "#008751",
+        "#ab5236",
+        "#5f574f",
+        "#c2c3c7",
+        "#fff1e8",
+        "#ff004d",
+        "#ffa300",
+        "#ffec27",
+        "#00e436",
+        "#29adff",
+        "#83769c",
+        "#ff77a8",
+        "#ffccaa",
     ],
     "cga": [
-        "#000000", "#0000aa", "#00aa00", "#00aaaa", "#aa0000", "#aa00aa", "#aa5500", "#aaaaaa",
-        "#555555", "#5555ff", "#55ff55", "#55ffff", "#ff5555", "#ff55ff", "#ffff55", "#ffffff",
+        "#000000",
+        "#0000aa",
+        "#00aa00",
+        "#00aaaa",
+        "#aa0000",
+        "#aa00aa",
+        "#aa5500",
+        "#aaaaaa",
+        "#555555",
+        "#5555ff",
+        "#55ff55",
+        "#55ffff",
+        "#ff5555",
+        "#ff55ff",
+        "#ffff55",
+        "#ffffff",
     ],
 }
 
@@ -173,7 +202,7 @@ def _ramp(base_hex: str, count: int, hue_shift: bool) -> list[str]:
         hh = (h + (0.5 - t) * 0.08) % 1.0 if hue_shift else h
         ns = min(1.0, s * (1.0 + (0.5 - abs(t - 0.5)) * 0.3))
         rr, gg, bb = colorsys.hls_to_rgb(hh, nl, ns)
-        out.append("#%02x%02x%02x" % (round(rr * 255), round(gg * 255), round(bb * 255)))
+        out.append(f"#{round(rr * 255):02x}{round(gg * 255):02x}{round(bb * 255):02x}")
     return out
 
 
@@ -225,7 +254,12 @@ def register(mcp):
         if count < 2:
             raise ToolError("count must be >= 2")
         hexes = _ramp(base_color, count, hue_shift)
-        res = run(_colors_lua(hexes) + _APPEND_COLORS, mutates=True, undo_label="Generate color ramp", file=file)
+        res = run(
+            _colors_lua(hexes) + _APPEND_COLORS,
+            mutates=True,
+            undo_label="Generate color ramp",
+            file=file,
+        )
         if isinstance(res, dict):
             res["colors"] = hexes
         return res

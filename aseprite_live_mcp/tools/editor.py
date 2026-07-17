@@ -1,4 +1,5 @@
 """Editor history tools (meaningful on the live editor)."""
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations

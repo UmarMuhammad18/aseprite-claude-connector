@@ -7,6 +7,7 @@ a **headless** backend regardless of the configured backend, and they are
 and never writes back the source `.aseprite`. Each file is independent; a failure
 on one is recorded and the rest continue (continue-on-error).
 """
+
 from __future__ import annotations
 
 import glob
@@ -104,7 +105,11 @@ def _headless() -> HeadlessBackend:
 def _list(folder: str, recursive: bool) -> list[str]:
     if not os.path.isdir(folder):
         raise ToolError(f"not a folder: {folder}")
-    pat = os.path.join(folder, "**", "*.aseprite") if recursive else os.path.join(folder, "*.aseprite")
+    pat = (
+        os.path.join(folder, "**", "*.aseprite")
+        if recursive
+        else os.path.join(folder, "*.aseprite")
+    )
     files = sorted(glob.glob(pat, recursive=recursive))
     if not files:
         raise ToolError(f"no .aseprite files found in {folder}")
@@ -138,16 +143,23 @@ def _run_each(files, out_dir, fmt, body_for):
             results.append({"file": f, "ok": False, "error": str(e)})
     ok = sum(1 for r in results if r["ok"])
     return {
-        "out_dir": out_dir, "processed": len(files),
-        "succeeded": ok, "failed": len(files) - ok, "results": results,
+        "out_dir": out_dir,
+        "processed": len(files),
+        "succeeded": ok,
+        "failed": len(files) - ok,
+        "results": results,
     }
 
 
 def register(mcp):
     @mcp.tool(annotations=ToolAnnotations(title="Batch export folder"))
     def batch_export(
-        folder: str, out_dir: str | None = None, format: str = "png",
-        scale: int = 1, recursive: bool = False, file: str | None = None,
+        folder: str,
+        out_dir: str | None = None,
+        format: str = "png",
+        scale: int = 1,
+        recursive: bool = False,
+        file: str | None = None,
     ) -> dict:
         """Export every ``.aseprite`` in ``folder`` (first frame) to an image, optionally
         integer-upscaled by ``scale``. Non-destructive: writes ``<name>.<format>`` to
@@ -157,13 +169,20 @@ def register(mcp):
             raise ToolError("scale must be >= 1")
         files = _list(folder, recursive)
         out = out_dir or folder
-        return _run_each(files, out, format, lambda f, o: lua_locals(OUT=o, SCALE=int(scale)) + _EXPORT)
+        return _run_each(
+            files, out, format, lambda f, o: lua_locals(OUT=o, SCALE=int(scale)) + _EXPORT
+        )
 
     @mcp.tool(annotations=ToolAnnotations(title="Batch resize folder"))
     def batch_resize(
-        folder: str, out_dir: str | None = None, scale: float | None = None,
-        width: int | None = None, height: int | None = None, format: str = "png",
-        recursive: bool = False, file: str | None = None,
+        folder: str,
+        out_dir: str | None = None,
+        scale: float | None = None,
+        width: int | None = None,
+        height: int | None = None,
+        format: str = "png",
+        recursive: bool = False,
+        file: str | None = None,
     ) -> dict:
         """Resize every ``.aseprite`` in ``folder`` (first frame, nearest-neighbor) and
         write images to ``out_dir``. Give either ``scale`` (multiplier) or explicit
@@ -174,13 +193,19 @@ def register(mcp):
         out = out_dir or folder
         sc = float(scale) if scale is not None else 0.0
         tw, th = (int(width), int(height)) if scale is None else (0, 0)
-        return _run_each(files, out, format, lambda f, o: lua_locals(OUT=o, SCALE=sc, TW=tw, TH=th) + _RESIZE)
+        return _run_each(
+            files, out, format, lambda f, o: lua_locals(OUT=o, SCALE=sc, TW=tw, TH=th) + _RESIZE
+        )
 
     @mcp.tool(annotations=ToolAnnotations(title="Batch apply palette"))
     def batch_apply_palette(
-        folder: str, out_dir: str | None = None, preset: str | None = None,
-        palette: list[str] | None = None, format: str = "png",
-        recursive: bool = False, file: str | None = None,
+        folder: str,
+        out_dir: str | None = None,
+        preset: str | None = None,
+        palette: list[str] | None = None,
+        format: str = "png",
+        recursive: bool = False,
+        file: str | None = None,
     ) -> dict:
         """Palette-lock every ``.aseprite`` in ``folder``: snap each sprite (first frame,
         alpha preserved) to a palette and export images to ``out_dir``. Give a ``preset``
@@ -198,4 +223,6 @@ def register(mcp):
         colors_lua = _colors_lua(colors)
         files = _list(folder, recursive)
         out = out_dir or folder
-        return _run_each(files, out, format, lambda f, o: colors_lua + lua_locals(OUT=o) + _APPLY_PAL)
+        return _run_each(
+            files, out, format, lambda f, o: colors_lua + lua_locals(OUT=o) + _APPLY_PAL
+        )

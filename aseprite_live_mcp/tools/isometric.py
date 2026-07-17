@@ -5,6 +5,7 @@ flat-canvas. These draw true 2:1 isometric forms with automatic top/left/right
 face shading (light from top-left), clean strokes, and a top-edge highlight —
 built for isometric game art. Each is one undo step on the live editor.
 """
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations
@@ -29,7 +30,9 @@ local function faces(r,g,b) local pc=app.pixelColor
   return {top=pc.rgba(r,g,b,255), left=s(0.70), right=s(0.48), stroke=s(0.20), hi=s(1.30)} end
 """
 
-_BOX = _ISO + """
+_BOX = (
+    _ISO
+    + """
 return editCel(function(img, s)
   local hw=HW; local half=hw/2
   local gL={CX-hw,CY}; local gR={CX+hw,CY}; local gF={CX,CY+half}; local gB={CX,CY-half}
@@ -46,8 +49,11 @@ return editCel(function(img, s)
     face_sw={{gL[1],gL[2]},{gF[1],gF[2]},{tF[1],tF[2]},{tL[1],tL[2]}} })
 end)
 """
+)
 
-_CYL = _ISO + """
+_CYL = (
+    _ISO
+    + """
 return editCel(function(img, s)
   local cx,topY,r,h=CX,TY,RAD,HT; local ry=math.floor(r/2); local p=faces(R,G,B)
   for y=0,h do for x=-r,r do pp(img,cx+x,topY+y, (x<-r*0.35) and p.hi or (x<r*0.1 and p.left or p.right)) end end
@@ -59,14 +65,20 @@ return editCel(function(img, s)
   return J({ cylinder=true, cx=cx, top=topY })
 end)
 """
+)
 
-_POLY = _ISO + """
+_POLY = (
+    _ISO
+    + """
 return editCel(function(img, s)
   polyfill(img, PTS, app.pixelColor.rgba(R,G,B,A)); return J({ filled=#PTS })
 end)
 """
+)
 
-_RECESS = _ISO + """
+_RECESS = (
+    _ISO
+    + """
 return editCel(function(img, s)
   if #PTS ~= 4 then error("iso_recessed_panel needs exactly 4 corner points (a face)") end
   local cx,cy=0,0; for _,q in ipairs(PTS) do cx=cx+q[1];cy=cy+q[2] end; cx=cx/4;cy=cy/4
@@ -77,19 +89,25 @@ return editCel(function(img, s)
   return J({ recessed=true })
 end)
 """
+)
 
 
 def _points_lua(points) -> str:
     try:
         return "{" + ",".join(f"{{{int(p[0])},{int(p[1])}}}" for p in points) + "}"
     except (TypeError, IndexError, ValueError):
-        raise ToolError("points must be a list of [x, y] pairs")
+        raise ToolError("points must be a list of [x, y] pairs") from None
 
 
 def register(mcp):
     @mcp.tool(annotations=ToolAnnotations(title="Draw isometric box"))
     def draw_iso_box(
-        center_x: int, center_y: int, half_width: int, height: int, color: str, file: str | None = None
+        center_x: int,
+        center_y: int,
+        half_width: int,
+        height: int,
+        color: str,
+        file: str | None = None,
     ) -> dict:
         """Draw a 2:1 isometric box. The footprint diamond is centered at
         (center_x, center_y) with the given ``half_width`` (full tile width =
@@ -98,7 +116,18 @@ def register(mcp):
         Returns the top/SE/SW face corner polygons so you can attach recessed ports
         or details. One undo step. Headless: pass ``file``."""
         r, g, b, _ = parse_color(color)
-        body = lua_locals(CX=int(center_x), CY=int(center_y), HW=int(half_width), HT=int(height), R=r, G=g, B=b) + _BOX
+        body = (
+            lua_locals(
+                CX=int(center_x),
+                CY=int(center_y),
+                HW=int(half_width),
+                HT=int(height),
+                R=r,
+                G=g,
+                B=b,
+            )
+            + _BOX
+        )
         return run(body, mutates=True, undo_label="Iso box", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Draw isometric cylinder"))
@@ -109,7 +138,12 @@ def register(mcp):
         shaded body + front rim, auto-shaded from ``color``. ``top_y`` is the top of
         the body. One undo step. Headless: pass ``file``."""
         r, g, b, _ = parse_color(color)
-        body = lua_locals(CX=int(center_x), TY=int(top_y), RAD=int(radius), HT=int(height), R=r, G=g, B=b) + _CYL
+        body = (
+            lua_locals(
+                CX=int(center_x), TY=int(top_y), RAD=int(radius), HT=int(height), R=r, G=g, B=b
+            )
+            + _CYL
+        )
         return run(body, mutates=True, undo_label="Iso cylinder", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Fill polygon"))

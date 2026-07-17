@@ -11,6 +11,7 @@
 Both operate on RGB sprites and are one undo step. Light directions:
 top_left, top, top_right, left, right, bottom_left, bottom, bottom_right.
 """
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations
@@ -19,9 +20,14 @@ from ..lua import lua_locals
 from ._common import ToolError, run
 
 _DIRS = {
-    "top_left": (-1, -1), "top": (0, -1), "top_right": (1, -1),
-    "left": (-1, 0), "right": (1, 0),
-    "bottom_left": (-1, 1), "bottom": (0, 1), "bottom_right": (1, 1),
+    "top_left": (-1, -1),
+    "top": (0, -1),
+    "top_right": (1, -1),
+    "left": (-1, 0),
+    "right": (1, 0),
+    "bottom_left": (-1, 1),
+    "bottom": (0, 1),
+    "bottom_right": (1, 1),
 }
 
 # Inside-editCel helpers: palette tables, nearestIdx, pxrgb, litnessAt.
@@ -114,8 +120,13 @@ def _body(prelude_locals: str, loop: str) -> str:
 def register(mcp):
     @mcp.tool(annotations=ToolAnnotations(title="Apply shading"))
     def apply_shading(
-        x: int, y: int, width: int, height: int, light_direction: str,
-        intensity: float = 0.5, file: str | None = None,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        light_direction: str,
+        intensity: float = 0.5,
+        file: str | None = None,
     ) -> dict:
         """Palette-constrained shading: brighten toward the light and darken away
         from it, snapping every pixel to the nearest palette color. ``intensity``
@@ -123,13 +134,26 @@ def register(mcp):
         if light_direction not in _DIRS:
             raise ToolError(f"light_direction must be one of {', '.join(_DIRS)}")
         lx, ly = _DIRS[light_direction]
-        loc = lua_locals(X=int(x), Y=int(y), W=int(width), H=int(height), LX=lx, LY=ly, INTENSITY=float(intensity))
+        loc = lua_locals(
+            X=int(x),
+            Y=int(y),
+            W=int(width),
+            H=int(height),
+            LX=lx,
+            LY=ly,
+            INTENSITY=float(intensity),
+        )
         return run(_body(loc, _APPLY_LOOP), mutates=True, undo_label="Apply shading", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Palette ramp-walk shading"))
     def palette_ramp_walk(
-        x: int, y: int, width: int, height: int, light_direction: str,
-        steps: int = 2, file: str | None = None,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        light_direction: str,
+        steps: int = 2,
+        file: str | None = None,
     ) -> dict:
         """Shade by WALKING the arranged palette ±N indices toward lighter/darker
         (per light direction), instead of snapping to the luminance-nearest color —
@@ -141,5 +165,7 @@ def register(mcp):
         if steps < 1:
             raise ToolError("steps must be >= 1")
         lx, ly = _DIRS[light_direction]
-        loc = lua_locals(X=int(x), Y=int(y), W=int(width), H=int(height), LX=lx, LY=ly, STEPS=int(steps))
+        loc = lua_locals(
+            X=int(x), Y=int(y), W=int(width), H=int(height), LX=lx, LY=ly, STEPS=int(steps)
+        )
         return run(_body(loc, _RAMP_LOOP), mutates=True, undo_label="Ramp-walk shading", file=file)

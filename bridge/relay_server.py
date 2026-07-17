@@ -13,17 +13,20 @@
 # Protocol per WS text frame:  request  = "<id>\n<lua code>"
 #                              response = "<id>\nOK\n<result>"  or  "<id>\nERR\n<error>"
 # Localhost only. Run: python relay_server.py   (needs: pip install websockets)
-import asyncio, json, threading, uuid
+import asyncio
+import json
+import threading
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import websockets  # pip install websockets
 
 WS_PORT, HTTP_PORT = 9877, 9878
 
-loop = None          # asyncio loop (set in main)
-client = None        # current Aseprite websocket connection
-client_info = ""     # version string learned from the hello exec
-pending = {}         # message id -> Future awaiting the Lua result
+loop = None  # asyncio loop (set in main)
+client = None  # current Aseprite websocket connection
+client_info = ""  # version string learned from the hello exec
+pending = {}  # message id -> Future awaiting the Lua result
 
 
 async def submit(code: str, timeout: float = 60.0) -> dict:
@@ -37,7 +40,10 @@ async def submit(code: str, timeout: float = 60.0) -> dict:
         await client.send(mid + "\n" + code)
         return await asyncio.wait_for(fut, timeout)
     except asyncio.TimeoutError:
-        return {"ok": False, "error": f"timeout after {timeout}s (a modal dialog may be blocking Aseprite)"}
+        return {
+            "ok": False,
+            "error": f"timeout after {timeout}s (a modal dialog may be blocking Aseprite)",
+        }
     except Exception as e:
         return {"ok": False, "error": f"send failed: {e}"}
     finally:
@@ -46,7 +52,9 @@ async def submit(code: str, timeout: float = 60.0) -> dict:
 
 async def hello():
     global client_info
-    res = await submit('return "aseprite " .. tostring(app.version) .. " | sprites open: " .. #app.sprites', 15)
+    res = await submit(
+        'return "aseprite " .. tostring(app.version) .. " | sprites open: " .. #app.sprites', 15
+    )
     client_info = res.get("result", "") if res.get("ok") else f"hello failed: {res.get('error')}"
     print(f"[relay] aseprite connected: {client_info}", flush=True)
 
@@ -125,7 +133,10 @@ async def main():
     # compression=None: refuse permessage-deflate outright - IXWebSocket (Aseprite's
     # client) and python-websockets disagree on it and frames silently vanish.
     async with websockets.serve(ws_handler, "127.0.0.1", WS_PORT, compression=None):
-        print(f"[relay] WS on 127.0.0.1:{WS_PORT} - waiting for Aseprite (File > Scripts > claude-bridge)", flush=True)
+        print(
+            f"[relay] WS on 127.0.0.1:{WS_PORT} - waiting for Aseprite (File > Scripts > claude-bridge)",
+            flush=True,
+        )
         await asyncio.Future()
 
 

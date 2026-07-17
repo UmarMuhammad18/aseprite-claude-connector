@@ -3,6 +3,7 @@
 All tools composite the active cel, draw into a sprite-sized image via ``editCel``
 (defined in the Lua prelude), and write it back.
 """
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations
@@ -126,7 +127,9 @@ end)
 # Bayer 4x4 threshold matrix, shared by the gradient (dithered) and dither tools.
 _BAYER = "local bayer = {0,8,2,10, 12,4,14,6, 3,11,1,9, 15,7,13,5}\n"
 
-_GRADIENT = _BAYER + """
+_GRADIENT = (
+    _BAYER
+    + """
 return editCel(function(img, s)
   local function put(x, y, c) if x >= 0 and y >= 0 and x < s.width and y < s.height then img:drawPixel(x, y, c) end end
   local c1 = Color{ r = R1, g = G1, b = B1, a = A1 }
@@ -153,8 +156,11 @@ return editCel(function(img, s)
   return J({ drawn = "gradient", dither = DITHER, region = { X, Y, W, H } })
 end)
 """
+)
 
-_DITHER = _BAYER + """
+_DITHER = (
+    _BAYER
+    + """
 return editCel(function(img, s)
   local function put(x, y, c) if x >= 0 and y >= 0 and x < s.width and y < s.height then img:drawPixel(x, y, c) end end
   local c1 = Color{ r = R1, g = G1, b = B1, a = A1 }
@@ -168,6 +174,7 @@ return editCel(function(img, s)
   return J({ dithered = true, density = DENSITY, region = { X, Y, W, H } })
 end)
 """
+)
 
 _OUTLINE = """
 return editCel(function(img, s)
@@ -200,30 +207,53 @@ end)
 def register(mcp):
     @mcp.tool(annotations=ToolAnnotations(title="Draw rectangle"))
     def draw_rectangle(
-        x: int, y: int, width: int, height: int, color: str, fill: bool = True, file: str | None = None
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        color: str,
+        fill: bool = True,
+        file: str | None = None,
     ) -> dict:
         """Draw a rectangle on the active layer + frame. ``color`` is #rrggbb or
         #rrggbbaa. ``fill`` false draws only the outline. One undo step (live).
         Headless: pass ``file``."""
         r, g, b, a = parse_color(color)
-        body = lua_locals(X=int(x), Y=int(y), W=int(width), H=int(height), R=r, G=g, B=b, A=a, FILL=fill) + _RECT
+        body = (
+            lua_locals(
+                X=int(x), Y=int(y), W=int(width), H=int(height), R=r, G=g, B=b, A=a, FILL=fill
+            )
+            + _RECT
+        )
         return run(body, mutates=True, undo_label="Draw rectangle", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Draw line"))
     def draw_line(x1: int, y1: int, x2: int, y2: int, color: str, file: str | None = None) -> dict:
         """Draw a 1px line from (x1,y1) to (x2,y2). One undo step. Headless: pass ``file``."""
         r, g, b, a = parse_color(color)
-        body = lua_locals(X0=int(x1), Y0=int(y1), X1=int(x2), Y1=int(y2), R=r, G=g, B=b, A=a) + _LINE
+        body = (
+            lua_locals(X0=int(x1), Y0=int(y1), X1=int(x2), Y1=int(y2), R=r, G=g, B=b, A=a) + _LINE
+        )
         return run(body, mutates=True, undo_label="Draw line", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Draw circle"))
     def draw_circle(
-        center_x: int, center_y: int, radius: int, color: str, fill: bool = False, file: str | None = None
+        center_x: int,
+        center_y: int,
+        radius: int,
+        color: str,
+        fill: bool = False,
+        file: str | None = None,
     ) -> dict:
         """Draw a circle centered at (center_x, center_y). ``fill`` true fills the
         disk. One undo step. Headless: pass ``file``."""
         r, g, b, a = parse_color(color)
-        body = lua_locals(CX=int(center_x), CY=int(center_y), RAD=int(radius), R=r, G=g, B=b, A=a, FILL=fill) + _CIRCLE
+        body = (
+            lua_locals(
+                CX=int(center_x), CY=int(center_y), RAD=int(radius), R=r, G=g, B=b, A=a, FILL=fill
+            )
+            + _CIRCLE
+        )
         return run(body, mutates=True, undo_label="Draw circle", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Flood fill"))
@@ -236,19 +266,44 @@ def register(mcp):
 
     @mcp.tool(annotations=ToolAnnotations(title="Draw ellipse"))
     def draw_ellipse(
-        center_x: int, center_y: int, radius_x: int, radius_y: int, color: str,
-        fill: bool = False, file: str | None = None,
+        center_x: int,
+        center_y: int,
+        radius_x: int,
+        radius_y: int,
+        color: str,
+        fill: bool = False,
+        file: str | None = None,
     ) -> dict:
         """Draw an ellipse centered at (center_x, center_y) with independent x/y radii.
         ``fill`` true fills it. One undo step. Headless: pass ``file``."""
         r, g, b, a = parse_color(color)
-        body = lua_locals(CX=int(center_x), CY=int(center_y), RX=int(radius_x), RY=int(radius_y), R=r, G=g, B=b, A=a, FILL=fill) + _ELLIPSE
+        body = (
+            lua_locals(
+                CX=int(center_x),
+                CY=int(center_y),
+                RX=int(radius_x),
+                RY=int(radius_y),
+                R=r,
+                G=g,
+                B=b,
+                A=a,
+                FILL=fill,
+            )
+            + _ELLIPSE
+        )
         return run(body, mutates=True, undo_label="Draw ellipse", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Draw gradient"))
     def draw_gradient(
-        x: int, y: int, width: int, height: int, color1: str, color2: str,
-        direction: str = "vertical", dither: bool = False, file: str | None = None,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        color1: str,
+        color2: str,
+        direction: str = "vertical",
+        dither: bool = False,
+        file: str | None = None,
     ) -> dict:
         """Fill a rectangle with a linear gradient from ``color1`` to ``color2``.
         ``direction`` is horizontal | vertical | diagonal. ``dither`` true uses an
@@ -259,16 +314,37 @@ def register(mcp):
             raise ToolError("direction must be horizontal | vertical | diagonal")
         r1, g1, b1, a1 = parse_color(color1)
         r2, g2, b2, a2 = parse_color(color2)
-        body = lua_locals(
-            X=int(x), Y=int(y), W=int(width), H=int(height), DIR=d, DITHER=dither,
-            R1=r1, G1=g1, B1=b1, A1=a1, R2=r2, G2=g2, B2=b2, A2=a2,
-        ) + _GRADIENT
+        body = (
+            lua_locals(
+                X=int(x),
+                Y=int(y),
+                W=int(width),
+                H=int(height),
+                DIR=d,
+                DITHER=dither,
+                R1=r1,
+                G1=g1,
+                B1=b1,
+                A1=a1,
+                R2=r2,
+                G2=g2,
+                B2=b2,
+                A2=a2,
+            )
+            + _GRADIENT
+        )
         return run(body, mutates=True, undo_label="Draw gradient", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Apply dither"))
     def apply_dither(
-        x: int, y: int, width: int, height: int, color1: str, color2: str,
-        density: float = 0.5, file: str | None = None,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        color1: str,
+        color2: str,
+        density: float = 0.5,
+        file: str | None = None,
     ) -> dict:
         """Fill a rectangle with a uniform ordered (Bayer 4x4) dither mixing ``color1``
         and ``color2``. ``density`` 0..1 is the fraction of ``color2`` — 0.5 is an even
@@ -277,10 +353,24 @@ def register(mcp):
             raise ToolError("density must be 0.0..1.0")
         r1, g1, b1, a1 = parse_color(color1)
         r2, g2, b2, a2 = parse_color(color2)
-        body = lua_locals(
-            X=int(x), Y=int(y), W=int(width), H=int(height), DENSITY=float(density),
-            R1=r1, G1=g1, B1=b1, A1=a1, R2=r2, G2=g2, B2=b2, A2=a2,
-        ) + _DITHER
+        body = (
+            lua_locals(
+                X=int(x),
+                Y=int(y),
+                W=int(width),
+                H=int(height),
+                DENSITY=float(density),
+                R1=r1,
+                G1=g1,
+                B1=b1,
+                A1=a1,
+                R2=r2,
+                G2=g2,
+                B2=b2,
+                A2=a2,
+            )
+            + _DITHER
+        )
         return run(body, mutates=True, undo_label="Apply dither", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Add outline"))

@@ -11,6 +11,7 @@ Two ideas keep the tool code safe and backend-agnostic:
 Tool bodies never string-format Lua braces; they prepend typed locals with
 ``lua_locals(...)`` and reference them from a static Lua template.
 """
+
 from __future__ import annotations
 
 # A minimal JSON encoder in Lua (encode-only; handles nil/number/bool/string and
@@ -128,7 +129,9 @@ def build_lua(body: str, *, mutates: bool = False, undo_label: str = "AI edit") 
             + "\nlocal __r\n"
             # Name the transaction so the editor's undo entry reads "Undo <label>"
             # rather than a generic one — the one-edit-one-named-undo discipline.
-            + "app.transaction(" + lua_str(undo_label) + ", function()\n"
+            + "app.transaction("
+            + lua_str(undo_label)
+            + ", function()\n"
             + "  __r = (function()\n"
             + body
             + "\n  end)()\n"

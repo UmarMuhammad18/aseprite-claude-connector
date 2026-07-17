@@ -8,6 +8,7 @@ File > Scripts > Claude Bridge is connected. Then:
 It draws a small emblem on your ACTIVE sprite. Every edit is one app.transaction,
 so each is a single Ctrl+Z — watch the shapes appear, then undo them one at a time.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -28,7 +29,9 @@ async def main() -> int:
 
     async def call(name, args=None):
         res = await mcp.call_tool(name, args or {})
-        txt = " ".join(getattr(p, "text", str(p)) for p in (res[0] if isinstance(res, tuple) else res))
+        txt = " ".join(
+            getattr(p, "text", str(p)) for p in (res[0] if isinstance(res, tuple) else res)
+        )
         print(f"  {name}: {txt[:140].replace(chr(10), ' ')}")
         return txt
 
@@ -38,9 +41,18 @@ async def main() -> int:
     await call("get_sprite_info")
 
     edits = [
-        ("draw_circle", {"center_x": 32, "center_y": 32, "radius": 20, "color": "#2288ff", "fill": True}),
-        ("draw_circle", {"center_x": 32, "center_y": 32, "radius": 28, "color": "#ffffff", "fill": False}),
-        ("draw_rectangle", {"x": 20, "y": 20, "width": 24, "height": 24, "color": "#ffcc00", "fill": False}),
+        (
+            "draw_circle",
+            {"center_x": 32, "center_y": 32, "radius": 20, "color": "#2288ff", "fill": True},
+        ),
+        (
+            "draw_circle",
+            {"center_x": 32, "center_y": 32, "radius": 28, "color": "#ffffff", "fill": False},
+        ),
+        (
+            "draw_rectangle",
+            {"x": 20, "y": 20, "width": 24, "height": 24, "color": "#ffcc00", "fill": False},
+        ),
         ("draw_line", {"x1": 0, "y1": 0, "x2": 63, "y2": 63, "color": "#ff3355"}),
         ("draw_line", {"x1": 0, "y1": 63, "x2": 63, "y2": 0, "color": "#ff3355"}),
     ]
@@ -54,7 +66,9 @@ async def main() -> int:
 
     print("export live sprite -> PNG:")
     await call("export_sprite", {"out_path": PNG})
-    print(f"\nDone. {len(edits)} edits made on your live canvas. Press Ctrl+Z {len(edits)} times to undo them one at a time.")
+    print(
+        f"\nDone. {len(edits)} edits made on your live canvas. Press Ctrl+Z {len(edits)} times to undo them one at a time."
+    )
     print(f"Exported to: {PNG}")
     return len(edits)
 

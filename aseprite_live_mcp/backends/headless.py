@@ -5,6 +5,7 @@ installed, prints a harmless dialog error), so results come back through a temp
 file, not stdout. ``aseprite --batch FILE`` loads FILE as ``app.activeSprite``, so
 the same tool Lua that targets the active document works here too.
 """
+
 from __future__ import annotations
 
 import os
@@ -66,9 +67,10 @@ class HeadlessBackend:
         if not os.path.isfile(result_path):
             tail = (proc.stderr or proc.stdout or "").strip()[-600:]
             return ExecResult(
-                ok=False, error=f"no result from headless run (exit {proc.returncode}). output: {tail}"
+                ok=False,
+                error=f"no result from headless run (exit {proc.returncode}). output: {tail}",
             )
-        with open(result_path, "r", encoding="utf-8") as f:
+        with open(result_path, encoding="utf-8") as f:
             raw = f.read()
         status, _, body = raw.partition("\n")
         if status == "OK":

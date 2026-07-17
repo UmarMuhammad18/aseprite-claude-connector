@@ -7,6 +7,7 @@
   were found in no other tool — this is a first attempt at that, not a claim of a
   solved feature.
 """
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations
@@ -78,18 +79,27 @@ return J({ smearFrame = fr.frameNumber, frames = #s.frames })
 def register(mcp):
     @mcp.tool(annotations=ToolAnnotations(title="Tween frames"))
     def tween_frames(
-        from_frame: int, to_frame: int, count: int = 1, layer: str | None = None, file: str | None = None
+        from_frame: int,
+        to_frame: int,
+        count: int = 1,
+        layer: str | None = None,
+        file: str | None = None,
     ) -> dict:
         """Insert ``count`` in-between frames between ``from_frame`` and ``to_frame``
         that interpolate the cel's position (a motion tween of the start cel's
         image). Headless: pass ``file``."""
         if count < 1:
             raise ToolError("count must be >= 1")
-        body = lua_locals(FROM=int(from_frame), TO=int(to_frame), COUNT=int(count), LAYER=layer) + _TWEEN
+        body = (
+            lua_locals(FROM=int(from_frame), TO=int(to_frame), COUNT=int(count), LAYER=layer)
+            + _TWEEN
+        )
         return run(body, mutates=True, undo_label="Tween frames", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Smear frame"))
-    def smear_frame(from_frame: int, to_frame: int, layer: str | None = None, file: str | None = None) -> dict:
+    def smear_frame(
+        from_frame: int, to_frame: int, layer: str | None = None, file: str | None = None
+    ) -> dict:
         """Append a motion-smear frame blending ``from_frame`` and ``to_frame``:
         overlapping pixels averaged, single-frame areas ghosted at half alpha — a
         pixel-content smear. RGB sprite only. Headless: pass ``file``."""

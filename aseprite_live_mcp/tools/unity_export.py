@@ -10,6 +10,7 @@ The .meta targets Unity 2021.3+/6 texture import. Rects, pivots, names and IDs a
 generated deterministically here; Unity finalizes the asset on import. Final
 in-Unity validation is a project-side step.
 """
+
 from __future__ import annotations
 
 import os
@@ -19,15 +20,21 @@ import uuid
 from mcp.types import ToolAnnotations
 
 from ..lua import lua_locals
-from ._common import ToolError, run
 from . import state
+from ._common import ToolError, run
 from ._schemas import UnityExport
 
 # Unity SpriteAlignment code + canonical pivot (x, y from bottom-left, 0..1).
 _ALIGN = {
-    "center": (0, 0.5, 0.5), "top_left": (1, 0.0, 1.0), "top": (2, 0.5, 1.0),
-    "top_right": (3, 1.0, 1.0), "left": (4, 0.0, 0.5), "right": (5, 1.0, 0.5),
-    "bottom_left": (6, 0.0, 0.0), "bottom": (7, 0.5, 0.0), "bottom_right": (8, 1.0, 0.0),
+    "center": (0, 0.5, 0.5),
+    "top_left": (1, 0.0, 1.0),
+    "top": (2, 0.5, 1.0),
+    "top_right": (3, 1.0, 1.0),
+    "left": (4, 0.0, 0.5),
+    "right": (5, 1.0, 0.5),
+    "bottom_left": (6, 0.0, 0.0),
+    "bottom": (7, 0.5, 0.0),
+    "bottom_right": (8, 1.0, 0.0),
     "custom": (9, 0.5, 0.5),
 }
 
@@ -181,7 +188,18 @@ def _yaml_scalar(s: str) -> str:
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
-def _sprite_entry(name: str, x: int, y: int, w: int, h: int, sid: str, iid: int, px: float, py: float, alignment: int = 9) -> str:
+def _sprite_entry(
+    name: str,
+    x: int,
+    y: int,
+    w: int,
+    h: int,
+    sid: str,
+    iid: int,
+    px: float,
+    py: float,
+    alignment: int = 9,
+) -> str:
     return (
         "    - serializedVersion: 2\n"
         f"      name: {_yaml_scalar(name)}\n"
@@ -216,7 +234,17 @@ def _assemble_meta(guid: str, ppu: int, sprites: list[str], idname: list[str]) -
     )
 
 
-def _gen_meta(guid: str, ppu: int, frames: int, w: int, h: int, stem: str, px: float, py: float, alignment: int = 9):
+def _gen_meta(
+    guid: str,
+    ppu: int,
+    frames: int,
+    w: int,
+    h: int,
+    stem: str,
+    px: float,
+    py: float,
+    alignment: int = 9,
+):
     sprites, idname, rects = [], [], []
     for i in range(frames):
         name = f"{stem}_{i}"

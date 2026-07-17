@@ -1,4 +1,5 @@
 """Sprite lifecycle tools."""
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations

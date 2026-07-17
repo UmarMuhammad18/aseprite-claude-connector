@@ -5,6 +5,7 @@ via ``export_unity_slices`` (see tools/unity_export.py), so exported Unity sprit
 carry their correct pivot point — something no competitor's Aseprite→Unity path
 does. ``findSlice`` lives in the Lua prelude.
 """
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations
@@ -64,7 +65,9 @@ return J({ deleted = NAME })
 
 def register(mcp):
     @mcp.tool(annotations=ToolAnnotations(title="Create slice"))
-    def create_slice(name: str, x: int, y: int, width: int, height: int, file: str | None = None) -> dict:
+    def create_slice(
+        name: str, x: int, y: int, width: int, height: int, file: str | None = None
+    ) -> dict:
         """Create a named slice (atlas region) at the given rectangle. Slices become
         Unity sprites via export_unity_slices. One undo step. Headless: pass ``file``."""
         body = lua_locals(NAME=name, X=int(x), Y=int(y), W=int(width), H=int(height)) + _NEW
@@ -79,7 +82,9 @@ def register(mcp):
         return run(body, mutates=True, undo_label="Set slice pivot", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Set slice center (9-patch)", idempotentHint=True))
-    def set_slice_center(name: str, x: int, y: int, width: int, height: int, file: str | None = None) -> dict:
+    def set_slice_center(
+        name: str, x: int, y: int, width: int, height: int, file: str | None = None
+    ) -> dict:
         """Set a slice's 9-patch stretchable center rectangle (relative to the slice).
         One undo step. Headless: pass ``file``."""
         body = lua_locals(NAME=name, X=int(x), Y=int(y), W=int(width), H=int(height)) + _CENTER

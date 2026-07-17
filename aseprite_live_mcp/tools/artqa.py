@@ -5,12 +5,13 @@ sticker-padding measurement was found in no tool at all (MCP or otherwise). Thes
 audit a sprite against project conventions inside the AI loop: content bounds,
 transparent padding, color count, grid-fit.
 """
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations
 
-from ._common import ToolError, run
 from . import state
+from ._common import ToolError, run
 from ._schemas import PaddingReport, QAReport
 
 # One composited pass: content bbox, per-side transparent padding, fill ratio, and
@@ -98,19 +99,40 @@ def register(mcp):
         cc = data["colorCount"]
 
         if expected_width is not None:
-            add("width", canvas["width"] == expected_width, f"{canvas['width']} (expected {expected_width})")
+            add(
+                "width",
+                canvas["width"] == expected_width,
+                f"{canvas['width']} (expected {expected_width})",
+            )
         if expected_height is not None:
-            add("height", canvas["height"] == expected_height, f"{canvas['height']} (expected {expected_height})")
+            add(
+                "height",
+                canvas["height"] == expected_height,
+                f"{canvas['height']} (expected {expected_height})",
+            )
         if grid_multiple:
             ok = canvas["width"] % grid_multiple == 0 and canvas["height"] % grid_multiple == 0
-            add("grid_fit", ok, f"{canvas['width']}x{canvas['height']} vs multiple of {grid_multiple}")
+            add(
+                "grid_fit",
+                ok,
+                f"{canvas['width']}x{canvas['height']} vs multiple of {grid_multiple}",
+            )
         if max_colors is not None:
             add("max_colors", cc <= max_colors, f"{cc} colors (max {max_colors})")
         if require_symmetric_padding:
             sym = pad["left"] == pad["right"] and pad["top"] == pad["bottom"]
-            add("symmetric_padding", sym, f"L{pad['left']} R{pad['right']} T{pad['top']} B{pad['bottom']}")
+            add(
+                "symmetric_padding",
+                sym,
+                f"L{pad['left']} R{pad['right']} T{pad['top']} B{pad['bottom']}",
+            )
 
         passed = sum(1 for c in checks if c["pass"])
-        result = {"passed": passed, "failed": len(checks) - passed, "checks": checks, "measurements": data}
+        result = {
+            "passed": passed,
+            "failed": len(checks) - passed,
+            "checks": checks,
+            "measurements": data,
+        }
         state.set_last("qa", {"kind": "qa_sweep", "result": result})
         return result

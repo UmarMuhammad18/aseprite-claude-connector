@@ -1,4 +1,5 @@
 """Selection tools (most useful in the live editor; selection is per-session)."""
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations

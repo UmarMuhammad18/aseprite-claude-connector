@@ -4,6 +4,7 @@ color histogram. Daily pixel-art parity ops the headless leaders all ship.
 All mutating tools composite the active cel via ``editCel`` and are one undo step.
 ``get_color_stats`` is read-only and feeds the art-QA loop (palette-drift checks).
 """
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations
@@ -130,9 +131,20 @@ def register(mcp):
         fr, fg, fb, _ = parse_color(from_color)
         tr, tg, tb, ta = parse_color(to_color)
         has_alpha = len(to_color.strip().lstrip("#")) == 8
-        body = lua_locals(
-            FR=fr, FG=fg, FB=fb, TR=tr, TG=tg, TB=tb, TA=ta, HAS_ALPHA=has_alpha, TOL=int(tolerance)
-        ) + _REPLACE
+        body = (
+            lua_locals(
+                FR=fr,
+                FG=fg,
+                FB=fb,
+                TR=tr,
+                TG=tg,
+                TB=tb,
+                TA=ta,
+                HAS_ALPHA=has_alpha,
+                TOL=int(tolerance),
+            )
+            + _REPLACE
+        )
         return run(body, mutates=True, undo_label="Replace color", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Quantize to palette"))
@@ -144,7 +156,9 @@ def register(mcp):
 
     @mcp.tool(annotations=ToolAnnotations(title="Adjust HSL"))
     def adjust_hsl(
-        hue_shift: float = 0.0, saturation: float = 1.0, lightness: float = 0.0,
+        hue_shift: float = 0.0,
+        saturation: float = 1.0,
+        lightness: float = 0.0,
         file: str | None = None,
     ) -> dict:
         """Shift the active cel's colors in HSL: ``hue_shift`` degrees (-360..360),

@@ -13,6 +13,7 @@ These tests drive ``tools/call`` through a real in-memory client session
 execution is stubbed at each tool module's ``run`` symbol, so no Aseprite is
 needed and each schema shape is pinned exactly.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -57,9 +58,7 @@ def _wire_call(tool: str, args: dict | None = None):
 
     async def go():
         server = build_server()
-        async with create_connected_server_and_client_session(
-            server._mcp_server
-        ) as client:
+        async with create_connected_server_and_client_session(server._mcp_server) as client:
             return await client.call_tool(tool, args or {})
 
     return asyncio.run(go())
@@ -73,9 +72,7 @@ def _text(res) -> str:
 
 
 def test_get_sprite_info_success_passes_wire_validation(monkeypatch):
-    monkeypatch.setattr(
-        "aseprite_live_mcp.tools.inspect.run", _stub_run(LIVE_SPRITE_INFO)
-    )
+    monkeypatch.setattr("aseprite_live_mcp.tools.inspect.run", _stub_run(LIVE_SPRITE_INFO))
     res = _wire_call("get_sprite_info")
     assert res.isError is False, f"schema rejected a normal sprite: {_text(res)}"
     assert res.structuredContent["width"] == 64

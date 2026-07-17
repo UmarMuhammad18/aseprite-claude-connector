@@ -45,3 +45,21 @@ packages = ["aseprite_live_mcp"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+# E/F/W core · I import order · UP modernize · B bugbear. The Lua-in-Python
+# string templates make long lines routine inside tool modules; E501 stays on,
+# with the templates exempt below.
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tool modules embed Lua templates where wrapping hurts readability; the relay
+# and demo scripts predate the lint config and read fine as-is.
+"aseprite_live_mcp/tools/*.py" = ["E501"]
+"tests/*" = ["E501"]
+"bridge/*" = ["E501"]
+"examples/*" = ["E501"]

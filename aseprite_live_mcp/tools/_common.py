@@ -1,4 +1,5 @@
 """Shared helpers for tool modules: run a Lua body and parse its result."""
+
 from __future__ import annotations
 
 import json
@@ -54,4 +55,4 @@ def parse_color(c: str) -> tuple[int, int, int, int]:
     try:
         return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), int(h[6:8], 16))
     except ValueError:
-        raise ToolError(f"bad color '{c}', expected hex digits")
+        raise ToolError(f"bad color '{c}', expected hex digits") from None

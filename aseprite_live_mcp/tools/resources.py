@@ -9,12 +9,13 @@ servers have no live state to expose.
 Each resource returns a JSON string and never raises: on error it returns
 ``{"error": ...}`` so the resource is always readable.
 """
+
 from __future__ import annotations
 
 import json
 
-from ._common import run
 from . import state
+from ._common import run
 
 _SPRITE_INFO = """
 local s = app.activeSprite
@@ -67,7 +68,8 @@ def _safe_dump(value) -> str:
 
 def register(mcp):
     @mcp.resource(
-        "aseprite://sprite/active", name="Active sprite",
+        "aseprite://sprite/active",
+        name="Active sprite",
         description="Size, color mode, and layer/frame/tag names of the active document.",
         mime_type="application/json",
     )
@@ -75,7 +77,8 @@ def register(mcp):
         return _safe(_SPRITE_INFO)
 
     @mcp.resource(
-        "aseprite://palette/active", name="Active palette",
+        "aseprite://palette/active",
+        name="Active palette",
         description="The active sprite's palette as #rrggbbaa hex colors.",
         mime_type="application/json",
     )
@@ -83,7 +86,8 @@ def register(mcp):
         return _safe(_PALETTE)
 
     @mcp.resource(
-        "aseprite://docs", name="Open documents",
+        "aseprite://docs",
+        name="Open documents",
         description="Every document open in the editor, including unsaved/untitled tabs (live backend).",
         mime_type="application/json",
     )
@@ -91,7 +95,8 @@ def register(mcp):
         return _safe(_DOCS)
 
     @mcp.resource(
-        "aseprite://qa/last", name="Last QA report",
+        "aseprite://qa/last",
+        name="Last QA report",
         description="The most recent qa_sweep / measure_padding result (null until one runs).",
         mime_type="application/json",
     )
@@ -99,9 +104,21 @@ def register(mcp):
         return _safe_dump(state.get_last("qa"))
 
     @mcp.resource(
-        "aseprite://export/last", name="Last export",
+        "aseprite://export/last",
+        name="Last export",
         description="The most recent Unity export result — written files and the .meta sprite manifest (null until one runs).",
         mime_type="application/json",
     )
     def last_export() -> str:
         return _safe_dump(state.get_last("export"))
+
+    @mcp.resource(
+        "aseprite://update",
+        name="Update status",
+        description="This server's version and whether a newer release exists on PyPI (checked at most daily; disable with ASEPRITE_MCP_NO_UPDATE_CHECK=1).",
+        mime_type="application/json",
+    )
+    def update_status() -> str:
+        from ..update_check import get_update_info
+
+        return _safe_dump(get_update_info())

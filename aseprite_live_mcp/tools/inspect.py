@@ -1,4 +1,5 @@
 """Read-only inspection tools."""
+
 from __future__ import annotations
 
 from mcp.types import ToolAnnotations
@@ -64,9 +65,15 @@ def register(mcp):
         annotations=ToolAnnotations(title="Backend status", readOnlyHint=True, openWorldHint=True)
     )
     def status() -> dict:
-        """Report backend health. Live: whether Aseprite is connected + its version.
+        """Report backend health plus this server's version and whether a newer
+        release exists. Live: whether Aseprite is connected + its version.
         Headless: the resolved Aseprite executable path and whether it exists."""
-        return get_backend().health()
+        from ..update_check import get_update_info
+
+        health = get_backend().health()
+        if isinstance(health, dict):
+            health = {**health, "server": get_update_info()}
+        return health
 
     @mcp.tool(annotations=ToolAnnotations(title="Sprite info", readOnlyHint=True))
     def get_sprite_info(file: str | None = None) -> SpriteInfo:

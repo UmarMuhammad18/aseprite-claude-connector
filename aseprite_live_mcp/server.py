@@ -4,10 +4,12 @@ Targets the current stable MCP spec (2025-11-25); stdio transport for the local,
 single-client case (Aseprite on your machine). The stateless 2026-07-28 revision
 is tracked as forward-compat work, not claimed here.
 """
+
 from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
 
+from . import __version__
 from .config import load_config
 from .tools import (
     animate,
@@ -34,6 +36,7 @@ from .tools import (
     transform,
     unity_export,
 )
+from .update_check import start_background_check
 
 _INSTRUCTIONS = """\
 Drive Aseprite from an AI agent. Tools operate on the *active sprite*: the live
@@ -75,7 +78,14 @@ _EXTRA_MODULES = (
 
 
 def build_server() -> FastMCP:
-    mcp = FastMCP("aseprite-live-mcp", instructions=_INSTRUCTIONS)
+    mcp = FastMCP(
+        "aseprite-live-mcp",
+        instructions=_INSTRUCTIONS,
+        website_url="https://github.com/oaktreegames/aseprite-live-mcp",
+    )
+    # FastMCP doesn't forward a version, so serverInfo would report the SDK's —
+    # set the lowlevel server's version so clients see the real release.
+    mcp._mcp_server.version = __version__
     for module in _TOOL_MODULES + _EXTRA_MODULES:
         module.register(mcp)
     return mcp
@@ -84,4 +94,6 @@ def build_server() -> FastMCP:
 def main() -> None:
     # Touch config early so a bad env fails loudly at startup, on stderr.
     load_config()
+    # Fire-and-forget daily update check (never blocks; ASEPRITE_MCP_NO_UPDATE_CHECK=1 disables).
+    start_background_check()
     build_server().run(transport="stdio")

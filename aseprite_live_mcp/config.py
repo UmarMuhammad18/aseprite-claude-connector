@@ -1,10 +1,13 @@
 """Runtime configuration, all overridable by environment variables.
 
-- ASEPRITE_MCP_BACKEND : "live" (default) or "headless"
-- ASEPRITE_RELAY_URL   : relay HTTP base for the live backend (default 127.0.0.1:9878)
-- ASEPRITE_PATH        : path to the Aseprite executable (auto-detected if unset)
-- ASEPRITE_MCP_TIMEOUT : per-op timeout seconds (default 60)
+- ASEPRITE_MCP_BACKEND         : "live" (default) or "headless"
+- ASEPRITE_RELAY_URL           : relay HTTP base for the live backend (default 127.0.0.1:9878)
+- ASEPRITE_PATH                : path to the Aseprite executable (auto-detected if unset)
+- ASEPRITE_MCP_TIMEOUT         : per-op timeout seconds (default 60)
+- ASEPRITE_MCP_NO_UPDATE_CHECK : set to disable the daily PyPI update check
+  (see update_check.py; also auto-disabled when CI is set)
 """
+
 from __future__ import annotations
 
 import os

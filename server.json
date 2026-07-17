@@ -2,23 +2,37 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.oaktreegames/aseprite-live-mcp",
   "title": "Aseprite Live",
-  "description": "Unity-first MCP for live Aseprite: Unity export, art-QA, iso tools, resources + prompts",
+  "description": "Live+headless Aseprite MCP: Unity export, art-QA, tilemaps, in-editor dialogs, update-aware",
   "status": "active",
   "repository": {
     "url": "https://github.com/oaktreegames/aseprite-live-mcp",
     "source": "github"
   },
-  "version": "0.1.2",
+  "version": "0.2.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "aseprite-live-mcp",
-      "version": "0.1.2",
-      "transport": { "type": "stdio" },
+      "version": "0.2.0",
+      "transport": {
+        "type": "stdio"
+      },
       "environmentVariables": [
-        { "name": "ASEPRITE_MCP_BACKEND", "description": "live (default) or headless", "isRequired": false },
-        { "name": "ASEPRITE_PATH", "description": "Path to the Aseprite executable (auto-detected if unset)", "isRequired": false },
-        { "name": "ASEPRITE_RELAY_URL", "description": "Relay HTTP base for the live backend (default http://127.0.0.1:9878)", "isRequired": false }
+        {
+          "name": "ASEPRITE_MCP_BACKEND",
+          "description": "live (default) or headless",
+          "isRequired": false
+        },
+        {
+          "name": "ASEPRITE_PATH",
+          "description": "Path to the Aseprite executable (auto-detected if unset)",
+          "isRequired": false
+        },
+        {
+          "name": "ASEPRITE_RELAY_URL",
+          "description": "Relay HTTP base for the live backend (default http://127.0.0.1:9878)",
+          "isRequired": false
+        }
       ]
     }
   ]

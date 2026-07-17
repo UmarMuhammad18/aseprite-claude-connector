@@ -31,9 +31,14 @@ Each of these is an AI agent driving a **live** Aseprite canvas through the MCP 
 <tr>
 <td align="center"><img src="docs/demo-tilemap.gif" width="240" alt="Tilemap editing"><br><sub><b>Tilemaps</b><br>tileset drawn tile by tile → map laid out row by row</sub></td>
 <td align="center"><img src="docs/demo-stamp.gif" width="240" alt="Stamp painting"><br><sub><b>Stamp painting</b><br>one flower drawn once → scattered along an arc, one undo</sub></td>
-<td align="center"></td>
+<td align="center"><img src="docs/bridge-panel.png" width="240" alt="The Claude Bridge panel in Aseprite"><br><sub><b>The bridge panel</b><br>live status, activity log, a Pause toggle — in Aseprite</sub></td>
 </tr>
 </table>
+
+And the part no headless server can do — the agent asking **you**, inside your editor
+(a real screen capture, not a mockup):
+
+<p align="center"><img src="docs/dialog-in-editor.png" width="560" alt="An MCP-driven approval dialog inside Aseprite"></p>
 
 ## Install
 

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aseprite-live-mcp"
-version = "0.1.2"
+version = "0.2.0"
 description = "Unity-first MCP server for the live Aseprite editor (and headless batch)."
 readme = "README.md"
 requires-python = ">=3.10"

@@ -1,0 +1,46 @@
+name: Bug report
+description: Something broke or behaved wrong
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Server version
+      description: Ask your agent to run the `status` tool, or `pip show aseprite-live-mcp`.
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      options:
+        - live (editor + relay)
+        - headless (aseprite --batch)
+        - both / not sure
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS / Python / Aseprite version
+      placeholder: "Windows 11 / Python 3.12 / Aseprite 1.3.17"
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: MCP client
+      placeholder: "Claude Code / Claude Desktop / Cursor / ..."
+  - type: textarea
+    id: repro
+    attributes:
+      label: What happened, and how to reproduce it
+      description: The tool call (name + arguments) that misbehaved, what you expected, and what you got. Error text verbatim if there was any.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server stderr / relay panel output (if relevant)
+      render: text

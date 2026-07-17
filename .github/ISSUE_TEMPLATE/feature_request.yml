@@ -1,0 +1,25 @@
+name: Feature request
+description: A tool, workflow, or integration you wish existed
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The art/game-dev task, not the implementation — e.g. "I need my agent to check animation frames for stray pixels before export."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would the tool look like?
+      description: Rough sketch is fine — name, inputs, what it returns.
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Where does it need to work?
+      options:
+        - live editor
+        - headless
+        - both
+        - don't care

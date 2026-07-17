@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security issue
+    url: https://github.com/oaktreegames/aseprite-live-mcp/blob/main/SECURITY.md
+    about: Please report security issues privately — see SECURITY.md for the contact.

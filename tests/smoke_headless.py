@@ -815,11 +815,46 @@ async def main() -> int:
     if not os.path.isfile(ts_png):
         failures.append(("export_tileset", "no tileset PNG written"))
 
+    # session / export / transform / tags pack
+    await step("open_sprite", {"path": v2})
+    saved_copy = os.path.join(d, "copy.aseprite")
+    await step("save_sprite", {"path": saved_copy, "file": v2})
+    if not os.path.isfile(saved_copy):
+        failures.append(("save_sprite", "no copy written"))
+    lay_dir = os.path.join(d, "layers-out")
+    await step("export_layers", {"out_dir": lay_dir, "file": v2})
+    if not (os.path.isdir(lay_dir) and os.listdir(lay_dir)):
+        failures.append(("export_layers", "no per-layer PNGs written"))
+    await step("create_tag", {"name": "walk", "from_frame": 1, "to_frame": 2, "file": v2})
+    await step("rename_tag", {"old_name": "walk", "new_name": "run", "file": v2})
+    await step("set_tag_color", {"name": "run", "color": "#0ac830", "file": v2})
+    await step("set_tag_range", {"name": "run", "from_frame": 1, "to_frame": 3, "file": v2})
+    await step("set_tag_direction", {"name": "run", "direction": "pingpong", "file": v2})
+    tag_dir = os.path.join(d, "tags-out")
+    await step("export_tags", {"out_dir": tag_dir, "format": "gif", "file": v2})
+    if not (os.path.isdir(tag_dir) and any(f.endswith(".gif") for f in os.listdir(tag_dir))):
+        failures.append(("export_tags", "no per-tag GIF written"))
+    ac = os.path.join(d, "autocrop.aseprite")
+    await step("create_sprite", {"width": 40, "height": 40, "file": ac})
+    await step("draw_rectangle", {"x": 10, "y": 10, "width": 5, "height": 5, "color": "#ff0000", "fill": True, "file": ac})
+    res = await step("autocrop_sprite", {"file": ac})
+    if res is not None and '"width": 5' not in _text(res).replace("  ", " "):
+        # size json formatting varies; parse instead
+        try:
+            info = _parse(res)
+            if info["new"]["width"] != 5 or info["new"]["height"] != 5:
+                failures.append(("autocrop_sprite", f"expected 5x5, got {info['new']}"))
+        except Exception as e:
+            failures.append(("autocrop_sprite", f"parse failed: {e}"))
+    await step("set_color_mode", {"mode": "indexed", "dithering": "ordered", "file": ac})
+
     # live-only tools must refuse cleanly under the headless backend
     for live_tool, args in (
         ("get_editor_state", {}),
         ("show_choice_dialog", {"message": "x", "options": ["a"]}),
         ("watch_changes", {}),
+        ("set_active_sprite", {"filename": "x"}),
+        ("list_sprites", {}),
     ):
         try:
             await mcp.call_tool(live_tool, args)

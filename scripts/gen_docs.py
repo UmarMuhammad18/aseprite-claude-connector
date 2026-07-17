@@ -29,6 +29,7 @@ from aseprite_live_mcp import server as srv  # noqa: E402
 # Module -> human category (order = display order).
 CATEGORIES = [
     ("inspect", "Inspect & metadata"),
+    ("session", "Documents & session"),
     ("canvas", "Canvas"),
     ("layers", "Layers & groups"),
     ("frames", "Frames"),

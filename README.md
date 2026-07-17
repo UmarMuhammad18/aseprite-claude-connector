@@ -6,7 +6,7 @@
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-112-orange)
+![tools](https://img.shields.io/badge/tools-139-orange)
 
 **Let an AI agent draw in your *live* Aseprite editor — every edit one named undo — with a Unity-first, game-dev toolset.**
 
@@ -171,7 +171,7 @@ real version in the MCP `serverInfo` handshake. Disable with
 is a read of PyPI's public JSON, nothing is sent anywhere.
 
 <!-- TOOLS:START -->
-## Tools (112)
+## Tools (139)
 
 Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), and — when it mutates — wrapped in a **named** `app.transaction`, so each edit is exactly one labeled undo step in the editor.
 
@@ -187,9 +187,21 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 
 </details>
 <details>
-<summary><b>Canvas</b> (1)</summary>
+<summary><b>Documents & session</b> (5)</summary>
+
+- **`open_sprite`** — Open a sprite file and make it the active document; returns its filename, size, and frame/layer counts.
+- **`save_sprite`** — Save the active sprite to disk: to ``path`` if given (save-as; the document's filename follows it), else to its own filename — errors if the sprite is untitled and no ``path`` is given.
+- **`close_sprite`** — Close the active sprite.
+- **`set_active_sprite`** — Live editor only: make one of the open documents active, found by exact filename or basename match (e.g.
+- **`list_sprites`** — Live editor only: list every open document — filename (or "(unsaved)"), size, frame/layer counts, unsaved-changes flag, and which one is active.
+
+</details>
+<details>
+<summary><b>Canvas</b> (3)</summary>
 
 - **`create_sprite`** — Create a new sprite.
+- **`expand_canvas`** — Grow (or shrink, with negatives) the canvas per side WITHOUT scaling content — existing pixels keep their positions relative to the old origin.
+- **`import_spritesheet`** — Slice a sheet PNG into animation frames: cells are read row-major at the given frame size onto a new "imported" layer, adding frames as needed.
 
 </details>
 <details>
@@ -212,12 +224,16 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 
 </details>
 <details>
-<summary><b>Frames</b> (4)</summary>
+<summary><b>Frames</b> (8)</summary>
 
 - **`add_frame`** — Append a new empty frame.
 - **`duplicate_frame`** — Duplicate frame ``number`` (1-based).
 - **`delete_frame`** — Delete frame ``number`` (1-based).
 - **`set_frame_duration`** — Set frame ``number``'s duration in milliseconds.
+- **`add_frames`** — Append ``count`` empty frames in one undo step.
+- **`set_frame_durations`** — Set every frame in [from_frame..to_frame] to ``ms`` milliseconds.
+- **`reverse_frames`** — Reverse frame order (cels on every layer, plus durations) — the whole sprite by default, or the inclusive [from_frame..to_frame] range.
+- **`set_onion_skin`** — Configure the editor's onion-skin view: on/off, ghost counts each direction, and whether ghosting stays inside the current tag.
 
 </details>
 <details>
@@ -229,8 +245,10 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 
 </details>
 <details>
-<summary><b>Drawing</b> (8)</summary>
+<summary><b>Drawing</b> (10)</summary>
 
+- **`draw_pixels`** — Set individual pixels: ``pixels`` is a list of ``{"x": int, "y": int, "color": "#rrggbb[aa]"}``.
+- **`draw_polyline`** — Stroke connected line segments through ``points`` (ordered [x, y] pairs); ``close=True`` joins the last point back to the first.
 - **`draw_rectangle`** — Draw a rectangle on the active layer + frame.
 - **`draw_line`** — Draw a 1px line from (x1,y1) to (x2,y2).
 - **`draw_circle`** — Draw a circle centered at (center_x, center_y).
@@ -242,7 +260,7 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 
 </details>
 <details>
-<summary><b>Palette</b> (7)</summary>
+<summary><b>Palette</b> (12)</summary>
 
 - **`get_palette`** — Return the active sprite's palette as #rrggbbaa hex strings.
 - **`set_palette_color`** — Set palette entry ``index`` to ``color`` (#rrggbb or #rrggbbaa).
@@ -251,6 +269,11 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 - **`apply_preset_palette`** — Replace the palette with a built-in preset: gameboy | pico8 | cga.
 - **`generate_color_ramp`** — Generate a dark->light shading ramp from ``base_color`` and APPEND it to the palette in order — ready for ``palette_ramp_walk``.
 - **`extract_palette_from_image`** — Extract a palette (median-cut) from an external image file and, by default, set it as the active sprite's palette — the concept-art → locked-palette step.
+- **`sort_palette`** — Reorder palette swatches by ``luminance`` (default), ``hue``, or ``saturation``.
+- **`palette_from_sprite`** — Derive the palette FROM the sprite's actual pixels (Aseprite's color quantization) — the inverse of ``quantize_to_palette``.
+- **`load_palette`** — Replace the sprite's palette from a palette file (.gpl, .pal, .ase, .png strip — anything Aseprite reads).
+- **`save_palette`** — Write the sprite's palette to a file (.gpl, .pal, .png — by extension).
+- **`apply_bundled_palette`** — Apply one of Aseprite's bundled extension palettes by resource ID — e.g.
 
 </details>
 <details>
@@ -308,12 +331,14 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 
 </details>
 <details>
-<summary><b>Transform</b> (4)</summary>
+<summary><b>Transform</b> (6)</summary>
 
 - **`flip_sprite`** — Flip the whole sprite horizontally or vertically.
 - **`resize_sprite`** — Scale the whole sprite to new pixel dimensions.
 - **`crop_sprite`** — Crop the sprite to the given rectangle.
 - **`rotate_sprite`** — Rotate the whole sprite by 90, 180, or 270 degrees clockwise (lossless).
+- **`autocrop_sprite`** — Trim transparent borders: shrink the canvas to the union of visible content across all layers and frames (Sprite > Trim).
+- **`set_color_mode`** — Convert the sprite between rgb | gray | indexed color modes.
 
 </details>
 <details>
@@ -327,11 +352,15 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 
 </details>
 <details>
-<summary><b>Tags</b> (3)</summary>
+<summary><b>Tags</b> (7)</summary>
 
 - **`create_tag`** — Create an animation tag named ``name`` spanning frames ``from_frame``..``to_frame`` (1-based).
 - **`delete_tag`** — Delete the animation tag named ``name``.
 - **`list_tags`** — List animation tags with their frame ranges.
+- **`rename_tag`** — Rename the animation tag ``old_name`` to ``new_name``.
+- **`set_tag_color`** — Set the timeline label color of the tag ``name`` (#rrggbb or #rrggbbaa).
+- **`set_tag_range`** — Move the tag ``name`` to span frames ``from_frame``..``to_frame`` (1-based, inclusive; validated against the sprite's frame count).
+- **`set_tag_direction`** — Set the playback direction of the tag ``name``: forward | reverse | pingpong | pingpong_reverse.
 
 </details>
 <details>
@@ -346,19 +375,22 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 
 </details>
 <details>
-<summary><b>Animation</b> (4)</summary>
+<summary><b>Animation</b> (5)</summary>
 
 - **`tween_frames`** — Insert ``count`` in-between frames between ``from_frame`` and ``to_frame`` that interpolate the cel's position (a motion tween of the start cel's image).
+- **`tween_cel_opacity`** — Fade a layer's cels across [from_frame..to_frame]: opacity interpolates from ``from_opacity`` to ``to_opacity`` (0-255) with the chosen easing.
 - **`smear_frame`** — Append a motion-smear frame blending ``from_frame`` and ``to_frame``: overlapping pixels averaged, single-frame areas ghosted at half alpha — a pixel-content smear.
 - **`frame_diff`** — Pixel-exact diff of two composited frames: changed-pixel count and ratio, the bounding box of the change, and whether they're identical.
 - **`render_onion_composite`** — Write a PNG of ``frame`` with up to ``prev`` earlier frames ghosted in red and ``next`` later frames ghosted in blue (Aseprite's onion-skin convention) at the given ghost ``opacity`` — so you can *see
 
 </details>
 <details>
-<summary><b>Export</b> (2)</summary>
+<summary><b>Export</b> (4)</summary>
 
 - **`export_sprite`** — Export the active sprite to a file; format is chosen by ``out_path`` extension (.png, .gif, ...).
 - **`export_spritesheet`** — Pack all frames into a single sprite-sheet image (optionally writing a JSON atlas to ``data_path``).
+- **`export_layers`** — Export every image layer (recursing into groups) as its own PNG in ``out_dir``, named ``<sanitized-layer-name>.png``.
+- **`export_tags`** — Export each animation tag's frame range as its own file in ``out_dir``: an animated ``<tag-name>.gif`` (format="gif", default) or a horizontal ``<tag-name>.png`` strip (format="png").
 
 </details>
 <details>

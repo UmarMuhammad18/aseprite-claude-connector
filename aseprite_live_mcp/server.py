@@ -33,6 +33,7 @@ from .tools import (
     prompts,
     resources,
     selection,
+    session,
     shading,
     slices,
     tags,
@@ -52,6 +53,7 @@ backend). Mutating tools are one undo step each. Start with `status`, then
 # Tool modules (each exposes register(mcp)).
 _TOOL_MODULES = (
     inspect,
+    session,
     canvas,
     layers,
     frames,

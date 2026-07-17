@@ -125,7 +125,7 @@ async def main() -> int:
     print(f"registered prompts ({len(prompt_names)}):", prompt_names)
     print(f"registered resources ({len(resource_uris)}):", resource_uris)
     assert len(prompt_names) == 5, f"expected 5 prompts, got {prompt_names}"
-    assert len(resource_uris) == 5, f"expected 5 resources, got {resource_uris}"
+    assert len(resource_uris) == 6, f"expected 6 resources, got {resource_uris}"
 
     d = tempfile.mkdtemp(prefix="aselm_smoke_")
     ase = os.path.join(d, "smoke.aseprite")
@@ -713,6 +713,122 @@ async def main() -> int:
     await read_res("aseprite://sprite/active")
     await read_res("aseprite://palette/active")
     await read_res("aseprite://docs")
+    upd = await read_res("aseprite://update")
+    if "current" not in upd:
+        failures.append(("aseprite://update", f"expected version info, got {upd[:80]}"))
+
+    # --- v0.2 surface ---
+    import json as _json
+
+    def _parse(res):
+        return _json.loads(_text(res))
+
+    v2 = os.path.join(d, "v02.aseprite")
+    await step("create_sprite", {"width": 32, "height": 32, "file": v2})
+    await step(
+        "draw_pixels",
+        {"pixels": [{"x": 1, "y": 1, "color": "#ff0000"}, {"x": 2, "y": 2, "color": "#00ff00"}], "file": v2},
+    )
+    await step("draw_polyline", {"points": [[4, 28], [16, 4], [28, 28]], "color": "#ffffff", "close": True, "file": v2})
+    await step("adjust_brightness_contrast", {"brightness": 10, "contrast": 5, "file": v2})
+    await step("desaturate", {"file": v2})
+    await step("invert_colors", {"file": v2})
+    await step("box_blur", {"radius": 1, "file": v2})
+    await step("sharpen", {"strength": 0.4, "file": v2})
+    await step("select_ellipse", {"x": 2, "y": 2, "width": 20, "height": 12, "file": v2})
+    await step("select_by_color", {"color": "#00000000", "tolerance": 4, "file": v2})
+    await step("invert_selection", {"file": v2})
+    await step("get_selection", {"file": v2})
+    await step("erase_area", {"x": 4, "y": 4, "width": 6, "height": 6, "file": v2})
+    await step("add_group", {"name": "Body", "file": v2})
+    await step("add_layer", {"name": "Arm", "file": v2})
+    await step("move_layer_to_group", {"layer": "Arm", "group": "Body", "file": v2})
+    res = await step("list_layers", {"file": v2})
+    if res is not None and "Body/Arm" not in _text(res):
+        failures.append(("list_layers", "nested path Body/Arm missing from tree"))
+    await step("draw_rectangle", {"x": 0, "y": 0, "width": 3, "height": 3, "color": "#ffcc00", "fill": True, "layer": "Body/Arm", "file": v2})
+    await step("set_sprite_metadata", {"entries": {"generated_by": "smoke", "rev": 2}, "file": v2})
+    res = await step("get_sprite_metadata", {"file": v2})
+    if res is not None and "generated_by" not in _text(res):
+        failures.append(("get_sprite_metadata", "metadata did not round-trip"))
+    await step("paint_with_stamp", {"points": [[20, 20], [26, 24]], "source_rect": [0, 0, 3, 3], "file": v2})
+
+    # animation QA + frame ops
+    await step("add_frames", {"count": 2, "file": v2})
+    await step("set_frame_durations", {"from_frame": 1, "to_frame": 3, "ms": 90, "file": v2})
+    res = await step("frame_diff", {"frame_a": 1, "frame_b": 2, "file": v2})
+    onion_png = os.path.join(d, "onion.png")
+    await step("render_onion_composite", {"frame": 2, "output_path": onion_png, "prev": 1, "next": 1, "file": v2})
+    if not os.path.isfile(onion_png):
+        failures.append(("render_onion_composite", "no PNG written"))
+    await step("reverse_frames", {"file": v2})
+    await step("set_onion_skin", {"active": True, "prev_frames": 2, "next_frames": 1, "file": v2})
+
+    # tween easing + opacity
+    tw = os.path.join(d, "tween.aseprite")
+    await step("create_sprite", {"width": 16, "height": 16, "file": tw})
+    await step("draw_rectangle", {"x": 0, "y": 0, "width": 4, "height": 4, "color": "#ff00ff", "fill": True, "file": tw})
+    await step("duplicate_frame", {"number": 1, "file": tw})
+    await step("set_cel_position", {"frame": 2, "x": 10, "y": 10, "file": tw})
+    await step("tween_frames", {"from_frame": 1, "to_frame": 2, "count": 2, "easing": "smoothstep", "file": tw})
+    await step("tween_cel_opacity", {"from_frame": 1, "to_frame": 4, "from_opacity": 255, "to_opacity": 60, "file": tw})
+
+    # canvas ops
+    await step("expand_canvas", {"left": 2, "right": 2, "top": 0, "bottom": 4, "file": tw})
+    sheet2 = os.path.join(d, "import-sheet.png")
+    await step("export_spritesheet", {"out_path": sheet2, "file": tw})
+    imp = os.path.join(d, "imported.aseprite")
+    await step("create_sprite", {"width": 20, "height": 20, "file": imp})
+    await step("import_spritesheet", {"sheet_path": sheet2, "frame_width": 20, "frame_height": 20, "file": imp})
+
+    # palette v0.2
+    await step("sort_palette", {"by": "luminance", "file": v2})
+    await step("palette_from_sprite", {"max_colors": 8, "file": v2})
+    gpl = os.path.join(d, "smoke.gpl")
+    await step("save_palette", {"path": gpl, "file": v2})
+    if not os.path.isfile(gpl):
+        failures.append(("save_palette", "no palette file written"))
+    await step("load_palette", {"path": gpl, "file": v2})
+
+    # tilemaps
+    tm = os.path.join(d, "tilemap.aseprite")
+    await step("create_sprite", {"width": 32, "height": 16, "file": tm})
+    await step("create_tilemap_layer", {"name": "ground", "tile_width": 8, "tile_height": 8, "file": tm})
+    await step("add_tile", {"layer": "ground", "file": tm})
+    await step(
+        "draw_on_tile",
+        {"layer": "ground", "tile_index": 1, "pixels": [{"x": 0, "y": 0, "color": "#3e8948"}, {"x": 7, "y": 7, "color": "#4faf5c"}], "file": tm},
+    )
+    await step("set_tiles", {"layer": "ground", "frame": 1, "tiles": [{"column": 0, "row": 0, "index": 1}, {"column": 3, "row": 1, "index": 1}], "file": tm})
+    res = await step("get_tilemap_info", {"layer": "ground", "file": tm})
+    if res is not None:
+        try:
+            info = _parse(res)
+            grid = info.get("tiles") or info.get("grid") or []
+            flat = [t for row in grid for t in row] if grid else []
+            if 1 not in flat:
+                failures.append(("get_tilemap_info", f"placed tile index missing: {str(info)[:120]}"))
+        except Exception as e:
+            failures.append(("get_tilemap_info", f"parse failed: {e}"))
+    ts_png = os.path.join(d, "tileset.png")
+    await step("export_tileset", {"layer": "ground", "output_path": ts_png, "file": tm})
+    if not os.path.isfile(ts_png):
+        failures.append(("export_tileset", "no tileset PNG written"))
+
+    # live-only tools must refuse cleanly under the headless backend
+    for live_tool, args in (
+        ("get_editor_state", {}),
+        ("show_choice_dialog", {"message": "x", "options": ["a"]}),
+        ("watch_changes", {}),
+    ):
+        try:
+            await mcp.call_tool(live_tool, args)
+            failures.append((live_tool, "expected a live-backend refusal under headless"))
+        except Exception as e:
+            if "live backend" in str(e):
+                print(f"  OK  {live_tool}: refuses cleanly under headless")
+            else:
+                failures.append((live_tool, f"unexpected error text: {e}"))
 
     # --- MCP prompt renders its guidance ---
     try:

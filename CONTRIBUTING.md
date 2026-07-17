@@ -17,9 +17,14 @@ standard install path).
 ## Before you submit
 
 ```bash
-pytest                          # unit + a headless roundtrip (auto-skips if Aseprite is absent)
+ruff check . && ruff format --check .   # lint + format (CI enforces both)
+pytest                          # unit + wire-validation + a headless roundtrip (auto-skips if Aseprite is absent)
 python tests/smoke_headless.py  # full end-to-end sweep (all tools + resources + prompts) against a throwaway sprite
 ```
+
+CI runs the suite on Linux/Windows/macOS against both the Python floor (3.10)
+and a current Python — a PR that's green locally but red on the floor will be
+caught there.
 
 ## Adding a tool
 

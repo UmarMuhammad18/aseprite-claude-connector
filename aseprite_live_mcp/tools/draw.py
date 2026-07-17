@@ -176,6 +176,49 @@ end)
 """
 )
 
+# PIXELS is a Lua array of {x, y, r, g, b, a}, prepended by Python.
+_PIXELS = """
+return editCel(function(img, s)
+  local drawn, skipped = 0, 0
+  for _, p in ipairs(PIXELS) do
+    if p[1] >= 0 and p[2] >= 0 and p[1] < s.width and p[2] < s.height then
+      img:drawPixel(p[1], p[2], app.pixelColor.rgba(p[3], p[4], p[5], p[6]))
+      drawn = drawn + 1
+    else
+      skipped = skipped + 1
+    end
+  end
+  return J({ drawn = drawn, skipped = skipped })
+end)
+"""
+
+_POLYLINE = """
+return editCel(function(img, s)
+  local col = Color{ r = R, g = G, b = B, a = A }
+  local function putpx(px, py)
+    if px >= 0 and py >= 0 and px < s.width and py < s.height then img:drawPixel(px, py, col) end
+  end
+  local function seg(x0, y0, x1, y1)
+    local dx = math.abs(x1 - x0)
+    local dy = -math.abs(y1 - y0)
+    local sx = x0 < x1 and 1 or -1
+    local sy = y0 < y1 and 1 or -1
+    local e = dx + dy
+    while true do
+      putpx(x0, y0)
+      if x0 == x1 and y0 == y1 then break end
+      local e2 = 2 * e
+      if e2 >= dy then e = e + dy; x0 = x0 + sx end
+      if e2 <= dx then e = e + dx; y0 = y0 + sy end
+    end
+  end
+  local n = #PTS
+  for i = 1, n - 1 do seg(PTS[i][1], PTS[i][2], PTS[i + 1][1], PTS[i + 1][2]) end
+  if CLOSE and n > 2 then seg(PTS[n][1], PTS[n][2], PTS[1][1], PTS[1][2]) end
+  return J({ segments = n - 1 + ((CLOSE and n > 2) and 1 or 0) })
+end)
+"""
+
 _OUTLINE = """
 return editCel(function(img, s)
   local col = Color{ r = R, g = G, b = B, a = A }
@@ -204,7 +247,55 @@ end)
 """
 
 
+def _pixels_lua(pixels) -> str:
+    parts = []
+    try:
+        for p in pixels:
+            r, g, b, a = parse_color(p["color"])
+            parts.append(f"{{{int(p['x'])},{int(p['y'])},{r},{g},{b},{a}}}")
+    except (TypeError, KeyError, ValueError):
+        raise ToolError('pixels must be a list of {"x", "y", "color"} objects') from None
+    return "local PIXELS = {" + ",".join(parts) + "}\n"
+
+
+def _points_lua(points) -> str:
+    try:
+        return "{" + ",".join(f"{{{int(p[0])},{int(p[1])}}}" for p in points) + "}"
+    except (TypeError, IndexError, ValueError):
+        raise ToolError("points must be a list of [x, y] pairs") from None
+
+
 def register(mcp):
+    @mcp.tool(annotations=ToolAnnotations(title="Draw pixels"))
+    def draw_pixels(pixels: list, file: str | None = None) -> dict:
+        """Set individual pixels: ``pixels`` is a list of
+        ``{"x": int, "y": int, "color": "#rrggbb[aa]"}``. The precision tool for
+        detail work — one undo step for the whole batch. Capped at 4096 pixels
+        per call. Headless: pass ``file``."""
+        if not pixels:
+            raise ToolError("pixels list is empty")
+        if len(pixels) > 4096:
+            raise ToolError("too many pixels in one call (cap 4096); split the batch")
+        body = _pixels_lua(pixels) + _PIXELS
+        return run(body, mutates=True, undo_label="Draw pixels", file=file)
+
+    @mcp.tool(annotations=ToolAnnotations(title="Draw polyline"))
+    def draw_polyline(
+        points: list, color: str, close: bool = False, file: str | None = None
+    ) -> dict:
+        """Stroke connected line segments through ``points`` (ordered [x, y]
+        pairs); ``close=True`` joins the last point back to the first. One undo
+        step. Headless: pass ``file``."""
+        if not points or len(points) < 2:
+            raise ToolError("need at least 2 points")
+        r, g, b, a = parse_color(color)
+        body = (
+            f"local PTS = {_points_lua(points)}\n"
+            + lua_locals(R=r, G=g, B=b, A=a, CLOSE=bool(close))
+            + _POLYLINE
+        )
+        return run(body, mutates=True, undo_label="Draw polyline", file=file)
+
     @mcp.tool(annotations=ToolAnnotations(title="Draw rectangle"))
     def draw_rectangle(
         x: int,

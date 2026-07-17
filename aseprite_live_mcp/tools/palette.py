@@ -190,6 +190,69 @@ return J({ colors = hexes, count = #hexes, source = PATH, replaced = REPLACE })
 """
 
 
+_SORT = """
+local s = app.activeSprite
+if not s then error("no active sprite") end
+local pal = s.palettes[1]
+local entries = {}
+for i = 0, #pal - 1 do
+  local c = pal:getColor(i)
+  local key
+  if BY == "hue" then key = c.hsvHue
+  elseif BY == "saturation" then key = c.hsvSaturation
+  else key = 0.299 * c.red + 0.587 * c.green + 0.114 * c.blue end
+  entries[#entries + 1] = { c = Color(c), k = key }
+end
+table.sort(entries, function(a, b)
+  if ASC then return a.k < b.k else return a.k > b.k end
+end)
+for i, e in ipairs(entries) do pal:setColor(i - 1, e.c) end
+return J({ sorted = #entries, by = BY, ascending = ASC })
+"""
+
+_QUANTIZE_FROM_SPRITE = """
+local s = app.activeSprite
+if not s then error("no active sprite") end
+local before = #s.palettes[1]
+app.command.ColorQuantization{ ui = false, withAlpha = false, maxColors = MAXC }
+local pal = s.palettes[1]
+local out = {}
+for i = 0, #pal - 1 do
+  local c = pal:getColor(i)
+  out[#out + 1] = string.format("#%02x%02x%02x", c.red, c.green, c.blue)
+end
+return J({ before = before, size = #pal, colors = out })
+"""
+
+_LOAD_PALETTE = """
+local s = app.activeSprite
+if not s then error("no active sprite") end
+local pal = Palette{ fromFile = PATH }
+if not pal then error("could not load palette: " .. PATH) end
+s:setPalette(pal)
+return J({ size = #pal, source = PATH })
+"""
+
+_SAVE_PALETTE = """
+local s = app.activeSprite
+if not s then error("no active sprite") end
+local pal = s.palettes[1]
+pal:saveAs(PATH)
+return J({ size = #pal, saved = PATH })
+"""
+
+_RESOURCE_PALETTE = """
+local s = app.activeSprite
+if not s then error("no active sprite") end
+local ok, pal = pcall(function() return Palette{ fromResource = RES } end)
+if not ok or not pal then
+  error("no bundled palette named '" .. RES .. "' (try DB16, DB32, ARQ4, EDG16, ...)")
+end
+s:setPalette(pal)
+return J({ size = #pal, resource = RES })
+"""
+
+
 def _ramp(base_hex: str, count: int, hue_shift: bool) -> list[str]:
     """Build a dark->light shading ramp from a base color. Optional hue-shift pushes
     shadows toward blue and highlights toward yellow — the classic pixel-art move."""
@@ -275,3 +338,48 @@ def register(mcp):
             raise ToolError("max_colors must be 2..256")
         body = lua_locals(PATH=image_path, MAXC=int(max_colors), REPLACE=bool(replace)) + _EXTRACT
         return run(body, mutates=bool(replace), undo_label="Extract palette", file=file)
+
+    @mcp.tool(annotations=ToolAnnotations(title="Sort palette"))
+    def sort_palette(
+        by: str = "luminance", ascending: bool = True, file: str | None = None
+    ) -> dict:
+        """Reorder palette swatches by ``luminance`` (default), ``hue``, or
+        ``saturation``. Intended for RGB sprites' swatch organization — on an
+        INDEXED sprite this changes which color each pixel shows (indices aren't
+        remapped). One undo step."""
+        if by not in ("luminance", "hue", "saturation"):
+            raise ToolError("by must be luminance, hue, or saturation")
+        body = lua_locals(BY=by, ASC=bool(ascending)) + _SORT
+        return run(body, mutates=True, undo_label="Sort palette", file=file)
+
+    @mcp.tool(annotations=ToolAnnotations(title="Palette from sprite"))
+    def palette_from_sprite(max_colors: int = 32, file: str | None = None) -> dict:
+        """Derive the palette FROM the sprite's actual pixels (Aseprite's color
+        quantization) — the inverse of ``quantize_to_palette``. Returns the new
+        palette as hex. One undo step."""
+        if not 2 <= max_colors <= 256:
+            raise ToolError("max_colors must be 2..256")
+        body = lua_locals(MAXC=int(max_colors)) + _QUANTIZE_FROM_SPRITE
+        return run(body, mutates=True, undo_label="Palette from sprite", file=file)
+
+    @mcp.tool(annotations=ToolAnnotations(title="Load palette file"))
+    def load_palette(path: str, file: str | None = None) -> dict:
+        """Replace the sprite's palette from a palette file (.gpl, .pal, .ase,
+        .png strip — anything Aseprite reads). One undo step."""
+        body = lua_locals(PATH=str(path)) + _LOAD_PALETTE
+        return run(body, mutates=True, undo_label="Load palette", file=file)
+
+    @mcp.tool(annotations=ToolAnnotations(title="Save palette file", openWorldHint=True))
+    def save_palette(path: str, file: str | None = None) -> dict:
+        """Write the sprite's palette to a file (.gpl, .pal, .png — by extension)."""
+        body = lua_locals(PATH=str(path)) + _SAVE_PALETTE
+        return run(body, mutates=False, file=file)
+
+    @mcp.tool(annotations=ToolAnnotations(title="Apply bundled palette"))
+    def apply_bundled_palette(name: str, file: str | None = None) -> dict:
+        """Apply one of Aseprite's bundled extension palettes by resource ID —
+        e.g. DB16, DB32, ARQ4, EDG16 (availability depends on the installed
+        palette extensions). For gameboy/pico8/cga see ``apply_preset_palette``.
+        One undo step."""
+        body = lua_locals(RES=str(name)) + _RESOURCE_PALETTE
+        return run(body, mutates=True, undo_label="Apply bundled palette", file=file)

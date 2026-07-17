@@ -21,7 +21,18 @@ from mcp.types import ToolAnnotations
 from ..lua import lua_locals
 from ._common import ToolError, run
 
-_TWEEN = """
+_EASE = """
+local function ease(t)
+  if EASING == "ease_in" then return t * t
+  elseif EASING == "ease_out" then return 1 - (1 - t) * (1 - t)
+  elseif EASING == "smoothstep" then return t * t * (3 - 2 * t) end
+  return t
+end
+"""
+
+_TWEEN = (
+    _EASE
+    + """
 local s = app.activeSprite
 if not s then error("no active sprite") end
 local layer = LAYER and findLayer(s, LAYER) or app.activeLayer
@@ -35,7 +46,7 @@ local ax, ay = celA.position.x, celA.position.y
 local bx, by = celB.position.x, celB.position.y
 local inserted = {}
 for k = 1, COUNT do
-  local t = k / (COUNT + 1)
+  local t = ease(k / (COUNT + 1))
   local at = FROM + k
   s:newEmptyFrame(at)
   local nx = math.floor(ax + (bx - ax) * t + 0.5)
@@ -45,6 +56,27 @@ for k = 1, COUNT do
 end
 return J({ inserted = inserted, frames = #s.frames })
 """
+)
+
+_TWEEN_OPACITY = (
+    _EASE
+    + """
+local s = app.activeSprite
+if not s then error("no active sprite") end
+local layer = LAYER and findLayer(s, LAYER) or app.activeLayer
+if not layer then error("no target layer") end
+if FROM < 1 or TO > #s.frames or FROM >= TO then error("need 1 <= from < to <= frames") end
+local touched = {}
+for n = FROM, TO do
+  local cel = layer:cel(n)
+  if not cel then error("frame " .. n .. " has no cel on the layer") end
+  local t = ease((n - FROM) / (TO - FROM))
+  cel.opacity = math.floor(OP_A + (OP_B - OP_A) * t + 0.5)
+  touched[#touched + 1] = n
+end
+return J({ frames = touched, from_opacity = OP_A, to_opacity = OP_B })
+"""
+)
 
 _SMEAR = """
 local s = app.activeSprite
@@ -171,18 +203,60 @@ def register(mcp):
         to_frame: int,
         count: int = 1,
         layer: str | None = None,
+        easing: str = "linear",
         file: str | None = None,
     ) -> dict:
         """Insert ``count`` in-between frames between ``from_frame`` and ``to_frame``
         that interpolate the cel's position (a motion tween of the start cel's
-        image). Headless: pass ``file``."""
+        image). ``easing``: linear, ease_in, ease_out, or smoothstep.
+        Headless: pass ``file``."""
         if count < 1:
             raise ToolError("count must be >= 1")
+        if easing not in ("linear", "ease_in", "ease_out", "smoothstep"):
+            raise ToolError("easing must be linear, ease_in, ease_out, or smoothstep")
         body = (
-            lua_locals(FROM=int(from_frame), TO=int(to_frame), COUNT=int(count), LAYER=layer)
+            lua_locals(
+                FROM=int(from_frame),
+                TO=int(to_frame),
+                COUNT=int(count),
+                LAYER=layer,
+                EASING=easing,
+            )
             + _TWEEN
         )
         return run(body, mutates=True, undo_label="Tween frames", file=file)
+
+    @mcp.tool(annotations=ToolAnnotations(title="Tween cel opacity"))
+    def tween_cel_opacity(
+        from_frame: int,
+        to_frame: int,
+        from_opacity: int,
+        to_opacity: int,
+        layer: str | None = None,
+        easing: str = "linear",
+        file: str | None = None,
+    ) -> dict:
+        """Fade a layer's cels across [from_frame..to_frame]: opacity
+        interpolates from ``from_opacity`` to ``to_opacity`` (0-255) with the
+        chosen easing. Every frame in the range needs a cel on the layer. One
+        undo step."""
+        for v in (from_opacity, to_opacity):
+            if not 0 <= v <= 255:
+                raise ToolError("opacity values must be 0..255")
+        if easing not in ("linear", "ease_in", "ease_out", "smoothstep"):
+            raise ToolError("easing must be linear, ease_in, ease_out, or smoothstep")
+        body = (
+            lua_locals(
+                FROM=int(from_frame),
+                TO=int(to_frame),
+                OP_A=int(from_opacity),
+                OP_B=int(to_opacity),
+                LAYER=layer,
+                EASING=easing,
+            )
+            + _TWEEN_OPACITY
+        )
+        return run(body, mutates=True, undo_label="Tween opacity", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Smear frame"))
     def smear_frame(

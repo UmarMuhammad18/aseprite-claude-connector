@@ -40,6 +40,35 @@ And the part no headless server can do — the agent asking **you**, inside your
 
 <p align="center"><img src="docs/dialog-in-editor.png" width="560" alt="An MCP-driven approval dialog inside Aseprite"></p>
 
+## A full set, one live session
+
+Everything below came out of a single session against one running editor: five
+sprites built, QA'd, assembled into a sheet, sliced, and exported for Unity —
+finished with an in-editor approval dialog. The `.aseprite` sources are in
+[`examples/showcase/`](examples/showcase/); open them and Ctrl-Z backwards
+through the build.
+
+<p align="center"><img src="docs/showcase/showcase-sheet.png" width="832" alt="Assembled showcase sheet: iso building, tilemap, motion-QA renders, beacon pulse strip"></p>
+
+<table>
+<tr>
+<td align="center"><img src="docs/showcase/refinery.png" width="256" alt="Isometric refinery blockout"><br><sub><b>Iso blockout, QA'd</b><br>face polygons → recessed port · ramp + palette-locked shading · rivets stamped in one undo · <code>qa_sweep</code> 4/4</sub></td>
+<td align="center"><img src="docs/showcase/beacon-pulse.gif" width="192" alt="Beacon pulse animation"><br><sub><b>Beacon pulse</b><br>additive glow · eased <code>tween_cel_opacity</code> loop · tagged + timed</sub></td>
+<td align="center"><img src="docs/showcase/drone-dash.gif" width="288" alt="Drone dash animation"><br><sub><b>Drone dash</b><br><code>tween_frames</code> smoothstep · <code>smear_frame</code> streak · endpoints verified with <code>frame_diff</code></sub></td>
+</tr>
+</table>
+
+The QA tools aren't decoration. During this build, `frame_diff`'s change bbox
+caught a motion tween the eye missed — every cel displaced by its image origin
+and clipping at the canvas edge. One transaction fixed it; the same diff
+re-verified it:
+
+<p align="center"><img src="docs/showcase/drone-onion.png" width="288" alt="Onion-skin composite of the drone flight arc"><br><sub><code>render_onion_composite</code> — earlier frames red, later frames blue, the whole arc in one image</sub></p>
+
+The sheet's ten slices went to Unity in one action —
+[`examples/showcase/unity/`](examples/showcase/unity/) has the atlas PNG and its
+generated `.meta`: ten Multiple-mode sprites, rects y-flipped, every pivot baked.
+
 ## Install
 
 One command, no clone:
@@ -133,6 +162,7 @@ each one. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it works.
 - *"Run a QA sweep: it must be 64×64, ≤ 16 colors, grid-aligned, with 2px of sticker padding."*
 - *"Draw an isometric box for a 1×1 machine base and put a recessed port on its front face."*
 - *"Set up a 16×16 tilemap layer, draw grass and dirt tiles, and lay out a 10×6 ground strip."*
+- *"Assemble my exports into one labeled sheet, slice each piece, set the pivots, and hand Unity the atlas."*
 - *"Pop a dialog in my editor: approve or redo. Then wait for me to click the anchor point."*
 - *"Watch the sprite while I touch it up; when I stop, re-run the QA sweep."*
 - *"Diff frames 3 and 4 — did the arm actually move?"*
@@ -481,6 +511,10 @@ One-call "skills" that chain the tools into finished art tasks:
   layers, frames, palettes, tilemaps, metadata: all persist (they're in the file).
 - **The interactive tools need the live editor** — dialogs, point picking,
   watching, viewport control error cleanly under `headless`.
+- **Animated `.gif` export is headless-only.** Saving `.gif` from the live
+  editor opens Aseprite's GIF-options dialog, which blocks the bridge until
+  dismissed. Live, use `export_spritesheet` strips or per-frame PNGs; the
+  animated GIFs in this README were exported headless from the same files.
 - **Windows is the primary dev platform.** CI runs the unit + wire-validation
   suite on Linux/macOS/Windows, but CI has no Aseprite binary — anything that
   touches a real Aseprite (headless batch or the live bridge) is hand-tested on

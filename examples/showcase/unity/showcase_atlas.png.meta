@@ -1,0 +1,333 @@
+fileFormatVersion: 2
+guid: 1edfea6f851546238a27744acc587a68
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 21300000
+    second: beacon_f6
+  - first:
+      213: 21300002
+    second: beacon_f5
+  - first:
+      213: 21300004
+    second: beacon_f4
+  - first:
+      213: 21300006
+    second: beacon_f3
+  - first:
+      213: 21300008
+    second: beacon_f2
+  - first:
+      213: 21300010
+    second: beacon_f1
+  - first:
+      213: 21300012
+    second: drone_smear
+  - first:
+      213: 21300014
+    second: drone_onion
+  - first:
+      213: 21300016
+    second: depot_floor
+  - first:
+      213: 21300018
+    second: refinery
+  externalObjects: {}
+  serializedVersion: 12
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 0
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 32
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: beacon_f6
+      rect:
+        serializedVersion: 2
+        x: 332
+        y: 16
+        width: 64
+        height: 64
+      alignment: 9
+      pivot: {x: 0.5, y: 0.015625}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: abdb05dcd0e34ea3a4686dbc3e456b32
+      internalID: 21300000
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: beacon_f5
+      rect:
+        serializedVersion: 2
+        x: 268
+        y: 16
+        width: 64
+        height: 64
+      alignment: 9
+      pivot: {x: 0.5, y: 0.015625}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 57f26c5e8f6141c398103eb7244f7087
+      internalID: 21300002
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: beacon_f4
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 16
+        width: 64
+        height: 64
+      alignment: 9
+      pivot: {x: 0.5, y: 0.015625}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e242778d84104bf1ae5851d111ea7799
+      internalID: 21300004
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: beacon_f3
+      rect:
+        serializedVersion: 2
+        x: 140
+        y: 16
+        width: 64
+        height: 64
+      alignment: 9
+      pivot: {x: 0.5, y: 0.015625}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a6ae857075f4421eba2db00d7347ce6a
+      internalID: 21300006
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: beacon_f2
+      rect:
+        serializedVersion: 2
+        x: 76
+        y: 16
+        width: 64
+        height: 64
+      alignment: 9
+      pivot: {x: 0.5, y: 0.015625}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 011c76608a5c45e3bb472759235d5db7
+      internalID: 21300008
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: beacon_f1
+      rect:
+        serializedVersion: 2
+        x: 12
+        y: 16
+        width: 64
+        height: 64
+      alignment: 9
+      pivot: {x: 0.5, y: 0.015625}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a51a661cbfc24e2a9fe776b24bf590fa
+      internalID: 21300010
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: drone_smear
+      rect:
+        serializedVersion: 2
+        x: 268
+        y: 72
+        width: 96
+        height: 64
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 951f7a991309414aa7e9659d6011b894
+      internalID: 21300012
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: drone_onion
+      rect:
+        serializedVersion: 2
+        x: 268
+        y: 144
+        width: 96
+        height: 64
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: daf1768b35fd425384b2729510c9cf15
+      internalID: 21300014
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: depot_floor
+      rect:
+        serializedVersion: 2
+        x: 156
+        y: 112
+        width: 96
+        height: 96
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3352d198d0cf499fb843724d9dab1b88
+      internalID: 21300016
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: refinery
+      rect:
+        serializedVersion: 2
+        x: 12
+        y: 96
+        width: 128
+        height: 128
+      alignment: 9
+      pivot: {x: 0.5, y: 0.1015625}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c842db224f7f45d28d670bd636af52fb
+      internalID: 21300018
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID:
+    internalID: 0
+    vertices: []
+    indices:
+    edges: []
+    weights: []
+    secondaryTextures: []
+  spritePackingTag:
+  pixelsPerUnit: 32
+  mipBias: 0
+  userData:
+  assetBundleName:
+  assetBundleVariant:

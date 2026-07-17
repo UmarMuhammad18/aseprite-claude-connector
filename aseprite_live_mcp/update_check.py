@@ -54,7 +54,11 @@ def _read_cache() -> dict | None:
     try:
         with open(_cache_path(), encoding="utf-8") as f:
             data = json.load(f)
-        if isinstance(data, dict) and isinstance(data.get("latest"), str):
+        if (
+            isinstance(data, dict)
+            and isinstance(data.get("latest"), str)
+            and isinstance(data.get("checked_at"), (int, float))
+        ):
             return data
     except Exception:
         pass

@@ -51,7 +51,7 @@ uvx aseprite-live-mcp        # or: pipx run aseprite-live-mcp
 Requires **Python 3.10+** and **Aseprite 1.3+**. That's it for headless; the live
 editor needs one extra step (below).
 
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](vscode:mcp/install?%7B%22name%22%3A%22aseprite-live%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22aseprite-live-mcp%22%5D%7D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=aseprite-live&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22aseprite-live-mcp%22%5D%7D)
 [![Install in Cursor](https://img.shields.io/badge/Cursor-Install_Server-000000?style=flat-square)](https://cursor.com/install-mcp?name=aseprite-live&config=eyJjb21tYW5kIjoidXZ4IGFzZXByaXRlLWxpdmUtbWNwIn0%3D)
 
 <details>
@@ -107,10 +107,14 @@ run `status` to confirm the connection, then try:
 
 ## Quickstart — live editor (drive your open canvas)
 
-The live backend edits your **running** Aseprite, one undo step per edit.
+The live backend edits your **running** Aseprite, one undo step per edit. The
+bridge script and relay live in this repo (they're not in the pip package), so
+grab them first: `git clone https://github.com/oaktreegames/aseprite-live-mcp`
+— or download just [`claude-bridge.lua`](aseprite_client/claude-bridge.lua) and
+[`relay_server.py`](bridge/relay_server.py).
 
 1. **Install the bridge script into Aseprite** — in Aseprite, `File → Scripts →
-   Open Scripts Folder`, copy [`aseprite_client/claude-bridge.lua`](aseprite_client/claude-bridge.lua)
+   Open Scripts Folder`, copy `aseprite_client/claude-bridge.lua`
    into it, and restart Aseprite (or `File → Scripts → Rescan Scripts Folder`).
 2. **Start the relay:** `python bridge/relay_server.py` (needs `pip install websockets`).
 3. **Connect:** in Aseprite, `File → Scripts → claude-bridge`, and grant the script

@@ -47,9 +47,32 @@ local function __enc(v)
   return "null"
 end
 local function J(v) return __enc(v) end
+-- Depth-first layer lookup: matches top-level layers, then descends into
+-- groups. Accepts either a bare name ("Arm") or a group path ("Body/Arm").
 local function findLayer(s, name)
-  for _, l in ipairs(s.layers) do if l.name == name then return l end end
-  return nil
+  local function walk(layers, want)
+    for _, l in ipairs(layers) do
+      if l.name == want then return l end
+      if l.isGroup then
+        local hit = walk(l.layers, want)
+        if hit then return hit end
+      end
+    end
+    return nil
+  end
+  if name:find("/", 1, true) then
+    local node, container = nil, s
+    for part in name:gmatch("[^/]+") do
+      node = nil
+      for _, l in ipairs(container.layers) do
+        if l.name == part then node = l; break end
+      end
+      if not node then return nil end
+      container = node
+    end
+    return node
+  end
+  return walk(s.layers, name)
 end
 local function findSlice(s, name)
   for _, sl in ipairs(s.slices) do if sl.name == name then return sl end end

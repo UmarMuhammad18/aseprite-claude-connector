@@ -60,6 +60,21 @@ return J({ x = X, y = Y, width = W, height = H, pixels = rows })
 """
 
 
+_GET_META = """
+local s = app.activeSprite
+if not s then error("no active sprite") end
+local out = {}
+local n = 0
+for k, v in pairs(s.properties) do
+  local t = type(v)
+  if t == "string" or t == "number" or t == "boolean" then out[k] = v else out[k] = tostring(v) end
+  n = n + 1
+end
+if n == 0 then return J({ empty = true }) end
+return J({ properties = out })
+"""
+
+
 def register(mcp):
     @mcp.tool(
         annotations=ToolAnnotations(title="Backend status", readOnlyHint=True, openWorldHint=True)
@@ -91,6 +106,41 @@ def register(mcp):
         """Read one composited pixel (all layers) at (x, y) as #rrggbbaa."""
         body = lua_locals(X=int(x), Y=int(y)) + _GET_PIXEL
         return run(body, file=file)
+
+    @mcp.tool(annotations=ToolAnnotations(title="Set sprite metadata"))
+    def set_sprite_metadata(entries: dict, file: str | None = None) -> dict:
+        """Attach typed key/value metadata to the sprite (Aseprite's Properties
+        system — stored in the .aseprite file itself). Values may be strings,
+        numbers, or booleans. Useful for provenance ("generated_by", spec IDs)
+        and pipeline state. One undo step."""
+        if not entries or not isinstance(entries, dict):
+            raise ToolError("entries must be a non-empty object of key -> value")
+        from ..lua import lua_str
+
+        sets = []
+        for k, v in entries.items():
+            if not isinstance(k, str) or not k:
+                raise ToolError("metadata keys must be non-empty strings")
+            if isinstance(v, bool):
+                lit = "true" if v else "false"
+            elif isinstance(v, (int, float)):
+                lit = repr(v)
+            elif isinstance(v, str):
+                lit = lua_str(v)
+            else:
+                raise ToolError(f"unsupported value type for '{k}' (string/number/bool only)")
+            sets.append(f"s.properties[{lua_str(k)}] = {lit}")
+        body = (
+            'local s = app.activeSprite\nif not s then error("no active sprite") end\n'
+            + "\n".join(sets)
+            + f"\nreturn J({{ set = {len(sets)} }})"
+        )
+        return run(body, mutates=True, undo_label="Set metadata", file=file)
+
+    @mcp.tool(annotations=ToolAnnotations(title="Get sprite metadata", readOnlyHint=True))
+    def get_sprite_metadata(file: str | None = None) -> dict:
+        """Read the sprite's typed key/value metadata (Properties)."""
+        return run(_GET_META, file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Get pixels", readOnlyHint=True))
     def get_pixels(x: int, y: int, width: int, height: int, file: str | None = None) -> dict:

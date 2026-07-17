@@ -38,6 +38,52 @@ if NAME ~= nil then l.name = NAME end
 return J({ name = l.name, layers = #s.layers })
 """
 
+_ADD_GROUP = """
+local s = app.activeSprite
+if not s then error("no active sprite") end
+local g = s:newGroup()
+if NAME ~= nil then g.name = NAME end
+return J({ name = g.name, group = true })
+"""
+
+_MOVE_TO_GROUP = """
+local s = app.activeSprite
+if not s then error("no active sprite") end
+local l = findLayer(s, NAME)
+if not l then error("no layer named '" .. NAME .. "'") end
+local g = findLayer(s, GROUP)
+if not g then error("no group named '" .. GROUP .. "'") end
+if not g.isGroup then error("'" .. GROUP .. "' is a layer, not a group") end
+l.parent = g
+return J({ layer = NAME, group = GROUP })
+"""
+
+_LIST = """
+local s = app.activeSprite
+if not s then error("no active sprite") end
+local function walk(layers, prefix)
+  local out = {}
+  for i = #layers, 1, -1 do
+    local l = layers[i]
+    local entry = {
+      name = l.name, path = prefix .. l.name,
+      visible = l.isVisible, opacity = l.opacity or 255,
+    }
+    if l.isGroup then
+      entry.kind = "group"
+      entry.children = walk(l.layers, prefix .. l.name .. "/")
+    elseif l.isTilemap then
+      entry.kind = "tilemap"
+    else
+      entry.kind = "image"
+    end
+    out[#out + 1] = entry
+  end
+  return out
+end
+return J({ layers = walk(s.layers, "") })
+"""
+
 _DELETE = """
 local s = app.activeSprite
 if not s then error("no active sprite") end
@@ -149,6 +195,26 @@ def register(mcp):
         """Add a new empty layer (optionally named) at the top of the stack."""
         body = lua_locals(NAME=name) + _ADD
         return run(body, mutates=True, undo_label="Add layer", file=file)
+
+    @mcp.tool(annotations=ToolAnnotations(title="Add layer group"))
+    def add_group(name: str | None = None, file: str | None = None) -> dict:
+        """Add a layer group. Move layers into it with ``move_layer_to_group``;
+        reference nested layers anywhere by name or as ``Group/Layer``."""
+        body = lua_locals(NAME=name) + _ADD_GROUP
+        return run(body, mutates=True, undo_label="Add group", file=file)
+
+    @mcp.tool(annotations=ToolAnnotations(title="Move layer into group"))
+    def move_layer_to_group(layer: str, group: str, file: str | None = None) -> dict:
+        """Move a layer inside a layer group."""
+        body = lua_locals(NAME=layer, GROUP=group) + _MOVE_TO_GROUP
+        return run(body, mutates=True, undo_label="Move layer to group", file=file)
+
+    @mcp.tool(annotations=ToolAnnotations(title="List layers", readOnlyHint=True))
+    def list_layers(file: str | None = None) -> dict:
+        """The full layer tree, top of stack first: name, path, kind
+        (image/group/tilemap), visibility, and opacity — including layers nested
+        in groups (which ``get_sprite_info`` lists only at the top level)."""
+        return run(_LIST, file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Delete layer", destructiveHint=True))
     def delete_layer(name: str, file: str | None = None) -> dict:

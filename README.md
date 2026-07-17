@@ -42,7 +42,7 @@ And the part no headless server can do — the agent asking **you**, inside your
 
 ## Install
 
-**One command, no clone:**
+One command, no clone:
 
 ```bash
 uvx aseprite-live-mcp        # or: pipx run aseprite-live-mcp
@@ -503,7 +503,7 @@ tool behavior, patches are fixes).
 
 Built solo by [Kyle Ocheltree](https://github.com/oaktreegames) (OakTree Games)
 for a real production pipeline — the Unity export, padding QA, and isometric
-tools exist because Cosmic Scale (a factory game with 134 buildings) needed
+tools exist because Cosmic Scale (an isometric factory game) needed
 them. Developed with an AI-native workflow: AI assists the coding; every tool
 is reviewed, tested against a real editor, and shipped deliberately.
 

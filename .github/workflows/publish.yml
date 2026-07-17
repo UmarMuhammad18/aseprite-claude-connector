@@ -64,9 +64,10 @@ jobs:
       - name: Extract this version's changelog section
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          # index() substring match — no regex built from strings, no escaping traps
           awk -v ver="$VERSION" '
-            $0 ~ "^## \\[" ver "\\]" {found=1; next}
-            found && /^## \[/ {exit}
+            index($0, "## [" ver "]") == 1 {found=1; next}
+            found && index($0, "## [") == 1 {exit}
             found {print}
           ' CHANGELOG.md > release-notes.md
           # Never ship an empty body: fall back to a pointer at the changelog.

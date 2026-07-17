@@ -434,6 +434,8 @@ One-call "skills" that chain the tools into finished art tasks:
 - `shade_along_ramp` — shade a sprite by walking its hand-ordered palette ramp
 - `autoslice_to_unity` — multi-frame sprite → Unity-import-ready sheet + pre-sliced `.meta`
 - `concept_to_placeholder` — external concept image → correctly-padded, in-palette placeholder
+- `tileset_and_map` — author a tileset from a terrain spec, lay out the map, export the strip
+- `live_review_loop` — wait for the artist to finish touching up, re-QA, ask for the ship call in-editor
 
 ## Limitations (honest ones)
 

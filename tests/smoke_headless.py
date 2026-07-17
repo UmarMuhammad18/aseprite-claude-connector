@@ -124,7 +124,7 @@ async def main() -> int:
     resource_uris = sorted(str(r.uri) for r in await mcp.list_resources())
     print(f"registered prompts ({len(prompt_names)}):", prompt_names)
     print(f"registered resources ({len(resource_uris)}):", resource_uris)
-    assert len(prompt_names) == 5, f"expected 5 prompts, got {prompt_names}"
+    assert len(prompt_names) == 7, f"expected 7 prompts, got {prompt_names}"
     assert len(resource_uris) == 6, f"expected 6 resources, got {resource_uris}"
 
     d = tempfile.mkdtemp(prefix="aselm_smoke_")

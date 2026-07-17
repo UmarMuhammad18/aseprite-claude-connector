@@ -109,3 +109,43 @@ def register(mcp):
             "5. Stop and present the result for the human to hand-finish. This is a TEMP placeholder — "
             "do not treat it as final art, and do not export it as shipped art without explicit approval."
         )
+
+    @mcp.prompt(
+        title="Tileset and map",
+        description="Author a small tileset and lay out a tilemap from a terrain spec.",
+    )
+    def tileset_and_map(
+        tile_size: str = "16", terrains: str = "grass,dirt,stone", map_size: str = "10x6"
+    ) -> str:
+        return (
+            f"Author a {tile_size}px tileset with terrains [{terrains}] and lay out a {map_size} map:\n"
+            f"1. `create_tilemap_layer` named 'ground' with tile_width=tile_height={tile_size}.\n"
+            "2. For each terrain: `add_tile`, then `draw_on_tile` with a simple, readable pattern "
+            "(2-3 shades per terrain; vary per-pixel so tiles don't read as flat fills). Tile index 0 "
+            "is the reserved empty tile — your first terrain is index 1.\n"
+            f"3. `set_tiles` to lay out the {map_size} map row by row: top rows the walkable terrain, "
+            "lower rows the substrate, with pockets of the third terrain for variety.\n"
+            "4. `get_tilemap_info` to verify the placed indices, then `export_tileset` so the user has "
+            "the tileset strip + JSON atlas next to the map.\n"
+            "Stop and show the result; ask before exporting anything else."
+        )
+
+    @mcp.prompt(
+        title="Live review loop",
+        description="Watch the artist touch up the sprite, then re-run QA and ask for the ship call in-editor.",
+    )
+    def live_review_loop(
+        expected_size: str = "64x64", grid: str = "16", max_colors: str = "16"
+    ) -> str:
+        return (
+            "Run a human-in-the-loop review session on the LIVE editor (needs the live backend):\n"
+            "1. `watch_changes` to start counting the artist's own edits.\n"
+            "2. Poll `get_watched_changes` (reset=true) every so often; while changes keep arriving, "
+            "the artist is still working — wait, don't edit.\n"
+            f"3. When a poll returns 0 new changes twice in a row, run `qa_sweep` "
+            f"(size '{expected_size}', grid_multiple={grid}, max_colors={max_colors}).\n"
+            "4. `show_choice_dialog` IN the editor with the QA verdict — options like "
+            "['Export to Unity', 'Keep editing'] — then poll `get_dialog_choice`.\n"
+            "5. On 'Export to Unity': `export_unity_sprite` and report the files. On 'Keep editing': "
+            "go back to step 2. Always `stop_watching_changes` before you finish."
+        )

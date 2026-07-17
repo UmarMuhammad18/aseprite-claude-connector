@@ -79,3 +79,35 @@ Wrapping the relay as a real MCP server, per the current best-practice set:
 - **Logging**: stderr only (stdout is JSON-RPC framing on stdio).
 - **Layout**: one module per tool group; tool logic separated from registration; a
   single server file registers them.
+
+## The live-interaction layer (v0.2)
+
+Interactive tools (in-editor dialogs, ask-the-artist point picking, artist-edit
+watching) are **two-phase and non-blocking** by contract: a start call registers
+UI or an event listener and returns immediately; a poll call fetches the
+outcome. Blocking inside a bridge command would stall Aseprite's event loop and
+the relay heartbeat — nothing in this codebase waits inside the editor.
+
+State between calls lives in the bridge script's Lua environment in one global
+table, `__almcp` (globals persist across relay execs — verified on 1.3.17.2).
+Two empirical facts the implementation encodes:
+
+- `Editor:cancel()` does **not** fire an `askPoint`'s `oncancel` callback; the
+  `cancel_ask_point` tool marks the state itself.
+- `Dialog{...}:show{wait=false}` keeps the dialog open across execs; the button
+  callbacks write the choice into `__almcp` for the poll tool.
+
+## Update awareness (v0.2)
+
+`update_check.py` fetches PyPI's public JSON for this package on a daemon
+thread (never blocks startup), caches the result for 24h in the platform cache
+dir, and surfaces it through the `status` tool, the `aseprite://update`
+resource, and a single stderr line. Opt-out: `ASEPRITE_MCP_NO_UPDATE_CHECK=1`;
+auto-disabled under `CI`. `serverInfo.version` is set on the lowlevel server at
+build time (FastMCP doesn't forward one), so MCP clients see the real release.
+
+## Generated docs
+
+The README's tool reference and the `tools-N` badge are written by
+`scripts/gen_docs.py` from the actual registrations; CI runs `--check` and
+fails on drift. A hand-edited count can't lie because it doesn't exist.

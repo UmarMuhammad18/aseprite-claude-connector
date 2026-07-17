@@ -12,6 +12,56 @@ users pick up new releases automatically.
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-07-16
+
+The "true competitor" release: the tool surface grows past every gap the
+competitive recon found, the live editor becomes a two-way surface, and the
+server learns to tell you when it's out of date.
+
+### Added — update awareness
+- `status` now reports the server version and (checked against PyPI at most
+  daily, opt-out `ASEPRITE_MCP_NO_UPDATE_CHECK=1`) whether a newer release
+  exists; also surfaced as the `aseprite://update` resource and one stderr line.
+- MCP `serverInfo` now reports the real package version (was the SDK's).
+
+### Added — live-editor interaction (needs the running editor)
+- `show_choice_dialog` / `get_dialog_choice` — pop an approve/redo dialog inside
+  Aseprite, non-blocking.
+- `ask_point` / `get_asked_point` / `cancel_ask_point` — ask the artist to click
+  a canvas point (pivot, anchor), human-in-the-loop.
+- `watch_changes` / `get_watched_changes` / `stop_watching_changes` — count the
+  artist's own edits via `Sprite.events`, e.g. re-QA after they stop.
+- `get_editor_state` / `set_editor_view` — read/drive zoom, scroll, mouse pixel.
+- `set_symmetry` — mirror-painting control (mode + axis placement).
+
+### Added — tilemaps
+- `create_tilemap_layer`, `add_tile`, `draw_on_tile`, `set_tiles`,
+  `get_tilemap_info`, `export_tileset` — full tileset/tilemap editing, live and
+  headless.
+
+### Added — parity and beyond
+- Layer groups: `add_group`, `move_layer_to_group`, `list_layers` (full tree);
+  every layer-name argument now finds nested layers, including `Group/Layer`
+  paths.
+- Filters: `adjust_brightness_contrast`, `invert_colors`, `desaturate`,
+  `box_blur` (alpha-weighted), `sharpen` (edge-safe unsharp).
+- Selection: `select_ellipse`, `select_by_color`, `invert_selection`,
+  `get_selection`, `erase_area` (rect or current selection).
+- Animation QA: `frame_diff` (pixel-exact diff + change bbox),
+  `render_onion_composite` (red/blue ghosted PNG of the motion arc).
+- `paint_with_stamp` — stamp an image (file or sprite region) along a path of
+  points, one undo step.
+- Typed sprite metadata: `set_sprite_metadata` / `get_sprite_metadata`
+  (Aseprite's Properties system — provenance that saves with the file).
+
+### Changed
+- README tool reference is now generated from the code
+  (`python scripts/gen_docs.py`); CI fails if it drifts. The tools badge is
+  written by the same script.
+- CI: lint (ruff check + format) and a 3-OS × 2-Python test matrix.
+- Repo practices: issue templates, dependabot, GitHub Releases cut from
+  CHANGELOG on tag push.
+
 ## [0.1.2] — 2026-07-16
 
 ### Fixed
@@ -44,7 +94,8 @@ users pick up new releases automatically.
 - Art-QA sweep: size/grid/palette checks plus transparent sticker-padding
   measurement.
 
-[Unreleased]: https://github.com/oaktreegames/aseprite-live-mcp/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/oaktreegames/aseprite-live-mcp/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/oaktreegames/aseprite-live-mcp/releases/tag/v0.2.0
 [0.1.2]: https://github.com/oaktreegames/aseprite-live-mcp/releases/tag/v0.1.2
 [0.1.1]: https://github.com/oaktreegames/aseprite-live-mcp/releases/tag/v0.1.1
 [0.1.0]: https://github.com/oaktreegames/aseprite-live-mcp/releases/tag/v0.1.0

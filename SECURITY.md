@@ -20,6 +20,12 @@ deliberately simple and explicit.
 - **One undo per edit.** Every edit an agent makes is wrapped in `app.transaction`,
   so a single Ctrl+Z reverts it like any manual action — you are never more than
   one keystroke away from undoing what the agent did.
+- **The update check is a read, not telemetry.** At most once a day the server
+  fetches `https://pypi.org/pypi/aseprite-live-mcp/json` to learn the latest
+  released version. Nothing about you, your machine, or your art is sent —
+  it's an HTTP GET of a public document, cached locally, disabled entirely with
+  `ASEPRITE_MCP_NO_UPDATE_CHECK=1` (and auto-disabled when `CI` is set). It is
+  the only network request this server ever makes on its own.
 
 ## Recommendations
 

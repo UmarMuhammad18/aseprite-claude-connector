@@ -12,6 +12,7 @@ from mcp.types import ToolAnnotations
 
 from ..lua import lua_locals
 from ._common import ToolError, run
+from .look import previewable
 
 _STAMP = """
 local s = app.activeSprite
@@ -49,6 +50,7 @@ def _points_lua(points) -> str:
 
 def register(mcp):
     @mcp.tool(annotations=ToolAnnotations(title="Paint with stamp"))
+    @previewable
     def paint_with_stamp(
         points: list,
         source_path: str | None = None,

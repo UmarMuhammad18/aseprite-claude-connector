@@ -7,7 +7,7 @@ Kyle Ocheltree / OakTree Games.
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-147-orange)
+![tools](https://img.shields.io/badge/tools-150-orange)
 
 **Let an AI agent draw in your *live* Aseprite editor — every edit one named undo — with a Unity-first, game-dev toolset.**
 
@@ -202,7 +202,7 @@ is an HTTP GET of PyPI's public JSON; nothing about you, your machine, or your
 art is sent.
 
 <!-- TOOLS:START -->
-## Tools (147)
+## Tools (150)
 
 Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), and — when it mutates — wrapped in a **named** `app.transaction`, so each edit is exactly one labeled undo step in the editor.
 
@@ -456,8 +456,10 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 
 </details>
 <details>
-<summary><b>Undo / redo</b> (2)</summary>
+<summary><b>Undo / redo</b> (4)</summary>
 
+- **`select_frame`** — Make a frame active, so the next edits land on it.
+- **`select_layer`** — Make a layer active, so the next edits land on it.
 - **`undo`** — Undo the last edit on the active sprite (live editor).
 - **`redo`** — Redo the last undone edit (live editor).
 

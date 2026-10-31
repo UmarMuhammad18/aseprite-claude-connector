@@ -12,6 +12,7 @@ from mcp.types import ToolAnnotations
 
 from ..lua import lua_locals
 from ._common import ToolError, parse_color, run
+from .look import previewable
 
 # Shared iso helpers, prepended to each tool body (kept out of the core prelude).
 _ISO = """
@@ -101,6 +102,7 @@ def _points_lua(points) -> str:
 
 def register(mcp):
     @mcp.tool(annotations=ToolAnnotations(title="Draw isometric box"))
+    @previewable
     def draw_iso_box(
         center_x: int,
         center_y: int,
@@ -131,6 +133,7 @@ def register(mcp):
         return run(body, mutates=True, undo_label="Iso box", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Draw isometric cylinder"))
+    @previewable
     def draw_iso_cylinder(
         center_x: int, top_y: int, radius: int, height: int, color: str, file: str | None = None
     ) -> dict:
@@ -147,6 +150,7 @@ def register(mcp):
         return run(body, mutates=True, undo_label="Iso cylinder", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Fill polygon"))
+    @previewable
     def fill_polygon(points: list, color: str, file: str | None = None) -> dict:
         """Scanline-fill an arbitrary polygon given ``points`` (a list of [x, y]
         pairs, in order). ``color`` is #rrggbb or #rrggbbaa. One undo step.
@@ -158,6 +162,7 @@ def register(mcp):
         return run(body, mutates=True, undo_label="Fill polygon", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Iso recessed panel"))
+    @previewable
     def iso_recessed_panel(points: list, file: str | None = None) -> dict:
         """Draw a recessed docking socket/port on an isometric face — a light lit
         lip framing a dark recessed interior. ``points`` = the 4 corner [x, y] pairs

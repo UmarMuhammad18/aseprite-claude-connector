@@ -19,7 +19,7 @@ babysitting. Our remote is `UmarMuhammad18/aseprite-claude-connector`.
 Claude ⇄ MCP server (stdio, runs the relay) ⇄ WS :9877 ⇄ Claude Bridge extension in Aseprite
 ```
 
-- **`aseprite_claude_connector/`** — FastMCP server with 147 tools. One module per group in
+- **`aseprite_claude_connector/`** — FastMCP server with 150 tools. One module per group in
   `tools/`, each exposing `register(mcp)`. Tools generate Lua and run it through
   `run()` in `tools/_common.py`.
 - **Two backends, one tool surface** — `live` (default) runs Lua in the open editor
@@ -101,12 +101,6 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   `MCPServer`, so the server can't import on it. Migrating is separate work.
 - **This package isn't on PyPI**, so install from GitHub, and the update check finds
   nothing until a release is published under this name.
-- **`test_headless_roundtrip` ignores `ASEPRITE_PATH`** and only checks the
-  auto-detected paths, so it skips on non-standard installs.
-- **The relay keeps a stale `info`** in `/status` after a disconnect. Trust
-  `connected`, not `info`.
-- **`set_color_mode` to `indexed` can blank a sprite** when the palette has one
-  entry, which is the default for a new sprite. Apply a palette first.
 - **`tween_frames` does nothing for frames made with the drawing tools**, because
   they leave every cel at (0, 0). Set the end cel with `set_cel_position` first.
 - **Tools that write files from Lua should hit the security prompt live**, such as
@@ -114,6 +108,11 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   Aseprite trusts separately from the extension. Only `Image:saveAs` has been seen
   doing this so far. Umar has chosen to give that code full trust, by answering the
   prompt in Aseprite the first time it appears.
+- **`export_godot` hasn't been loaded in real Godot.** Its unit tests check the
+  `.tres` text, and the sheet was exported live, but nothing has opened it in Godot.
+- **Local-scope registration matches the exact path spelling.** VS Code can open
+  this folder as `c:\`, which misses a server registered under `C:/`. Register at
+  user scope, as `setup` does.
 - **The Mac setup is untested, and on hold by choice.** The extension folder path
   comes from Aseprite's source, but nothing here has run on a Mac.
 - **`setup` run through `uvx` would register a temporary path.** Install with `pip`.
@@ -154,7 +153,7 @@ On hold by choice: testing the full setup on a Mac.
 See "Safety rails" in `docs/ARCHITECTURE.md`. The cool extras in `PLAN.md` haven't
 started.
 
-### 5. Godot export — next
+### 5. Godot export — built, not yet confirmed in Godot
 
-One-action export to Godot (sprite sheet plus a `SpriteFrames` `.tres` resource with
-animations from tags), to match the Unity export that already exists.
+`export_godot` writes a sprite sheet plus a `SpriteFrames` `.tres` with animations from
+tags. The finish line, a tagged animation playing in Godot, still needs checking.

@@ -21,6 +21,12 @@ from aseprite_claude_connector.lua import build_lua
 from aseprite_claude_connector.server import build_server
 from aseprite_claude_connector.tools import _common
 from aseprite_claude_connector.tools._common import ToolError, rails, run
+from aseprite_claude_connector.tools.godot_export import (
+    animations,
+    build_tres,
+    frame_order,
+    res_path_for,
+)
 from aseprite_claude_connector.tools.safety import _combine
 
 PAGE = """# Sprite
@@ -238,3 +244,58 @@ def test_batch_refuses_bad_steps_before_touching_the_sprite(monkeypatch, steps, 
         _call("edit_batch", {"steps": steps})
     assert not any("app.transaction" in lua for lua, _ in fake.calls)
     assert rails.capturing is False
+
+
+# --- polish -----------------------------------------------------------------------
+
+
+def test_select_tools_can_be_batched_with_an_edit(backend):
+    steps = [
+        {"tool": "select_frame", "args": {"number": 2}},
+        {"tool": "select_layer", "args": {"name": "top"}},
+        STEPS[0],
+    ]
+    _call("edit_batch", {"steps": steps})
+    lua = backend.calls[0][0]
+    assert (
+        len(backend.calls) == 1 and "__steps[3]" in lua and "app.activeFrame = s.frames[N]" in lua
+    )
+
+
+def test_ping_pong_doesnt_double_the_turnaround():
+    assert frame_order(1, 4, "pingpong") == [1, 2, 3, 4, 3, 2]
+    assert frame_order(1, 4, "pingpong_reverse") == [4, 3, 2, 1, 2, 3]
+    assert frame_order(2, 4, "reverse") == [4, 3, 2]
+    assert frame_order(3, 3, "pingpong") == [3]
+
+
+def test_no_tags_gives_one_looping_default():
+    assert animations([100, 100], []) == [{"name": "default", "frames": [1, 2], "loop": True}]
+
+
+def test_repeats_stop_the_loop_and_same_names_stay_distinct():
+    tags = [
+        {"name": "hit", "from": 1, "to": 2, "repeats": 2},
+        {"name": "hit", "from": 1, "to": 1, "repeats": 0},
+    ]
+    a, b = animations([100, 100], tags)
+    assert a == {"name": "hit", "frames": [1, 2, 1, 2], "loop": False}
+    assert b["name"] == "hit_2" and b["loop"] is True
+
+
+def test_tres_keeps_timing_and_only_the_frames_it_uses():
+    anims = [{"name": 'a"b', "frames": [2, 3], "loop": True}]
+    text = build_tres("res://s.png", 16, 8, [50, 100, 200], anims)
+    assert "load_steps=4 format=3" in text
+    assert "region = Rect2(16, 0, 16, 8)" in text and "region = Rect2(32, 0, 16, 8)" in text
+    assert "Rect2(0, 0" not in text
+    assert '"duration": 1.0' in text and '"duration": 2.0' in text and '"speed": 10.0' in text
+    assert r'&"a\"b"' in text
+
+
+def test_res_path_comes_from_the_nearest_project(tmp_path):
+    (tmp_path / "project.godot").write_text("")
+    sub = tmp_path / "art" / "hero"
+    sub.mkdir(parents=True)
+    assert res_path_for(str(sub / "a.png")) == ("res://art/hero/a.png", True)
+    assert res_path_for("/nowhere/a.png") == ("res://a.png", False)

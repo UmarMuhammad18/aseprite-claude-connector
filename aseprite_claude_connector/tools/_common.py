@@ -57,18 +57,20 @@ def run(
     undo_label: str = "AI edit",
     file: str | None = None,
     save: bool | None = None,
+    batchable: bool = False,
 ):
     """Compose + execute a Lua tool body and return its parsed result.
 
     ``body`` must ``return`` a value (usually ``J({...})``). Mutating bodies are
     wrapped in ``app.transaction`` (one undo step). For the headless backend,
-    ``file`` is the target sprite and ``save`` defaults to ``mutates``.
+    ``file`` is the target sprite and ``save`` defaults to ``mutates``. ``batchable``
+    lets a tool that edits nothing still take part in ``edit_batch``.
     """
     if _OUTSIDE_THE_SPRITE.search(body):
         if rails.capturing:
             raise ToolError("this tool does more than edit the sprite, so it can't be batched")
         refuse_in_dry_run()
-    if rails.capturing and mutates:
+    if rails.capturing and (mutates or batchable):
         raise Captured(body)
     backend = get_backend()
     lua = build_lua(

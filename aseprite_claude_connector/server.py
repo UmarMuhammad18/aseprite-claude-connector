@@ -25,6 +25,7 @@ from .tools import (
     export,
     filters,
     frames,
+    godot_export,
     inspect,
     isometric,
     layers,
@@ -53,7 +54,8 @@ backend). Mutating tools are one undo step each. Start with `status`, then
 `get_sprite_info`. Colors are #rrggbb or #rrggbbaa. Use `look` to see the canvas
 as an image, and check your work with it rather than editing blind. Use
 `describe_sprite` for a one-call summary, `search_api_docs` before writing Lua, and
-`edit_batch` to make a multi-step change one undo step.
+`edit_batch` to make a multi-step change one undo step. `select_frame` and
+`select_layer` choose where edits land.
 """
 
 # Tool modules (each exposes register(mcp)).
@@ -82,6 +84,7 @@ _TOOL_MODULES = (
     animate,
     export,
     unity_export,
+    godot_export,
     artqa,
     batch,
     editor,

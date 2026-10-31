@@ -18,8 +18,9 @@ classifiers = [
 ]
 dependencies = [
   # >=1.10: first SDK line with structured output (outputSchema/structuredContent),
-  # which the typed report tools depend on.
-  "mcp>=1.10.0",
+  # which the typed report tools depend on. <2: the 2.x SDK removed
+  # mcp.server.fastmcp (renamed to MCPServer), so the server can't import on it.
+  "mcp>=1.10.0,<2",
   # Imported directly by tools/_schemas.py (pydantic requires the
   # typing_extensions TypedDict on Python < 3.12).
   "typing-extensions>=4.9.0",

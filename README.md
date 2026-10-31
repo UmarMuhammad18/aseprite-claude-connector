@@ -136,23 +136,28 @@ run `status` to confirm the connection, then try:
 
 ## Quickstart — live editor (drive your open canvas)
 
-The live backend edits your **running** Aseprite, one undo step per edit. The
-bridge script and relay live in this repo (they're not in the pip package), so
-grab them first: `git clone https://github.com/oaktreegames/aseprite-live-mcp`
-— or download just [`claude-bridge.lua`](aseprite_client/claude-bridge.lua) and
-[`relay_server.py`](bridge/relay_server.py).
+The live backend edits your **running** Aseprite, one undo step per edit. Set it up
+with one command:
 
-1. **Install the bridge script into Aseprite** — in Aseprite, `File → Scripts →
-   Open Scripts Folder`, copy `aseprite_client/claude-bridge.lua`
-   into it, and restart Aseprite (or `File → Scripts → Rescan Scripts Folder`).
-2. **Start the relay:** `python bridge/relay_server.py` (needs `pip install websockets`).
-3. **Connect:** in Aseprite, `File → Scripts → claude-bridge`, and grant the script
-   trust when asked. The panel shows **"connected to Claude"**, live activity, and a
-   Pause toggle.
-4. **Switch the backend** to `live` in your MCP config (`"ASEPRITE_MCP_BACKEND": "live"`).
+```bash
+pip install git+https://github.com/UmarMuhammad18/aseprite-claude-connector && aseprite-live-mcp setup
+```
 
-Now tools act on your active document; watch edits appear and press Ctrl-Z to undo
-each one. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it works.
+`setup` registers the server with Claude Code and installs the Claude Bridge
+extension. Restart Aseprite if it's open. It asks once for permission to connect:
+tick the box to remember, then allow it. That's the whole setup.
+
+From then on the server starts the relay itself and Aseprite connects on its own.
+Tools act on your active document; watch edits appear and press Ctrl-Z to undo each
+one. **File → Scripts → Claude Bridge** opens a status panel with live activity and
+a Pause toggle.
+
+Using another MCP client? Run `aseprite-live-mcp setup --no-register` and add the
+server to that client yourself. To install the extension by hand instead,
+`aseprite-live-mcp setup --out <folder>` writes a `.aseprite-extension` file you can
+add in **Edit → Preferences → Extensions**.
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it works.
 
 ## What you can ask it to do
 
@@ -530,7 +535,10 @@ One-call "skills" that chain the tools into finished art tasks:
   touches a real Aseprite (headless batch or the live bridge) is hand-tested on
   Windows. Treat mac/linux as expected-to-work, not proven.
 - **`run_lua` is local code execution** by design (it's the escape hatch). The
-  relay binds to `127.0.0.1` only. Read [`SECURITY.md`](SECURITY.md).
+  relay binds to `127.0.0.1` only and refuses browsers. Read
+  [`SECURITY.md`](SECURITY.md).
+- **Tools that write files from the live editor raise an Aseprite prompt** the first
+  time, such as the exports. Allow it in Aseprite, or the call times out.
 - **No generative art.** This server draws what it's told with deterministic
   primitives; taste stays with the artist.
 

@@ -24,6 +24,8 @@ dependencies = [
   # Imported directly by tools/_schemas.py (pydantic requires the
   # typing_extensions TypedDict on Python < 3.12).
   "typing-extensions>=4.9.0",
+  # The relay runs inside the server, so the live backend works out of the box.
+  "websockets>=12",
 ]
 
 [project.urls]
@@ -32,9 +34,6 @@ Repository = "https://github.com/oaktreegames/aseprite-live-mcp"
 Issues = "https://github.com/oaktreegames/aseprite-live-mcp/issues"
 
 [project.optional-dependencies]
-# The live relay (bridge/relay_server.py) needs websockets; the MCP server itself
-# is stdlib-only besides mcp.
-relay = ["websockets>=12"]
 dev = ["pytest>=8"]
 
 [project.scripts]
@@ -62,5 +61,4 @@ select = ["E", "F", "W", "I", "UP", "B"]
 # and demo scripts predate the lint config and read fine as-is.
 "aseprite_live_mcp/tools/*.py" = ["E501"]
 "tests/*" = ["E501"]
-"bridge/*" = ["E501"]
 "examples/*" = ["E501"]

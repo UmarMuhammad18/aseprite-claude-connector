@@ -19,8 +19,8 @@ batch process.
 ## Why the editor connects to us (not the reverse)
 
 Aseprite's Lua `WebSocket` API can only act as a **client** — it dials out, it
-cannot listen. So the relay hosts the WebSocket server and the in-editor script
-connects to it. Every live-GUI Aseprite tool (this one, Aseprite MCP Pro, Dizzd,
+cannot listen. So the relay hosts the WebSocket server and the Claude Bridge
+extension connects to it. Every live-GUI Aseprite tool (this one, Aseprite MCP Pro, Dizzd,
 Shexiaoyun) is forced into this same shape by the API; it is not a novel trick.
 
 ## Wire protocol (relay ⇄ editor)
@@ -48,6 +48,25 @@ The WebSocket listens on `127.0.0.1:9877`.
   IXWebSocket client and python-websockets disagree on it and frames vanish.
 - A ticking `Timer` heartbeat in the client keeps Aseprite's event loop pumping
   callbacks while the window is unfocused (an idle editor starves them).
+- Aseprite's client sends `Origin: ws://127.0.0.1:9877`, so the relay can't simply
+  refuse every Origin. Browsers only send http(s) or `null`, so allowing that one
+  value still keeps web pages out.
+
+## Who starts what
+
+`relay.py` runs on a daemon thread inside the MCP server, so it lives and dies with
+that server. Only one process can own the ports: `ensure_running` lets a second
+server fail quietly and use the first one's relay, and `LiveBackend` starts its own
+if the relay later refuses a connection. The extension retries every few seconds, so
+it finds whichever relay is up. `ASEPRITE_MCP_NO_RELAY=1` turns auto-start off.
+
+The extension connects on its first `Timer` tick rather than in `init`, because
+connecting can raise Aseprite's access prompt, which needs the UI to be up.
+
+`setup` installs the extension by unpacking it into Aseprite's per-user `extensions`
+folder with an `__info.json` file list, which is exactly what Aseprite's own installer
+writes. Passing a `.aseprite-extension` to `Aseprite.exe` doesn't work: it tries to
+load it as a sprite.
 
 ## Port map (avoid collisions)
 
@@ -104,10 +123,12 @@ frame and returns its raw pixels as base64 over the ordinary result channel;
 `raster.py` (stdlib only) zooms, adds the backdrop, lays out panels, diffs, and
 encodes the PNG. Two facts shaped this:
 
-- **Never write a temp file from Lua in these tools.** In the live editor,
-  `Image:saveAs` raises Aseprite's script-security prompt unless the script has full
-  trust. The prompt is modal, so the call hangs until someone answers it, and
-  commands sent meanwhile stack more prompts on top.
+- **Never write a temp file from Lua in these tools.** Aseprite tracks trust per
+  script, and the bridge runs what it receives under the chunk name `claude`, which
+  counts as a separate script from the extension. So `Image:saveAs` raises the
+  script-security prompt even when the extension has full trust. The prompt is
+  modal: the call hangs until someone answers, and commands sent meanwhile stack more
+  prompts on top.
 - **The relay's `max_size` must exceed the largest picture payload.** Python's
   websockets defaults to 1 MiB and drops the connection above that.
 

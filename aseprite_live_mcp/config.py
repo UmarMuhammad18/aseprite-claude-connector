@@ -2,6 +2,8 @@
 
 - ASEPRITE_MCP_BACKEND         : "live" (default) or "headless"
 - ASEPRITE_RELAY_URL           : relay HTTP base for the live backend (default 127.0.0.1:9878)
+- ASEPRITE_MCP_NO_RELAY        : set to stop the server starting the relay itself
+  (also off when ASEPRITE_RELAY_URL points somewhere else)
 - ASEPRITE_PATH                : path to the Aseprite executable (auto-detected if unset)
 - ASEPRITE_MCP_TIMEOUT         : per-op timeout seconds (default 60)
 - ASEPRITE_MCP_NO_UPDATE_CHECK : set to disable the daily PyPI update check
@@ -12,6 +14,8 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+
+_DEFAULT_RELAY_URL = "http://127.0.0.1:9878"
 
 _DEFAULT_ASEPRITE_PATHS = [
     r"C:\Program Files (x86)\Steam\steamapps\common\Aseprite\Aseprite.exe",
@@ -29,6 +33,7 @@ class Config:
     relay_url: str
     aseprite_path: str
     exec_timeout: float
+    relay_autostart: bool = False
 
 
 def _default_aseprite() -> str:
@@ -42,10 +47,21 @@ def load_config() -> Config:
     backend = os.environ.get("ASEPRITE_MCP_BACKEND", "live").strip().lower()
     if backend not in ("live", "headless"):
         backend = "live"
-    relay = os.environ.get("ASEPRITE_RELAY_URL", "http://127.0.0.1:9878").rstrip("/")
+    relay = os.environ.get("ASEPRITE_RELAY_URL", _DEFAULT_RELAY_URL).rstrip("/")
+    autostart = (
+        backend == "live"
+        and relay == _DEFAULT_RELAY_URL
+        and not os.environ.get("ASEPRITE_MCP_NO_RELAY")
+    )
     aseprite = os.environ.get("ASEPRITE_PATH") or _default_aseprite()
     try:
         timeout = float(os.environ.get("ASEPRITE_MCP_TIMEOUT", "60"))
     except ValueError:
         timeout = 60.0
-    return Config(backend=backend, relay_url=relay, aseprite_path=aseprite, exec_timeout=timeout)
+    return Config(
+        backend=backend,
+        relay_url=relay,
+        aseprite_path=aseprite,
+        exec_timeout=timeout,
+        relay_autostart=autostart,
+    )

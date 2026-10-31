@@ -106,7 +106,11 @@ def build_server() -> FastMCP:
 
 def main() -> None:
     # Touch config early so a bad env fails loudly at startup, on stderr.
-    load_config()
+    config = load_config()
+    if config.relay_autostart:
+        from .relay import ensure_running
+
+        ensure_running()
     # Fire-and-forget daily update check (never blocks; ASEPRITE_MCP_NO_UPDATE_CHECK=1 disables).
     start_background_check()
     build_server().run(transport="stdio")

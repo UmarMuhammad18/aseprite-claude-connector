@@ -62,8 +62,8 @@ def register(mcp):
         ``dry_run`` true makes every edit report what it would change, as an error,
         then roll back; tools that save, export, or run raw Lua refuse instead.
         ``max_changed_pixels`` caps what one call can change, and an edit over it is
-        rolled back; 0 removes the cap. It counts hidden layers, and a reordered layer
-        counts as changed. ``run_lua`` isn't capped."""
+        rolled back; 0 removes the cap. It counts hidden layers. ``move_layer`` isn't capped, and
+        ``run_lua`` is capped only with ``edit=true``."""
         if max_changed_pixels is not None:
             if max_changed_pixels < 0:
                 raise ToolError("max_changed_pixels must be 0 or more")

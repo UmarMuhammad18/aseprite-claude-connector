@@ -29,10 +29,10 @@ def test_extension_package_is_installable(tmp_path):
     built = build_extension(tmp_path)
     assert built.name == EXTENSION_FILE
     with zipfile.ZipFile(built) as z:
-        assert sorted(z.namelist()) == ["claude-bridge.lua", "package.json"]
+        assert sorted(z.namelist()) == ["claude-bridge.lua", "game-export.lua", "package.json"]
         manifest = json.loads(z.read("package.json"))
     paths = [s["path"] for s in manifest["contributes"]["scripts"]]
-    assert paths == ["./claude-bridge.lua"]
+    assert paths == ["./claude-bridge.lua", "./game-export.lua"]
     assert manifest["version"] == __version__
 
 

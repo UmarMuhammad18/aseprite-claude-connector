@@ -19,7 +19,7 @@ babysitting. Our remote is `UmarMuhammad18/aseprite-claude-connector`.
 Claude ⇄ MCP server (stdio, runs the relay) ⇄ WS :9877 ⇄ Claude Bridge extension in Aseprite
 ```
 
-- **`aseprite_claude_connector/`** — FastMCP server with 150 tools. One module per group in
+- **`aseprite_claude_connector/`** — FastMCP server with 151 tools. One module per group in
   `tools/`, each exposing `register(mcp)`. Tools generate Lua and run it through
   `run()` in `tools/_common.py`.
 - **Two backends, one tool surface** — `live` (default) runs Lua in the open editor
@@ -30,6 +30,9 @@ Claude ⇄ MCP server (stdio, runs the relay) ⇄ WS :9877 ⇄ Claude Bridge ext
 - **`aseprite_claude_connector/extension/`** — the Claude Bridge extension, which runs inside
   Aseprite, connects on launch, and executes the Lua it receives.
 - **`aseprite_claude_connector/setup.py`** — the `aseprite-claude-connector setup` command.
+- **`extension/game-export.lua`** — the Export to Game button. It repeats
+  `tools/game_export.py` in Lua because it has to work with no server running. The
+  smoke test holds their output byte-equal, so change them together.
 
 Read `docs/ARCHITECTURE.md` before changing anything in the live path, and
 `SECURITY.md` before changing what can reach `/exec`.
@@ -101,28 +104,28 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   `MCPServer`, so the server can't import on it. Migrating is separate work.
 - **This package isn't on PyPI**, so install from GitHub, and the update check finds
   nothing until a release is published under this name.
-- **`tween_frames` does nothing for frames made with the drawing tools**, because
-  they leave every cel at (0, 0). Set the end cel with `set_cel_position` first.
 - **Tools that write files from Lua should hit the security prompt live**, such as
   the exports. The bridge runs received code under the chunk name `claude`, which
   Aseprite trusts separately from the extension. Only `Image:saveAs` has been seen
   doing this so far. Umar has chosen to give that code full trust, by answering the
   prompt in Aseprite the first time it appears.
-- **`export_godot` hasn't been loaded in real Godot.** Its unit tests check the
-  `.tres` text, and the sheet was exported live, but nothing has opened it in Godot.
+- **Exports haven't been opened in real Godot or Unity.** Their text is tested and
+  the art was exported live, but no engine has loaded the `.tres` or `.meta`.
+- **The Export to Game dialog hasn't been clicked through.** Real Aseprite loads the
+  command and its export code passes the smoke test, but the dialog itself needs a
+  person.
 - **Local-scope registration matches the exact path spelling.** VS Code can open
-  this folder as `c:\`, which misses a server registered under `C:/`. Register at
-  user scope, as `setup` does.
+  this folder as `c:\`, which misses a server registered under `C:/`. `setup` moves a
+  local entry to user scope.
 - **The Mac setup is untested, and on hold by choice.** The extension folder path
   comes from Aseprite's source, but nothing here has run on a Mac.
 - **`setup` run through `uvx` would register a temporary path.** Install with `pip`.
-- **`run_lua` isn't covered by the pixel cap,** and refuses to run in a dry run.
+- **`run_lua` is only covered by the rails with `edit=true`.** Without it, the pixel
+  cap doesn't apply and it refuses to run in a dry run.
 - **A dry-run report comes back as a tool error,** so that no tool has to handle a
   result that didn't happen.
-- **A reordered layer counts as changed pixels,** because layers have no id in the
-  API. A big `move_layer` can hit the cap.
-- **Right after a relay handover, calls fail for a few seconds** until the extension
-  reconnects.
+- **A reordered layer counts as changed pixels inside `edit_batch`,** because layers
+  have no id in the API. `move_layer` on its own skips the cap.
 
 ## Roadmap
 
@@ -157,3 +160,8 @@ started.
 
 `export_godot` writes a sprite sheet plus a `SpriteFrames` `.tres` with animations from
 tags. The finish line, a tagged animation playing in Godot, still needs checking.
+
+### 6. Export to your game — built, not yet confirmed in an engine
+
+**File → Export → Export to Game...** and `export_to_game` put art straight into a
+Godot or Unity project, ready to select. Tested live and headless.

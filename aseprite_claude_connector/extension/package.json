@@ -8,7 +8,8 @@
   "categories": ["Scripts"],
   "contributes": {
     "scripts": [
-      { "path": "./claude-bridge.lua" }
+      { "path": "./claude-bridge.lua" },
+      { "path": "./game-export.lua" }
     ]
   }
 }

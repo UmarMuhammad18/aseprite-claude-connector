@@ -7,8 +7,9 @@ single action. The sheet drops into a Unity project already sliced; no manual
 Sprite Editor pass.
 
 The .meta targets Unity 2021.3+/6 texture import. Rects, pivots, names and IDs are
-generated deterministically here; Unity finalizes the asset on import. Final
-in-Unity validation is a project-side step.
+generated deterministically here; Unity finalizes the asset on import. Exporting
+again keeps the ``guid`` already in the ``.meta``, because prefabs and scenes point at
+the sprite through it. Final in-Unity validation is a project-side step.
 """
 
 from __future__ import annotations
@@ -188,6 +189,20 @@ def _yaml_scalar(s: str) -> str:
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+def _guid_for(meta_path: str) -> str:
+    """The guid already in ``meta_path``, or a new one for a first export."""
+    try:
+        with open(meta_path, encoding="utf-8") as f:
+            found = re.search(r"^guid: ([0-9a-f]{32})\s*$", f.read(), re.MULTILINE)
+    except OSError:
+        found = None
+    return found.group(1) if found else uuid.uuid4().hex
+
+
+def _sprite_id(guid: str, index: int) -> str:
+    return f"{guid[:24]}{index:08x}"
+
+
 def _sprite_entry(
     name: str,
     x: int,
@@ -248,7 +263,7 @@ def _gen_meta(
     sprites, idname, rects = [], [], []
     for i in range(frames):
         name = f"{stem}_{i}"
-        sid = uuid.uuid4().hex
+        sid = _sprite_id(guid, i)
         iid = 21300000 + i * 2
         x = i * w
         sprites.append(_sprite_entry(name, x, 0, w, h, sid, iid, px, py, alignment))
@@ -263,7 +278,7 @@ def _gen_meta_slices(guid: str, ppu: int, slices: list, tex_h: int):
     sprites, idname, rects = [], [], []
     for i, sl in enumerate(slices):
         name = str(sl["name"])
-        sid = uuid.uuid4().hex
+        sid = _sprite_id(guid, i)
         iid = 21300000 + i * 2
         x, w, h = int(sl["x"]), int(sl["width"]), int(sl["height"])
         uy = tex_h - (int(sl["y"]) + h)  # Aseprite top-left -> Unity bottom-left
@@ -272,6 +287,47 @@ def _gen_meta_slices(guid: str, ppu: int, slices: list, tex_h: int):
         idname.append(f"  - first:\n      213: {iid}\n    second: {_yaml_scalar(name)}\n")
         rects.append({"name": name, "x": x, "y": uy, "width": w, "height": h, "pivot": [px, py]})
     return _assemble_meta(guid, ppu, sprites, idname), rects
+
+
+def export_sheet(
+    png_path: str,
+    pixels_per_unit: int = 100,
+    alignment: str = "custom",
+    pivot_x: float = 0.5,
+    pivot_y: float = 0.5,
+    file: str | None = None,
+) -> dict:
+    """Write the sheet and its pre-sliced ``.meta``."""
+    align = _ALIGN.get(alignment.strip().lower())
+    if not align:
+        raise ToolError(f"unknown alignment '{alignment}' (have: {', '.join(sorted(_ALIGN))})")
+    code, apx, apy = align
+    px, py = (pivot_x, pivot_y) if code == 9 else (apx, apy)
+    info = run(lua_locals(OUT=png_path) + _EXPORT_STRIP, mutates=False, file=file, save=False)
+    if not isinstance(info, dict):
+        raise ToolError("sprite sheet export failed")
+    frames, w, h = int(info["frames"]), int(info["width"]), int(info["height"])
+    stem = os.path.splitext(os.path.basename(png_path))[0]
+    meta_path = png_path + ".meta"
+    guid = _guid_for(meta_path)
+    meta, rects = _gen_meta(guid, pixels_per_unit, frames, w, h, stem, px, py, code)
+    with open(meta_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(meta)
+    result = {
+        "mode": "frames",
+        "png": png_path,
+        "png_exists": os.path.isfile(png_path),
+        "meta": meta_path,
+        "guid": guid,
+        "frames": frames,
+        "frame_size": {"width": w, "height": h},
+        "sheet_size": {"width": w * frames, "height": h},
+        "pixels_per_unit": pixels_per_unit,
+        "alignment": alignment.strip().lower(),
+        "sprites": rects,
+    }
+    state.set_last("export", result)
+    return result
 
 
 def register(mcp):
@@ -292,36 +348,7 @@ def register(mcp):
         Headless: pass ``file``."""
         if not png_path.lower().endswith(".png"):
             raise ToolError("png_path must end in .png")
-        align = _ALIGN.get(alignment.strip().lower())
-        if not align:
-            raise ToolError(f"unknown alignment '{alignment}' (have: {', '.join(sorted(_ALIGN))})")
-        code, apx, apy = align
-        px, py = (pivot_x, pivot_y) if code == 9 else (apx, apy)
-        info = run(lua_locals(OUT=png_path) + _EXPORT_STRIP, mutates=False, file=file, save=False)
-        if not isinstance(info, dict):
-            raise ToolError("sprite sheet export failed")
-        frames, w, h = int(info["frames"]), int(info["width"]), int(info["height"])
-        stem = os.path.splitext(os.path.basename(png_path))[0]
-        guid = uuid.uuid4().hex
-        meta, rects = _gen_meta(guid, pixels_per_unit, frames, w, h, stem, px, py, code)
-        meta_path = png_path + ".meta"
-        with open(meta_path, "w", encoding="utf-8", newline="\n") as f:
-            f.write(meta)
-        result = {
-            "mode": "frames",
-            "png": png_path,
-            "png_exists": os.path.isfile(png_path),
-            "meta": meta_path,
-            "guid": guid,
-            "frames": frames,
-            "frame_size": {"width": w, "height": h},
-            "sheet_size": {"width": w * frames, "height": h},
-            "pixels_per_unit": pixels_per_unit,
-            "alignment": alignment.strip().lower(),
-            "sprites": rects,
-        }
-        state.set_last("export", result)
-        return result
+        return export_sheet(png_path, pixels_per_unit, alignment, pivot_x, pivot_y, file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Export Unity slices", destructiveHint=False))
     def export_unity_slices(
@@ -341,9 +368,9 @@ def register(mcp):
         slices = info.get("slices") or []
         if not slices:
             raise ToolError("sprite has no slices to export")
-        guid = uuid.uuid4().hex
-        meta, rects = _gen_meta_slices(guid, pixels_per_unit, slices, tex_h)
         meta_path = png_path + ".meta"
+        guid = _guid_for(meta_path)
+        meta, rects = _gen_meta_slices(guid, pixels_per_unit, slices, tex_h)
         with open(meta_path, "w", encoding="utf-8", newline="\n") as f:
             f.write(meta)
         result = {

@@ -7,7 +7,7 @@ Kyle Ocheltree / OakTree Games.
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-150-orange)
+![tools](https://img.shields.io/badge/tools-151-orange)
 
 **Let an AI agent draw in your *live* Aseprite editor — every edit one named undo — with a Unity-first, game-dev toolset.**
 
@@ -148,6 +148,23 @@ add in **Edit → Preferences → Extensions**.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it works.
 
+## Export to your game
+
+In Aseprite, choose **File → Export → Export to Game...**, pick your game folder once,
+and press **Export**. Or ask Claude: *"export this to my game"*. Then select the sprite
+in your engine.
+
+| Folder you pick | Where it goes | What you get |
+| --- | --- | --- |
+| Godot project | Your `sprites` or `assets` folder, or a new `sprites` | PNG, plus a `.tres` with animations from tags if it has more than one frame |
+| Unity project | `Assets/Sprites` or `Assets/Art` | PNG and a `.meta`, already sliced. Exporting again keeps your prefab references |
+| Any other folder | Your `sprites` or `assets` folder, or a new `sprites` | PNG sprite sheet |
+
+Pick a folder deeper inside a project to put the art exactly there. The first export
+from the button may ask to allow file access: allow it. To export with one key, assign
+a shortcut under **Edit → Keyboard Shortcuts**. In Godot, set the node's Texture Filter
+to Nearest for sharp pixels.
+
 ## What you can ask it to do
 
 - *"Make a 32×32 sprite, draw a red circle, and export it as icon.png."*
@@ -202,7 +219,7 @@ is an HTTP GET of PyPI's public JSON; nothing about you, your machine, or your
 art is sent.
 
 <!-- TOOLS:START -->
-## Tools (150)
+## Tools (151)
 
 Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), and — when it mutates — wrapped in a **named** `app.transaction`, so each edit is exactly one labeled undo step in the editor.
 
@@ -417,7 +434,7 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 <details>
 <summary><b>Animation</b> (5)</summary>
 
-- **`tween_frames`** — Insert ``count`` in-between frames between ``from_frame`` and ``to_frame`` that interpolate the cel's position (a motion tween of the start cel's image).
+- **`tween_frames`** — Insert ``count`` in-between frames between ``from_frame`` and ``to_frame`` that slide the start frame's art toward where the end frame's art sits, so it works for moved cels and for art redrawn in a new place.
 - **`tween_cel_opacity`** — Fade a layer's cels across [from_frame..to_frame]: opacity interpolates from ``from_opacity`` to ``to_opacity`` (0-255) with the chosen easing.
 - **`smear_frame`** — Append a motion-smear frame blending ``from_frame`` and ``to_frame``: overlapping pixels averaged, single-frame areas ghosted at half alpha — a pixel-content smear.
 - **`frame_diff`** — Pixel-exact diff of two composited frames: changed-pixel count and ratio, the bounding box of the change, and whether they're identical.

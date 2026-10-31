@@ -122,6 +122,33 @@ def res_path_for(png_path: str) -> tuple[str, bool]:
         folder = parent
 
 
+def export(png_path: str, file: str | None = None, *, tres: str = "always") -> dict:
+    """Write the sheet, and its ``.tres`` when ``tres`` says so: ``always``, ``animated``
+    (more than one frame), or ``never``."""
+    info = run(lua_locals(OUT=png_path) + _EXPORT, mutates=False, file=file, save=False)
+    if not isinstance(info, dict):
+        raise ToolError("sprite sheet export failed")
+    res_path, found = res_path_for(png_path)
+    anims = animations(info["durations"], info.get("tags") or [])
+    result = {
+        "png": png_path,
+        "png_exists": os.path.isfile(png_path),
+        "res_path": res_path,
+        "project_found": found,
+        "frames": len(info["durations"]),
+        "frame_size": {"width": info["width"], "height": info["height"]},
+        "animations": [a["name"] for a in anims],
+    }
+    if tres == "always" or (tres == "animated" and len(info["durations"]) > 1):
+        text = build_tres(res_path, info["width"], info["height"], info["durations"], anims)
+        tres_path = os.path.splitext(png_path)[0] + ".tres"
+        with open(tres_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+        result["tres"] = tres_path
+    state.set_last("export", result)
+    return result
+
+
 def register(mcp):
     @mcp.tool(annotations=ToolAnnotations(title="Export to Godot", destructiveHint=False))
     def export_godot(png_path: str, file: str | None = None) -> dict:
@@ -134,24 +161,4 @@ def register(mcp):
         Nearest. Headless: pass ``file``."""
         if not png_path.lower().endswith(".png"):
             raise ToolError("png_path must end in .png")
-        info = run(lua_locals(OUT=png_path) + _EXPORT, mutates=False, file=file, save=False)
-        if not isinstance(info, dict):
-            raise ToolError("sprite sheet export failed")
-        res_path, found = res_path_for(png_path)
-        anims = animations(info["durations"], info.get("tags") or [])
-        text = build_tres(res_path, info["width"], info["height"], info["durations"], anims)
-        tres_path = os.path.splitext(png_path)[0] + ".tres"
-        with open(tres_path, "w", encoding="utf-8", newline="\n") as f:
-            f.write(text)
-        result = {
-            "png": png_path,
-            "png_exists": os.path.isfile(png_path),
-            "tres": tres_path,
-            "res_path": res_path,
-            "project_found": found,
-            "frames": len(info["durations"]),
-            "frame_size": {"width": info["width"], "height": info["height"]},
-            "animations": [a["name"] for a in anims],
-        }
-        state.set_last("export", result)
-        return result
+        return export(png_path, file)

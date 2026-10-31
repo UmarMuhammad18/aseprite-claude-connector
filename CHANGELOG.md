@@ -19,6 +19,24 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
   entries below this one keep the names they shipped with. Install from GitHub;
   this name isn't on PyPI yet.
 
+### Added — export to your game
+
+- **File → Export → Export to Game...** in Aseprite, and the **`export_to_game`** tool.
+  Either one finds the engine from the folder, uses the project's sprites folder, and
+  writes what that engine needs. The button works without Claude running.
+
+### Fixed — repeat exports and known issues
+
+- Exporting to Unity again keeps the `guid` in the `.meta`, so prefabs and scenes stay
+  linked to the sprite. Each export used to make a new one and break those links.
+- `tween_frames` works on art redrawn in a new place, and refuses when the art hasn't
+  moved instead of reporting success on a still animation.
+- `move_layer` no longer trips the pixel cap, because a reorder changes no pixels.
+- `run_lua` takes `edit=true` for one undo step under the pixel cap and dry run.
+- Calls right after a relay handover wait for the extension instead of failing.
+- `setup` moves a local Claude Code registration to user scope, so the tools appear
+  however VS Code spells the folder path.
+
 ### Added — Godot export and targeting
 
 - **`export_godot`** writes a sprite sheet and a Godot 4 `SpriteFrames` `.tres`, with

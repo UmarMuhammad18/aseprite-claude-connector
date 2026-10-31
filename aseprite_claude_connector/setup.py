@@ -19,7 +19,7 @@ from pathlib import Path
 EXTENSION_DIR = Path(__file__).parent / "extension"
 EXTENSION_NAME = "aseprite-claude-connector"
 EXTENSION_FILE = f"{EXTENSION_NAME}.aseprite-extension"
-EXTENSION_FILES = ("package.json", "claude-bridge.lua")
+EXTENSION_FILES = ("package.json", "claude-bridge.lua", "game-export.lua")
 
 
 def build_extension(out_dir: Path) -> Path:
@@ -60,8 +60,12 @@ def register_claude_code(name: str) -> str:
     if claude is None:
         return "Claude Code not found, so nothing was registered."
     probe = subprocess.run([claude, "mcp", "get", name], capture_output=True, text=True)
-    if probe.returncode == 0:
+    if probe.returncode == 0 and "Scope: Local" not in probe.stdout:
         return f"Claude Code already has a server named '{name}'."
+    if probe.returncode == 0:
+        # A local entry only matches this exact spelling of the folder, and VS Code can
+        # open the same folder under another, which hides the tools.
+        subprocess.run([claude, "mcp", "remove", name, "-s", "local"], capture_output=True)
     config = {
         "type": "stdio",
         "command": sys.executable,

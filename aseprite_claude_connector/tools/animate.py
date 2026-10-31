@@ -42,15 +42,26 @@ local celA = layer:cel(FROM)
 local celB = layer:cel(TO)
 if not celA or not celB then error("both from and to frames need a cel on the layer") end
 local imgA = celA.image
-local ax, ay = celA.position.x, celA.position.y
-local bx, by = celB.position.x, celB.position.y
+-- Measure the art, not the cel: the drawing tools leave every cel at (0, 0).
+local function artAt(cel)
+  local b = cel.image:shrinkBounds()
+  if b.isEmpty then return cel.position.x, cel.position.y end
+  return cel.position.x + b.x, cel.position.y + b.y
+end
+local ax, ay = artAt(celA)
+local bx, by = artAt(celB)
+if ax == bx and ay == by then
+  error("frames " .. FROM .. " and " .. TO .. " have their art in the same place, so there is nothing to tween")
+end
+local dx, dy = bx - ax, by - ay
+local px, py = celA.position.x, celA.position.y
 local inserted = {}
 for k = 1, COUNT do
   local t = ease(k / (COUNT + 1))
   local at = FROM + k
   s:newEmptyFrame(at)
-  local nx = math.floor(ax + (bx - ax) * t + 0.5)
-  local ny = math.floor(ay + (by - ay) * t + 0.5)
+  local nx = math.floor(px + dx * t + 0.5)
+  local ny = math.floor(py + dy * t + 0.5)
   s:newCel(layer, at, Image(imgA), Point(nx, ny))
   inserted[#inserted + 1] = at
 end
@@ -214,11 +225,11 @@ def register(mcp):
         file: str | None = None,
     ) -> dict:
         """Insert ``count`` in-between frames between ``from_frame`` and ``to_frame``
-        that interpolate the cel's position (a motion tween of the start cel's
-        image). ``easing``: linear, ease_in, ease_out, or smoothstep. The drawing
-        tools leave every cel at (0, 0), so two frames drawn with them have nothing
-        to interpolate: set the end cel with ``set_cel_position`` first, and check the
-        result with ``look_animation``. Headless: pass ``file``."""
+        that slide the start frame's art toward where the end frame's art sits, so it
+        works for moved cels and for art redrawn in a new place. It moves the art
+        without reshaping it, and refuses if the art hasn't moved. ``easing``: linear,
+        ease_in, ease_out, or smoothstep. Check the result with ``look_animation``.
+        Headless: pass ``file``."""
         if count < 1:
             raise ToolError("count must be >= 1")
         if easing not in ("linear", "ease_in", "ease_out", "smoothstep"):

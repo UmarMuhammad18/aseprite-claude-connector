@@ -280,7 +280,9 @@ def register(mcp):
         if d not in ("up", "down", "top", "bottom"):
             raise ToolError("direction must be up | down | top | bottom")
         body = lua_locals(NAME=name, DIR=d) + _MOVE
-        return run(body, mutates=True, undo_label="Move layer", file=file)
+        # Cels are compared by their place in the stack, so a reorder looks like every
+        # pixel changing when none did.
+        return run(body, mutates=True, undo_label="Move layer", file=file, capped=False)
 
     @mcp.tool(annotations=ToolAnnotations(title="Import image as layer"))
     def import_image_as_layer(

@@ -6,6 +6,7 @@
   (also off when ASEPRITE_RELAY_URL points somewhere else)
 - ASEPRITE_PATH                : path to the Aseprite executable (auto-detected if unset)
 - ASEPRITE_MCP_TIMEOUT         : per-op timeout seconds (default 60)
+- ASEPRITE_MCP_MAX_PIXELS      : most pixels one call may change (default 250000, 0 = no cap)
 - ASEPRITE_MCP_NO_UPDATE_CHECK : set to disable the daily PyPI update check
   (see update_check.py; also auto-disabled when CI is set)
 """
@@ -16,6 +17,7 @@ import os
 from dataclasses import dataclass
 
 _DEFAULT_RELAY_URL = "http://127.0.0.1:9878"
+_DEFAULT_MAX_PIXELS = 250_000
 
 _DEFAULT_ASEPRITE_PATHS = [
     r"C:\Program Files (x86)\Steam\steamapps\common\Aseprite\Aseprite.exe",
@@ -34,6 +36,7 @@ class Config:
     aseprite_path: str
     exec_timeout: float
     relay_autostart: bool = False
+    max_pixels: int = _DEFAULT_MAX_PIXELS
 
 
 def _default_aseprite() -> str:
@@ -58,10 +61,15 @@ def load_config() -> Config:
         timeout = float(os.environ.get("ASEPRITE_MCP_TIMEOUT", "60"))
     except ValueError:
         timeout = 60.0
+    try:
+        max_pixels = max(0, int(os.environ.get("ASEPRITE_MCP_MAX_PIXELS", _DEFAULT_MAX_PIXELS)))
+    except ValueError:
+        max_pixels = _DEFAULT_MAX_PIXELS
     return Config(
         backend=backend,
         relay_url=relay,
         aseprite_path=aseprite,
         exec_timeout=timeout,
         relay_autostart=autostart,
+        max_pixels=max_pixels,
     )

@@ -18,7 +18,7 @@ from mcp.types import ToolAnnotations
 from ..backends.headless import HeadlessBackend
 from ..config import load_config
 from ..lua import build_lua, lua_locals
-from ._common import ToolError, parse_color
+from ._common import ToolError, parse_color, refuse_in_dry_run
 from .palette import PRESETS
 
 # Render frame 1 (optionally integer-upscaled, nearest-neighbor) and save it.
@@ -126,6 +126,7 @@ def _colors_lua(hex_colors: list[str]) -> str:
 
 def _run_each(files, out_dir, fmt, body_for):
     """Run ``body_for(file, out_path)`` -> (body, out_path) per file, continue on error."""
+    refuse_in_dry_run("a batch export")
     backend = _headless()
     os.makedirs(out_dir, exist_ok=True)
     results = []

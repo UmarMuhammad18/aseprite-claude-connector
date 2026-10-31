@@ -19,7 +19,7 @@ babysitting. Our remote is `UmarMuhammad18/aseprite-claude-connector`.
 Claude ⇄ MCP server (stdio, runs the relay) ⇄ WS :9877 ⇄ Claude Bridge extension in Aseprite
 ```
 
-- **`aseprite_claude_connector/`** — FastMCP server with 142 tools. One module per group in
+- **`aseprite_claude_connector/`** — FastMCP server with 147 tools. One module per group in
   `tools/`, each exposing `register(mcp)`. Tools generate Lua and run it through
   `run()` in `tools/_common.py`.
 - **Two backends, one tool surface** — `live` (default) runs Lua in the open editor
@@ -79,6 +79,8 @@ Ruff isn't in the `dev` extra, so install it separately. Set
 - **Never block inside the bridge.** Interactive tools are two-phase: a start call
   plus a poll call.
 - **Logs go to stderr.** Stdout is JSON-RPC on stdio.
+- **Never ship the user manual.** `aseprite/docs` has no licence; only the MIT API
+  docs in `api_docs/` are bundled. Refresh them with `scripts/update_api_docs.py`.
 - **Keep the sockets on `127.0.0.1`.** `/exec` is equivalent to local code execution.
 - **Don't "fix" the networking details:** `onreceive(messageType, data)`,
   `compression=None` on the relay, the `Timer` heartbeat, and the allowed `ws://`
@@ -115,6 +117,11 @@ Ruff isn't in the `dev` extra, so install it separately. Set
 - **The Mac setup is untested, and on hold by choice.** The extension folder path
   comes from Aseprite's source, but nothing here has run on a Mac.
 - **`setup` run through `uvx` would register a temporary path.** Install with `pip`.
+- **`run_lua` isn't covered by the pixel cap,** and refuses to run in a dry run.
+- **A dry-run report comes back as a tool error,** so that no tool has to handle a
+  result that didn't happen.
+- **A reordered layer counts as changed pixels,** because layers have no id in the
+  API. A big `move_layer` can hit the cap.
 - **Right after a relay handover, calls fail for a few seconds** until the extension
   reconnects.
 
@@ -140,14 +147,14 @@ starts the relay, and Aseprite connects on launch after one access prompt.
 
 On hold by choice: testing the full setup on a Mac.
 
-### 4. Docs search, `describe_sprite`, and safety rails
+### 4. Docs search, `describe_sprite`, and safety rails — must-haves done
 
-- Docs search: let Claude look up Aseprite's scripting API.
-- `describe_sprite`: a single summary of the sprite in one call.
-- Safety rails: a dry-run mode, a cap on how many pixels one call can change, and a
-  single undo step per request so you can always roll back.
+`search_api_docs`, `search_manual`, `describe_sprite`, `set_safety_rails`, and
+`edit_batch` are in. Rollback and one-undo batches were checked in the live editor.
+See "Safety rails" in `docs/ARCHITECTURE.md`. The cool extras in `PLAN.md` haven't
+started.
 
-### 5. Godot export
+### 5. Godot export — next
 
 One-action export to Godot (sprite sheet plus a `SpriteFrames` `.tres` resource with
 animations from tags), to match the Unity export that already exists.

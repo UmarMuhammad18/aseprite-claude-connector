@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from mcp.types import ToolAnnotations
 
-from ._common import run
+from ._common import refuse_in_dry_run, run
 
 
 def register(mcp):
@@ -25,5 +25,7 @@ def register(mcp):
         JSON returns; wrap your own edits in ``app.transaction`` for clean undo.
         The prelude also provides ``editCel(fn)`` and ``findLayer(s, name)``. Set
         ``save=true`` (headless) to persist changes to ``file``. Your code must
-        ``return`` a value."""
+        ``return`` a value. Safety rails don't apply here: the pixel cap isn't
+        enforced, and in a dry run this tool refuses to run."""
+        refuse_in_dry_run("run_lua")
         return run(code, mutates=False, file=file, save=save)

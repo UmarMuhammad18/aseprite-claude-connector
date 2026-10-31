@@ -19,6 +19,17 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
   entries below this one keep the names they shipped with. Install from GitHub;
   this name isn't on PyPI yet.
 
+### Added — smarter help
+
+- **`describe_sprite`** summarizes the sprite in one call: layer tree, frame timing,
+  tags, slices, palette, selection, and what's active.
+- **`search_api_docs`** searches the Lua API reference, bundled with its MIT licence.
+- **`search_manual`** searches the user manual, downloaded to your cache on first use.
+- **`edit_batch`** runs several editing tools as one undo step.
+- **`set_safety_rails`** sets a dry-run mode and the cap on pixels one call can change.
+  The cap is on by default at 250,000 pixels; `ASEPRITE_MCP_MAX_PIXELS` changes it, and
+  0 removes it. An edit that hits a rail rolls back and leaves nothing on the undo stack.
+
 ### Added — canvas vision
 
 - **`look`** returns a frame as an image in the conversation, scaled up with sharp

@@ -140,6 +140,30 @@ read-only calls around the unchanged tool, so the edit stays one undo step, and 
 returns a `CallToolResult` so the tool's structured output survives next to the
 image. If a render fails, the edit's result still comes back, with `preview_error`.
 
+## Safety rails
+
+`build_lua` applies the rails to every mutating body, on both backends. With a cap or
+dry run set, it clones every cel, runs the body inside `app.transaction`, then counts
+changed pixels while the transaction is still open. Raising there makes Aseprite roll
+the transaction back, so a stopped edit leaves nothing on the undo stack and no redo
+entry. Three things follow from that design:
+
+- **Cels are keyed by their place in the layer tree,** because layers have no id in
+  the API. A reordered layer counts as changed.
+- **A rollback can't undo what's outside the sprite.** `run` refuses bodies that save,
+  export, or open and close documents during a dry run, by matching their Lua.
+- **`edit_batch` is the only way to get one Ctrl-Z for several tools.** A transaction
+  can't stay open across bridge calls, since each one has to return to Aseprite's
+  event loop. So capture mode makes `run` raise the step's Lua instead of executing it,
+  and the steps run as one body. Any Python a tool has after its `run` call is skipped.
+
+## Docs search
+
+`docs_search.py` splits Markdown into one section per heading and ranks them with
+BM25. The API docs ship in `api_docs/` with their MIT licence; refresh them with
+`scripts/update_api_docs.py`. The user manual has no licence, so this repo must not
+ship a copy: `search_manual` downloads it to the user's cache on first use.
+
 ## Update awareness (v0.2)
 
 `update_check.py` fetches PyPI's public JSON for this package on a daemon

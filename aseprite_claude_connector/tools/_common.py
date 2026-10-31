@@ -3,13 +3,51 @@
 from __future__ import annotations
 
 import json
+import re
+from dataclasses import dataclass
 
 from ..backends import get_backend
+from ..config import load_config
 from ..lua import build_lua
 
 
 class ToolError(Exception):
     """Raised when Aseprite reports an error; surfaced to the model as isError."""
+
+
+class Captured(Exception):
+    """Raised instead of running a mutating body while ``edit_batch`` collects steps."""
+
+    def __init__(self, body: str):
+        self.body = body
+
+
+@dataclass
+class Rails:
+    """Safety rails for this server process, set with ``set_safety_rails``."""
+
+    dry_run: bool = False
+    max_pixels: int | None = None  # None until first use: the config default
+    capturing: bool = False
+
+    def cap(self) -> int:
+        if self.max_pixels is None:
+            self.max_pixels = load_config().max_pixels
+        return self.max_pixels
+
+
+rails = Rails()
+
+# Effects a rolled-back transaction can't undo: files, and which documents are open.
+_OUTSIDE_THE_SPRITE = re.compile(
+    r"saveAs|saveCopyAs|SaveFile|ExportSpriteSheet|ExportTileset|app\.open\("
+    r"|\bs:close\(\)|Sprite\(W|app\.command\.(Undo|Redo)"
+)
+
+
+def refuse_in_dry_run(what: str = "this tool") -> None:
+    if rails.dry_run:
+        raise ToolError(f"dry run: {what} can't be rehearsed, so it was not run.")
 
 
 def run(
@@ -26,9 +64,21 @@ def run(
     wrapped in ``app.transaction`` (one undo step). For the headless backend,
     ``file`` is the target sprite and ``save`` defaults to ``mutates``.
     """
+    if _OUTSIDE_THE_SPRITE.search(body):
+        if rails.capturing:
+            raise ToolError("this tool does more than edit the sprite, so it can't be batched")
+        refuse_in_dry_run()
+    if rails.capturing and mutates:
+        raise Captured(body)
     backend = get_backend()
-    lua = build_lua(body, mutates=mutates, undo_label=undo_label)
-    do_save = mutates if save is None else save
+    lua = build_lua(
+        body,
+        mutates=mutates,
+        undo_label=undo_label,
+        dry_run=rails.dry_run,
+        max_pixels=rails.cap(),
+    )
+    do_save = (mutates if save is None else save) and not rails.dry_run
     res = backend.exec(lua, file=file, save=do_save)
     if not res.ok:
         raise ToolError(res.error or "unknown Aseprite error")

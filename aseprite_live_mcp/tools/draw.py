@@ -10,6 +10,7 @@ from mcp.types import ToolAnnotations
 
 from ..lua import lua_locals
 from ._common import ToolError, parse_color, run
+from .look import previewable
 
 _RECT = """
 return editCel(function(img, s)
@@ -286,6 +287,7 @@ def _points_lua(points) -> str:
 
 def register(mcp):
     @mcp.tool(annotations=ToolAnnotations(title="Draw pixels"))
+    @previewable
     def draw_pixels(pixels: list, file: str | None = None) -> dict:
         """Set individual pixels: ``pixels`` is a list of
         ``{"x": int, "y": int, "color": "#rrggbb[aa]"}``. The precision tool for
@@ -299,6 +301,7 @@ def register(mcp):
         return run(body, mutates=True, undo_label="Draw pixels", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Draw polyline"))
+    @previewable
     def draw_polyline(
         points: list, color: str, close: bool = False, file: str | None = None
     ) -> dict:
@@ -316,6 +319,7 @@ def register(mcp):
         return run(body, mutates=True, undo_label="Draw polyline", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Draw rectangle"))
+    @previewable
     def draw_rectangle(
         x: int,
         y: int,
@@ -338,6 +342,7 @@ def register(mcp):
         return run(body, mutates=True, undo_label="Draw rectangle", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Draw line"))
+    @previewable
     def draw_line(x1: int, y1: int, x2: int, y2: int, color: str, file: str | None = None) -> dict:
         """Draw a 1px line from (x1,y1) to (x2,y2). One undo step. Headless: pass ``file``."""
         r, g, b, a = parse_color(color)
@@ -347,6 +352,7 @@ def register(mcp):
         return run(body, mutates=True, undo_label="Draw line", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Draw circle"))
+    @previewable
     def draw_circle(
         center_x: int,
         center_y: int,
@@ -367,6 +373,7 @@ def register(mcp):
         return run(body, mutates=True, undo_label="Draw circle", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Flood fill"))
+    @previewable
     def fill_area(x: int, y: int, color: str, file: str | None = None) -> dict:
         """Flood-fill the contiguous same-color region at (x, y). Most reliable on
         RGB sprites. One undo step. Headless: pass ``file``."""
@@ -375,6 +382,7 @@ def register(mcp):
         return run(body, mutates=True, undo_label="Fill", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Draw ellipse"))
+    @previewable
     def draw_ellipse(
         center_x: int,
         center_y: int,
@@ -404,6 +412,7 @@ def register(mcp):
         return run(body, mutates=True, undo_label="Draw ellipse", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Draw gradient"))
+    @previewable
     def draw_gradient(
         x: int,
         y: int,
@@ -446,6 +455,7 @@ def register(mcp):
         return run(body, mutates=True, undo_label="Draw gradient", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Apply dither"))
+    @previewable
     def apply_dither(
         x: int,
         y: int,
@@ -484,6 +494,7 @@ def register(mcp):
         return run(body, mutates=True, undo_label="Apply dither", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Add outline"))
+    @previewable
     def add_outline(color: str, diagonal: bool = False, file: str | None = None) -> dict:
         """Add a 1px outline in ``color`` around the opaque pixels of the active cel —
         readability against busy backgrounds. ``diagonal`` true also outlines

@@ -22,6 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import websockets  # pip install websockets
 
 WS_PORT, HTTP_PORT = 9877, 9878
+MAX_FRAME = 64 * 1024 * 1024
 
 loop = None  # asyncio loop (set in main)
 client = None  # current Aseprite websocket connection
@@ -132,7 +133,10 @@ async def main():
     print(f"[relay] HTTP on 127.0.0.1:{HTTP_PORT} (POST /exec, GET /status)", flush=True)
     # compression=None: refuse permessage-deflate outright - IXWebSocket (Aseprite's
     # client) and python-websockets disagree on it and frames silently vanish.
-    async with websockets.serve(ws_handler, "127.0.0.1", WS_PORT, compression=None):
+    # max_size: pixel data for the look tools can exceed the library's 1 MiB default.
+    async with websockets.serve(
+        ws_handler, "127.0.0.1", WS_PORT, compression=None, max_size=MAX_FRAME
+    ):
         print(
             f"[relay] WS on 127.0.0.1:{WS_PORT} - waiting for Aseprite (File > Scripts > claude-bridge)",
             flush=True,

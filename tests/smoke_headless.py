@@ -785,6 +785,19 @@ async def main() -> int:
     )
     if not os.path.isfile(onion_png):
         failures.append(("render_onion_composite", "no PNG written"))
+    for tool, args in (
+        ("look", {"file": v2}),
+        ("look", {"x": 0, "y": 0, "width": 4, "height": 4, "background": "#ffffff", "file": v2}),
+        ("look_animation", {"file": v2}),
+        ("look_onion", {"frame": 2, "prev": 1, "next": 1, "file": v2}),
+        (
+            "draw_line",
+            {"x1": 0, "y1": 0, "x2": 3, "y2": 3, "color": "#ff0000", "preview": True, "file": v2},
+        ),
+    ):
+        res = await step(tool, args)
+        if res is not None and "image" not in repr(res):
+            failures.append((tool, "no image returned"))
     await step("reverse_frames", {"file": v2})
     await step("set_onion_skin", {"active": True, "prev_frames": 2, "next_frames": 1, "file": v2})
 

@@ -97,6 +97,28 @@ Two empirical facts the implementation encodes:
 - `Dialog{...}:show{wait=false}` keeps the dialog open across execs; the button
   callbacks write the choice into `__almcp` for the poll tool.
 
+## Canvas vision
+
+`tools/look.py` returns pictures to the model as MCP image content. Lua renders a
+frame and returns its raw pixels as base64 over the ordinary result channel;
+`raster.py` (stdlib only) zooms, adds the backdrop, lays out panels, diffs, and
+encodes the PNG. Two facts shaped this:
+
+- **Never write a temp file from Lua in these tools.** In the live editor,
+  `Image:saveAs` raises Aseprite's script-security prompt unless the script has full
+  trust. The prompt is modal, so the call hangs until someone answers it, and
+  commands sent meanwhile stack more prompts on top.
+- **The relay's `max_size` must exceed the largest picture payload.** Python's
+  websockets defaults to 1 MiB and drops the connection above that.
+
+Only canvases too big for the picture shrink in Lua, which keeps payloads small;
+zooming up costs nothing on the wire because it happens in Python.
+
+`previewable` wraps a drawing tool. It renders before and after in separate
+read-only calls around the unchanged tool, so the edit stays one undo step, and it
+returns a `CallToolResult` so the tool's structured output survives next to the
+image. If a render fails, the edit's result still comes back, with `preview_error`.
+
 ## Update awareness (v0.2)
 
 `update_check.py` fetches PyPI's public JSON for this package on a daemon

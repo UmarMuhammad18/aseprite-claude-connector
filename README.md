@@ -6,7 +6,7 @@
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-139-orange)
+![tools](https://img.shields.io/badge/tools-142-orange)
 
 **Let an AI agent draw in your *live* Aseprite editor — every edit one named undo — with a Unity-first, game-dev toolset.**
 
@@ -166,6 +166,8 @@ each one. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it works.
 - *"Pop a dialog in my editor: approve or redo. Then wait for me to click the anchor point."*
 - *"Watch the sprite while I touch it up; when I stop, re-run the QA sweep."*
 - *"Diff frames 3 and 4 — did the arm actually move?"*
+- *"Look at the walk cycle and tell me which frame pops."*
+- *"Draw the outline with a preview, and check it before you carry on."*
 
 ## Where this sits (honest positioning)
 
@@ -206,7 +208,7 @@ is an HTTP GET of PyPI's public JSON; nothing about you, your machine, or your
 art is sent.
 
 <!-- TOOLS:START -->
-## Tools (139)
+## Tools (142)
 
 Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), and — when it mutates — wrapped in a **named** `app.transaction`, so each edit is exactly one labeled undo step in the editor.
 
@@ -219,6 +221,14 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 - **`set_sprite_metadata`** — Attach typed key/value metadata to the sprite (Aseprite's Properties system — stored in the .aseprite file itself).
 - **`get_sprite_metadata`** — Read the sprite's typed key/value metadata (Properties).
 - **`get_pixels`** — Read a composited pixel region as a grid of #rrggbbaa strings — the AI feedback loop for 'what does the canvas look like now'.
+
+</details>
+<details>
+<summary><b>Canvas vision</b> (3)</summary>
+
+- **`look`** — See the canvas: returns a frame as an image, scaled up with sharp pixels.
+- **`look_animation`** — See an animation: returns a tag or frame range as one image, frames left to right and top to bottom.
+- **`look_onion`** — See motion: returns ``frame`` as an image with earlier frames ghosted in red and later frames in blue, so the whole arc shows at once.
 
 </details>
 <details>

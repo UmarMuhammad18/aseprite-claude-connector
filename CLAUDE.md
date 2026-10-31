@@ -48,8 +48,8 @@ Install the bridge once by copying `aseprite_client/claude-bridge.lua` to
 `%APPDATA%\Aseprite\scripts\`. Re-copy it after every edit: Aseprite runs the
 installed copy, not the one in this repo.
 
-In Aseprite, open a sprite and run **File > Scripts > claude-bridge**, granting full
-trust. The Status line must read `connected to Claude`; `connecting...` and
+In Aseprite, open a sprite and run **File > Scripts > claude-bridge**, allowing access
+when prompted. The Status line must read `connected to Claude`; `connecting...` and
 `bridge started - waiting for Claude` both mean it isn't connected yet. To confirm:
 
 ```bash
@@ -91,6 +91,10 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   `compression=None` on the relay, and the `Timer` heartbeat are all deliberate.
 - **Test edits on a new layer, and never save them to the user's art.** Saving to a
   `.png` flattens it.
+- **Check visual work with `look`, not just tool results.** A tool can report success
+  while the picture is wrong.
+- **Never write files from Lua in the look tools.** It raises a modal security prompt
+  in the live editor. See "Canvas vision" in `docs/ARCHITECTURE.md`.
 
 ## Known issues
 
@@ -103,6 +107,12 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   auto-detected paths, so it skips on non-standard installs.
 - **The relay keeps a stale `info`** in `/status` after a disconnect. Trust
   `connected`, not `info`.
+- **`set_color_mode` to `indexed` can blank a sprite** when the palette has one
+  entry, which is the default for a new sprite. Apply a palette first.
+- **`tween_frames` does nothing for frames made with the drawing tools**, because
+  they leave every cel at (0, 0). Set the end cel with `set_cel_position` first.
+- **Other tools that write files from Lua can hit the security prompt live**, such as
+  the exports. So far it has only been seen with `Image:saveAs`.
 
 ## Roadmap
 
@@ -114,10 +124,12 @@ scope, and headless mode finds Aseprite on its own.
 
 Not yet scheduled: renaming the package, CLI, and server to aseprite-claude-connector.
 
-### 2. `look` tool
+### 2. Claude's eyes — done
 
-Return the canvas to Claude as an actual image, so it can see its work instead of
-reading `get_pixels` hex grids.
+`look`, `look_animation`, `look_onion`, and a `preview` flag on the 10 drawing tools
+in `draw.py` return pictures straight to Claude. Finish line met in the live editor:
+`look_animation` exposed a broken tween that every tool result had reported as a
+success.
 
 ### 3. One-step setup
 

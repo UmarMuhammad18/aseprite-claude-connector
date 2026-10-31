@@ -142,7 +142,7 @@ return J({ frame_a = FA, frame_b = FB, changed_pixels = changed, total_pixels = 
   changed_ratio = changed / total, bbox = bbox, identical = (changed == 0) })
 """
 
-_ONION = """
+_ONION_RENDER = """
 local s = app.activeSprite
 if not s then error("no active sprite") end
 if s.width * s.height > 262144 then error("sprite too large for onion composite (cap 512x512)") end
@@ -192,9 +192,15 @@ for y = 0, s.height - 1 do
     if pc.rgbaA(v) > 0 then out:drawPixel(x, y, v) end
   end
 end
+"""
+
+_ONION = (
+    _ONION_RENDER
+    + """
 out:saveAs(OUT)
 return J({ png = OUT, frame = FRAME, ghosts_prev = gp, ghosts_next = gn })
 """
+)
 
 
 def register(mcp):
@@ -209,8 +215,10 @@ def register(mcp):
     ) -> dict:
         """Insert ``count`` in-between frames between ``from_frame`` and ``to_frame``
         that interpolate the cel's position (a motion tween of the start cel's
-        image). ``easing``: linear, ease_in, ease_out, or smoothstep.
-        Headless: pass ``file``."""
+        image). ``easing``: linear, ease_in, ease_out, or smoothstep. The drawing
+        tools leave every cel at (0, 0), so two frames drawn with them have nothing
+        to interpolate: set the end cel with ``set_cel_position`` first, and check the
+        result with ``look_animation``. Headless: pass ``file``."""
         if count < 1:
             raise ToolError("count must be >= 1")
         if easing not in ("linear", "ease_in", "ease_out", "smoothstep"):

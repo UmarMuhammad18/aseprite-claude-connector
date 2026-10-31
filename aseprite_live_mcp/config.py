@@ -16,6 +16,7 @@ from dataclasses import dataclass
 _DEFAULT_ASEPRITE_PATHS = [
     r"C:\Program Files (x86)\Steam\steamapps\common\Aseprite\Aseprite.exe",
     r"C:\Program Files\Aseprite\Aseprite.exe",
+    r"C:\Program Files (x86)\Aseprite\Aseprite.exe",
     "/Applications/Aseprite.app/Contents/MacOS/aseprite",
     "/usr/bin/aseprite",
     "/usr/local/bin/aseprite",

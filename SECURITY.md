@@ -35,6 +35,13 @@ deliberately simple and explicit.
   it's an HTTP GET of a public document, cached locally, disabled entirely with
   `ASEPRITE_MCP_NO_UPDATE_CHECK=1` (and auto-disabled when `CI` is set). It is
   the only network request this server ever makes on its own.
+- **`search_manual` downloads Aseprite's manual when you use it.** The first search
+  fetches the archive of `github.com/aseprite/docs` into your cache, and again
+  every 30 days. Only that tool call triggers it, and nothing is sent. The archive
+  is read in memory for its Markdown, never unpacked to disk.
+- **Safety rails limit mistakes, not attackers.** The pixel cap and dry run cover
+  the typed tools. `run_lua` isn't capped, and anything that can reach `/exec`
+  sends raw Lua straight past the rails.
 
 ## Recommendations
 

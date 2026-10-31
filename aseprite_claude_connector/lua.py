@@ -113,6 +113,73 @@ local function editCel(fn)
 end
 """
 
+# Safety rails: compare every cel before and after an edit, hidden layers included.
+# Layers have no id in the API, so a cel is keyed by its place in the layer tree; a
+# reordered layer therefore counts as changed, which errs on the safe side.
+_RAILS_LUA = r"""
+local function __snapshot(s)
+  local out = {}
+  local function walk(layers, prefix)
+    for i, l in ipairs(layers) do
+      local key = prefix .. i .. "/"
+      if l.isGroup then
+        walk(l.layers, key)
+      else
+        for _, c in ipairs(l.cels) do
+          out[key .. c.frameNumber] = {
+            image = c.image:clone(), x = c.position.x, y = c.position.y,
+          }
+        end
+      end
+    end
+  end
+  walk(s.layers, "")
+  return out
+end
+local function __pixelAt(e, x, y)
+  if not e then return 0 end
+  local px, py = x - e.x, y - e.y
+  if px < 0 or py < 0 or px >= e.image.width or py >= e.image.height then return 0 end
+  return e.image:getPixel(px, py)
+end
+local function __celChanges(a, b, limit)
+  if a and b and a.x == b.x and a.y == b.y and a.image.width == b.image.width
+    and a.image.height == b.image.height and a.image.colorMode == b.image.colorMode
+    and a.image:isEqual(b.image) then
+    return 0
+  end
+  local x0, y0, x1, y1 = math.huge, math.huge, -math.huge, -math.huge
+  for _, e in ipairs({ a or b, b or a }) do
+    x0, y0 = math.min(x0, e.x), math.min(y0, e.y)
+    x1, y1 = math.max(x1, e.x + e.image.width), math.max(y1, e.y + e.image.height)
+  end
+  local n = 0
+  for y = y0, y1 - 1 do
+    for x = x0, x1 - 1 do
+      if __pixelAt(a, x, y) ~= __pixelAt(b, x, y) then
+        n = n + 1
+        if n > limit then return n end
+      end
+    end
+  end
+  return n
+end
+local function __countChanges(before, after, limit)
+  local n = 0
+  for key, a in pairs(before) do
+    n = n + __celChanges(a, after[key], limit - n)
+    if n > limit then return n end
+  end
+  for key, b in pairs(after) do
+    if not before[key] then
+      n = n + __celChanges(nil, b, limit - n)
+      if n > limit then return n end
+    end
+  end
+  return n
+end
+"""
+
 
 def lua_str(s: str) -> str:
     """Render a Python string as a safe double-quoted Lua string literal."""
@@ -144,11 +211,69 @@ def lua_locals(**kw) -> str:
     return "\n".join(lines) + ("\n" if lines else "")
 
 
-def build_lua(body: str, *, mutates: bool = False, undo_label: str = "AI edit") -> str:
+def _build_railed(body: str, undo_label: str, dry_run: bool, max_pixels: int) -> str:
+    """Measure the edit inside its transaction. Raising from there makes Aseprite roll
+    the transaction back, so a stopped edit leaves nothing on the undo stack."""
+    rails = lua_locals(
+        __DRY=dry_run, __CAP=max_pixels, __LABEL=undo_label, __MSG_DRY=_DRY_MSG, __MSG_CAP=_CAP_MSG
+    )
+    return (
+        LUA_PRELUDE
+        + _RAILS_LUA
+        + rails
+        + """
+local __s = app.activeSprite
+if not __s then error("no active sprite (headless: pass file=)") end
+local __limit = (__DRY or __CAP <= 0) and math.huge or __CAP
+local __before = __snapshot(__s)
+local __layers, __frames = #__s.layers, #__s.frames
+local __r
+local __ok, __err = pcall(function()
+  app.transaction(__LABEL, function()
+    __r = (function()
+"""
+        + body
+        + """
+    end)()
+    local n = __countChanges(__before, __snapshot(__s), __limit)
+    if __DRY then
+      error(string.format(__MSG_DRY, n, __layers, #__s.layers, __frames, #__s.frames), 0)
+    elseif n > __limit then
+      error(string.format(__MSG_CAP, __CAP), 0)
+    end
+  end)
+end)
+if not __ok then error(__err, 0) end
+return __r
+"""
+    )
+
+
+_DRY_MSG = (
+    "dry run: this edit would change %d pixels (layers %d -> %d, frames %d -> %d). "
+    "Nothing was changed."
+)
+_CAP_MSG = (
+    "refused: this edit would change more than %d pixels, so it was rolled back. "
+    "Raise the cap with set_safety_rails if the change is intended."
+)
+
+
+def build_lua(
+    body: str,
+    *,
+    mutates: bool = False,
+    undo_label: str = "AI edit",
+    dry_run: bool = False,
+    max_pixels: int = 0,
+) -> str:
     """Wrap a tool body (which must ``return`` a value) into a full Lua chunk.
 
     Mutating bodies run inside ``app.transaction`` so the edit is one undo step.
+    ``dry_run`` and ``max_pixels`` (0 for no cap) add the safety rails.
     """
+    if mutates and (dry_run or max_pixels > 0):
+        return _build_railed(body, undo_label, dry_run, max_pixels)
     if mutates:
         return (
             LUA_PRELUDE

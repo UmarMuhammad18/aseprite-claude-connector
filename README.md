@@ -7,7 +7,7 @@ Kyle Ocheltree / OakTree Games.
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-142-orange)
+![tools](https://img.shields.io/badge/tools-147-orange)
 
 **Let an AI agent draw in your *live* Aseprite editor — every edit one named undo — with a Unity-first, game-dev toolset.**
 
@@ -202,15 +202,16 @@ is an HTTP GET of PyPI's public JSON; nothing about you, your machine, or your
 art is sent.
 
 <!-- TOOLS:START -->
-## Tools (142)
+## Tools (147)
 
 Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), and — when it mutates — wrapped in a **named** `app.transaction`, so each edit is exactly one labeled undo step in the editor.
 
 <details>
-<summary><b>Inspect & metadata</b> (6)</summary>
+<summary><b>Inspect & metadata</b> (7)</summary>
 
 - **`status`** — Report backend health plus this server's version and whether a newer release exists.
 - **`get_sprite_info`** — Get the active sprite's size, color mode, and layer/frame/tag lists.
+- **`describe_sprite`** — Summarize the active sprite in one call: size, color mode, the layer tree with visibility and blend modes, frame timing, tags, slices, palette, the selection, and what's active.
 - **`get_pixel`** — Read one composited pixel (all layers) at (x, y) as #rrggbbaa.
 - **`set_sprite_metadata`** — Attach typed key/value metadata to the sprite (Aseprite's Properties system — stored in the .aseprite file itself).
 - **`get_sprite_metadata`** — Read the sprite's typed key/value metadata (Properties).

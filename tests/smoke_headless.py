@@ -785,6 +785,25 @@ async def main() -> int:
     )
     if not os.path.isfile(onion_png):
         failures.append(("render_onion_composite", "no PNG written"))
+    # --- phase 4: docs, summary, rails ---
+    await step("describe_sprite", {"file": v2})
+    await step("search_api_docs", {"query": "Image:drawImage"})
+    await step("search_manual", {"query": "onion skinning"})
+    await step("set_safety_rails", {"max_changed_pixels": 100000})
+    await step(
+        "edit_batch",
+        {
+            "steps": [
+                {"tool": "add_layer", "args": {"name": "batched"}},
+                {
+                    "tool": "draw_line",
+                    "args": {"x1": 0, "y1": 0, "x2": 3, "y2": 3, "color": "#ff0000"},
+                },
+            ],
+            "label": "Smoke batch",
+            "file": v2,
+        },
+    )
     for tool, args in (
         ("look", {"file": v2}),
         ("look", {"x": 0, "y": 0, "width": 4, "height": 4, "background": "#ffffff", "file": v2}),

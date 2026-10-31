@@ -26,6 +26,93 @@ return J({
 })
 """
 
+# Everything an agent would otherwise piece together from several calls. Layers list
+# top first, like the timeline.
+_DESCRIBE = """
+local s = app.activeSprite
+if not s then error("no active sprite") end
+local function enumName(enum, value)
+  for k, v in pairs(enum) do if v == value then return k end end
+  return tostring(value)
+end
+local mode = "indexed"
+if s.colorMode == ColorMode.RGB then mode = "rgb"
+elseif s.colorMode == ColorMode.GRAY then mode = "gray" end
+
+local layers = {}
+local function walk(list, depth)
+  for i = #list, 1, -1 do
+    local l = list[i]
+    local kind = "image"
+    if l.isGroup then kind = "group"
+    elseif l.isTilemap then kind = "tilemap"
+    elseif l.isReference then kind = "reference"
+    elseif l.isBackground then kind = "background" end
+    local entry = { name = l.name, depth = depth, kind = kind, visible = l.isVisible }
+    if not l.isEditable then entry.locked = true end
+    if l.isGroup then
+      layers[#layers + 1] = entry
+      walk(l.layers, depth + 1)
+    else
+      entry.opacity = l.opacity
+      -- NORMAL shares its value with SRC_OVER, so a plain lookup picks either.
+      entry.blend = l.blendMode == BlendMode.NORMAL and "normal"
+        or enumName(BlendMode, l.blendMode):lower()
+      entry.cels = #l.cels
+      layers[#layers + 1] = entry
+    end
+  end
+end
+walk(s.layers, 0)
+
+local durations, total = {}, 0
+for i, f in ipairs(s.frames) do
+  local ms = math.floor(f.duration * 1000 + 0.5)
+  total = total + ms
+  if i <= MAX_ITEMS then durations[i] = ms end
+end
+
+local tags = {}
+for i, t in ipairs(s.tags) do
+  tags[i] = {
+    name = t.name, from = t.fromFrame.frameNumber, to = t.toFrame.frameNumber,
+    direction = enumName(AniDir, t.aniDir):lower(), repeats = t.repeats,
+  }
+end
+
+local slices = {}
+for i, sl in ipairs(s.slices) do
+  local b = sl.bounds
+  slices[i] = { name = sl.name, x = b.x, y = b.y, width = b.width, height = b.height }
+end
+
+local pal = s.palettes[1]
+local colors = {}
+for i = 0, math.min(#pal, MAX_ITEMS) - 1 do
+  local c = pal:getColor(i)
+  colors[i + 1] = string.format("#%02x%02x%02x%02x", c.red, c.green, c.blue, c.alpha)
+end
+
+local selection = { empty = s.selection.isEmpty }
+if not s.selection.isEmpty then
+  local b = s.selection.bounds
+  selection = { empty = false, x = b.x, y = b.y, width = b.width, height = b.height }
+end
+
+local active = {}
+if app.activeLayer then active.layer = app.activeLayer.name end
+if app.activeFrame then active.frame = app.activeFrame.frameNumber end
+if app.activeTag then active.tag = app.activeTag.name end
+
+return J({
+  filename = s.filename, modified = s.isModified,
+  width = s.width, height = s.height, colorMode = mode,
+  layers = layers, tags = tags, slices = slices, selection = selection, active = active,
+  frames = { count = #s.frames, total_ms = total, durations_ms = durations },
+  palette = { count = #pal, colors = colors },
+})
+"""
+
 _GET_PIXEL = """
 local s = app.activeSprite
 if not s then error("no active sprite") end
@@ -100,6 +187,14 @@ def register(mcp):
         if "error" in res:
             raise ToolError(str(res["error"]))
         return res
+
+    @mcp.tool(annotations=ToolAnnotations(title="Describe sprite", readOnlyHint=True))
+    def describe_sprite(file: str | None = None) -> dict:
+        """Summarize the active sprite in one call: size, color mode, the layer tree
+        with visibility and blend modes, frame timing, tags, slices, palette, the
+        selection, and what's active. Frame durations and palette colors stop at 64
+        entries; ``count`` always gives the full number."""
+        return run(lua_locals(MAX_ITEMS=64) + _DESCRIBE, file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Get pixel", readOnlyHint=True))
     def get_pixel(x: int, y: int, file: str | None = None) -> dict:

@@ -19,6 +19,7 @@ from .tools import (
     canvas,
     cels,
     color,
+    docs,
     draw,
     editor,
     export,
@@ -33,6 +34,7 @@ from .tools import (
     palette,
     prompts,
     resources,
+    safety,
     selection,
     session,
     shading,
@@ -49,13 +51,17 @@ Drive Aseprite from an AI agent. Tools operate on the *active sprite*: the live
 editor's active document (live backend) or a file you pass via `file` (headless
 backend). Mutating tools are one undo step each. Start with `status`, then
 `get_sprite_info`. Colors are #rrggbb or #rrggbbaa. Use `look` to see the canvas
-as an image, and check your work with it rather than editing blind.
+as an image, and check your work with it rather than editing blind. Use
+`describe_sprite` for a one-call summary, `search_api_docs` before writing Lua, and
+`edit_batch` to make a multi-step change one undo step.
 """
 
 # Tool modules (each exposes register(mcp)).
 _TOOL_MODULES = (
     inspect,
     look,
+    docs,
+    safety,
     session,
     canvas,
     layers,

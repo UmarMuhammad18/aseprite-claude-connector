@@ -115,8 +115,8 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   the exports. The bridge runs received code under the chunk name `claude`, which
   Aseprite trusts separately from the extension. Only `Image:saveAs` has been seen
   doing this so far.
-- **The Mac setup is untested.** The extension folder path comes from Aseprite's
-  source, but nothing here has run on a Mac.
+- **The Mac setup is untested, and on hold by choice.** The extension folder path
+  comes from Aseprite's source, but nothing here has run on a Mac.
 - **`setup` run through `uvx` would register a temporary path.** Install with `pip`.
 - **Right after a relay handover, calls fail for a few seconds** until the extension
   reconnects.
@@ -143,7 +143,7 @@ success.
 `aseprite-live-mcp setup` registers the server and installs the extension. The server
 starts the relay, and Aseprite connects on launch after one access prompt.
 
-Remaining: test the full setup on a Mac.
+On hold by choice: testing the full setup on a Mac.
 
 ### 4. Docs search, `describe_sprite`, and safety rails
 

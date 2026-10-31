@@ -25,6 +25,7 @@ from .tools import (
     export,
     filters,
     frames,
+    game_export,
     godot_export,
     inspect,
     isometric,
@@ -56,6 +57,7 @@ as an image, and check your work with it rather than editing blind. Use
 `describe_sprite` for a one-call summary, `search_api_docs` before writing Lua, and
 `edit_batch` to make a multi-step change one undo step. `select_frame` and
 `select_layer` choose where edits land.
+Use `export_to_game` to put art straight into a Godot or Unity project.
 """
 
 # Tool modules (each exposes register(mcp)).
@@ -85,6 +87,7 @@ _TOOL_MODULES = (
     export,
     unity_export,
     godot_export,
+    game_export,
     artqa,
     batch,
     editor,

@@ -8,10 +8,14 @@ Operates on the editor's active document; ``file``/``save`` are ignored here.
 from __future__ import annotations
 
 import json
+import time
 import urllib.error
 import urllib.request
 
 from .base import ExecResult
+
+# The extension redials within 5 seconds of losing the relay.
+HANDOVER_WAIT = 7.0
 
 
 class LiveBackend:
@@ -41,6 +45,17 @@ class LiveBackend:
         with urllib.request.urlopen(req, timeout=self.timeout + 15) as r:
             return json.loads(r.read().decode("utf-8"))
 
+    def _post_after_handover(self, lua: str) -> dict:
+        """Post to a relay this call just started, giving the extension time to find
+        it. Nothing has run while the answer is "not connected", so retrying is safe."""
+        deadline = time.monotonic() + HANDOVER_WAIT
+        while True:
+            payload = self._post(lua)
+            waiting = str(payload.get("error", "")).startswith("Aseprite isn't connected")
+            if not waiting or time.monotonic() >= deadline:
+                return payload
+            time.sleep(0.25)
+
     def exec(self, lua: str, *, file: str | None = None, save: bool = False) -> ExecResult:
         try:
             try:
@@ -48,7 +63,7 @@ class LiveBackend:
             except urllib.error.URLError as e:
                 if not self._revive_relay(e):
                     raise
-                payload = self._post(lua)
+                payload = self._post_after_handover(lua)
             return ExecResult(
                 ok=bool(payload.get("ok")),
                 result=payload.get("result") or "",

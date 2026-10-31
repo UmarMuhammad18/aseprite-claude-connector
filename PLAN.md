@@ -12,7 +12,7 @@ What it lacks is what makes the Blender connector feel good: Claude can't actual
 
 ## Project details and status
 
-Phases 1 to 4 are merged into `main`, and **phase 5: Godot export** is built but hasn't been opened in real Godot yet. On Umar's Windows PC, Claude can see the canvas, look up Aseprite's docs, and work behind safety rails, and setup is one command plus one permission click in Aseprite. Mac testing is on hold by choice, so nothing has run on a Mac yet.
+Phases 1 to 4 are merged into `main`. **Phase 5: Godot export** and **phase 6: export to your game** are built, but nothing has been opened in a real engine yet. On Umar's Windows PC, Claude can see the canvas, look up Aseprite's docs, and work behind safety rails, and setup is one command plus one permission click in Aseprite. Mac testing is on hold by choice, so nothing has run on a Mac yet.
 
 | | |
 | --- | --- |
@@ -89,6 +89,7 @@ These are what it takes to beat the Blender connector. The first two matter most
 - [x] **Better state reading.** A `describe_sprite` tool giving one compact summary: size, colour mode, layers, frames, tags, slices, palette and what's selected.
 - [x] **Safety rails.** A dry-run mode, a cap on how many pixels one call can change (250,000 by default), and `edit_batch`, which makes several tools one undo step. The server can't see where a request starts or ends, so Claude has to choose `edit_batch`. `run_lua` isn't capped.
 - [x] **Godot export.** `export_godot` writes a sprite sheet plus a `SpriteFrames` `.tres` resource with animations from tags, to match the Unity export. Still needs opening in real Godot.
+- [x] **Export to your game.** File → Export → Export to Game... in Aseprite, or `export_to_game` through Claude, puts art in the project's sprites folder, ready to select in Godot or Unity. Still needs opening in real engines.
 - [ ] **Works on your OS.** Test the full live setup on Windows and Mac, with standalone Aseprite. Windows is done; Mac is on hold.
 
 ## Cool to have
@@ -131,7 +132,7 @@ Nice extras once the must-haves work. Roughly ordered by how much they'd help da
 Claude (desktop app or Claude Code)
    |  tool calls  ↓        ↑  images back
 Our MCP server (Python)
-   ├─ Typed tools: 150, including look tools
+   ├─ Typed tools: 151, including look tools
    ├─ Relay, auto-started: WebSocket on this computer
    │     └─ live → Aseprite (open), via bridge extension, one undo per edit
    ├─ Docs search: Lua API and user manual
@@ -151,6 +152,7 @@ Each phase only starts once the one before passes its finish line. The Mac tests
 | 3. Easy setup | Auto-start relay, Aseprite extension, Windows and Mac tests | Install takes one step | Done on Windows; Mac on hold |
 | 4. Smarter help | Docs search, `describe_sprite`, safety rails, then the cool extras | It beats the Blender connector for sprite work | Must-haves done; cool extras not started |
 | 5. Godot export | One-action sprite sheet plus `SpriteFrames` `.tres`, with animations from tags | A sprite exported in one action plays its tagged animations in Godot | Built; needs checking in Godot |
+| 6. Export to your game | One Export button plus `export_to_game`, for Godot, Unity or any folder | Art exported from Aseprite can be selected straight away in the engine | Built; needs checking in Godot and Unity |
 
 ## Limits, risks and open questions
 
@@ -165,7 +167,7 @@ Each phase only starts once the one before passes its finish line. The Mac tests
 - The original author may change direction. Keep the fork close to theirs and offer improvements back upstream where they fit.
 - Aseprite updates can change the Lua API. Pin a tested version and test on each new release.
 - Live edits run real code in the editor. Keep the Pause toggle and undo-per-request, and never auto-save over the user's files.
-- The relay refuses browsers, but any other program on the computer can still reach it. It has no password or token.
+- The relay refuses browsers, but any other program on the computer can still reach it. It has no password, because that password would sit in a file those same programs can read.
 - One undo per request depends on Claude using `edit_batch`. Separate tool calls are still one undo each.
 
 **Decisions and open questions**

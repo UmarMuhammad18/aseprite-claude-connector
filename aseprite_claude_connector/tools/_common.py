@@ -58,13 +58,15 @@ def run(
     file: str | None = None,
     save: bool | None = None,
     batchable: bool = False,
+    capped: bool = True,
 ):
     """Compose + execute a Lua tool body and return its parsed result.
 
     ``body`` must ``return`` a value (usually ``J({...})``). Mutating bodies are
     wrapped in ``app.transaction`` (one undo step). For the headless backend,
     ``file`` is the target sprite and ``save`` defaults to ``mutates``. ``batchable``
-    lets a tool that edits nothing still take part in ``edit_batch``.
+    lets a tool that edits nothing still take part in ``edit_batch``. ``capped=False``
+    skips the pixel cap for an edit that can't lose pixels.
     """
     if _OUTSIDE_THE_SPRITE.search(body):
         if rails.capturing:
@@ -78,7 +80,7 @@ def run(
         mutates=mutates,
         undo_label=undo_label,
         dry_run=rails.dry_run,
-        max_pixels=rails.cap(),
+        max_pixels=rails.cap() if capped else 0,
     )
     do_save = (mutates if save is None else save) and not rails.dry_run
     res = backend.exec(lua, file=file, save=do_save)

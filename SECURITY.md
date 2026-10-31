@@ -40,8 +40,13 @@ deliberately simple and explicit.
   every 30 days. Only that tool call triggers it, and nothing is sent. The archive
   is read in memory for its Markdown, never unpacked to disk.
 - **Safety rails limit mistakes, not attackers.** The pixel cap and dry run cover
-  the typed tools. `run_lua` isn't capped, and anything that can reach `/exec`
-  sends raw Lua straight past the rails.
+  the typed tools, and `run_lua` with `edit=true`. `run_lua` without it isn't capped,
+  and anything that can reach `/exec` sends raw Lua straight past the rails.
+- **The relay has no password, on purpose.** A secret would have to sit in a file any
+  program running as you can read, so it wouldn't stop the programs that can already
+  reach the relay. Browsers and other machines are what the checks above keep out.
+- **Export to Game writes files from the extension.** The first export may raise
+  Aseprite's permission prompt, which is yours to answer.
 
 ## Recommendations
 

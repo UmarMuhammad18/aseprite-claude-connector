@@ -11,13 +11,17 @@ Requires Aseprite installed (auto-detected, or set ASEPRITE_PATH).
 from __future__ import annotations
 
 import asyncio
+import json
 import os
+import subprocess
 import sys
 import tempfile
 
 os.environ.setdefault("ASEPRITE_MCP_BACKEND", "headless")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import aseprite_claude_connector  # noqa: E402
+from aseprite_claude_connector.config import load_config  # noqa: E402
 from aseprite_claude_connector.server import build_server  # noqa: E402
 
 
@@ -218,7 +222,6 @@ async def main() -> int:
         failures.append(("export_spritesheet", "JSON atlas missing"))
 
     # --- differentiator: transparent-padding measurement + QA sweep ---
-    import json
 
     pad_ase = os.path.join(d, "pad.aseprite")
     await step("create_sprite", {"width": 20, "height": 20, "color_mode": "rgb", "file": pad_ase})
@@ -826,6 +829,112 @@ async def main() -> int:
     await step("export_godot", {"png_path": godot_png, "file": pol})
     if not os.path.isfile(godot_png[:-4] + ".tres"):
         failures.append(("export_godot", "no .tres written"))
+    # tween art redrawn in a new place, with every cel left at (0, 0)
+    dt = os.path.join(d, "drawn_tween.aseprite")
+    await step("create_sprite", {"width": 16, "height": 16, "color_mode": "rgb", "file": dt})
+    await step(
+        "draw_rectangle",
+        {"x": 0, "y": 0, "width": 2, "height": 2, "color": "#ffffff", "fill": True, "file": dt},
+    )
+    await step("add_frames", {"count": 1, "file": dt})
+    await step(
+        "edit_batch",
+        {
+            "steps": [
+                {"tool": "select_frame", "args": {"number": 2}},
+                {
+                    "tool": "draw_rectangle",
+                    "args": {
+                        "x": 8,
+                        "y": 8,
+                        "width": 2,
+                        "height": 2,
+                        "color": "#ffffff",
+                        "fill": True,
+                    },
+                },
+            ],
+            "file": dt,
+        },
+    )
+    await step("tween_frames", {"from_frame": 1, "to_frame": 2, "count": 1, "file": dt})
+    moved = await step(
+        "run_lua",
+        {
+            "code": "local c=app.activeLayer:cel(2); return J({x=c.position.x, y=c.position.y})",
+            "file": dt,
+        },
+    )
+    if '"x":4' not in _text(moved).replace(" ", "") or '"y":4' not in _text(moved).replace(" ", ""):
+        failures.append(
+            ("tween_frames", f"drawn frames: expected cel at (4,4), got {_text(moved)}")
+        )
+    # run_lua with edit=true is capped and leaves no trace when stopped
+    await step("set_safety_rails", {"max_changed_pixels": 3})
+    try:
+        await mcp.call_tool(
+            "run_lua",
+            {
+                "code": "editCel(function(i) i:clear(app.pixelColor.rgba(1,2,3,255)) end) return 1",
+                "edit": True,
+                "save": True,
+                "file": dt,
+            },
+        )
+        failures.append(("run_lua", "edit=true went past the pixel cap"))
+    except Exception as e:
+        if "refused" not in str(e):
+            failures.append(("run_lua", f"expected the cap to refuse it: {e}"))
+    await step("add_layer", {"name": "over", "file": dt})
+    await step("move_layer", {"name": "over", "direction": "bottom", "file": dt})
+    await step("set_safety_rails", {"max_changed_pixels": 250000})
+    # export_to_game, and the button in the extension writing identical files.
+    games = {
+        "godot_game": "project.godot",
+        "unity_game": "Assets/x",
+        "unity_game/ProjectSettings": "x",
+    }
+    for rel, marker in games.items():
+        os.makedirs(os.path.dirname(os.path.join(d, rel, marker)), exist_ok=True)
+        open(os.path.join(d, rel, marker), "w").close()
+    ext = os.path.join(
+        os.path.dirname(os.path.abspath(aseprite_claude_connector.__file__)), "extension"
+    )
+    for game, made in (
+        ("godot_game", ["sprites/polish.tres"]),
+        ("unity_game", ["Assets/Sprites/polish.png.meta"]),
+    ):
+        root = os.path.join(d, game)
+        await step("export_to_game", {"game_dir": root, "file": pol})
+        await step("export_to_game", {"file": pol})  # the folder is remembered
+        for rel in made:
+            path = os.path.join(root, rel)
+            if not os.path.isfile(path):
+                failures.append(("export_to_game", f"{rel} not written"))
+                continue
+            before = open(path, encoding="utf-8").read()
+            # Leave only the guid, so a script that quietly failed can't pass.
+            keep = "".join(ln for ln in before.splitlines(True) if ln.startswith("guid:"))
+            with open(path, "w", encoding="utf-8", newline="\n") as f:
+                f.write(keep)
+            script = os.path.join(d, game + ".lua")
+            with open(script, "w", encoding="utf-8") as f:
+                f.write(
+                    f"dofile({json.dumps(os.path.join(ext, 'game-export.lua'))});"
+                    f"ClaudeGameExport.exportTo(app.activeSprite, {json.dumps(root)}, 'polish')"
+                )
+            done = subprocess.run(
+                [load_config().aseprite_path, "--batch", pol, "--script", script],
+                capture_output=True,
+                text=True,
+            )
+            after = open(path, encoding="utf-8").read()
+            if done.returncode or after != before:
+                failures.append(
+                    ("game-export.lua", f"{rel} differs from export_to_game: {done.stderr}")
+                )
+            else:
+                print(f"  export button matches export_to_game for {rel}")
     await step(
         "draw_iso_box",
         {

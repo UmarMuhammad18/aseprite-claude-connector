@@ -19,6 +19,23 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
   entries below this one keep the names they shipped with. Install from GitHub;
   this name isn't on PyPI yet.
 
+### Added — Godot export and targeting
+
+- **`export_godot`** writes a sprite sheet and a Godot 4 `SpriteFrames` `.tres`, with
+  one animation per tag, keeping frame timing, tag direction, and repeat counts.
+- **`select_frame`** and **`select_layer`** choose where edits land, and work as
+  `edit_batch` steps, which is how to target a frame or layer in headless mode.
+- **`bands`** on `draw_gradient` steps through solid colors and dithers only the seams.
+- **`preview`** now also covers the isometric tools, `fill_polygon`, and
+  `paint_with_stamp`.
+
+### Fixed
+
+- `set_color_mode` to `indexed` no longer blanks a sprite with a one-entry palette.
+- The relay reads a refused request before answering, so Windows callers get the 403
+  instead of a connection reset.
+- The relay stalled on startup on Macs, doing a reverse DNS lookup it never used.
+
 ### Added — smarter help
 
 - **`describe_sprite`** summarizes the sprite in one call: layer tree, frame timing,

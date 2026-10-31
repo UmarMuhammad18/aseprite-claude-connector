@@ -130,6 +130,9 @@ class Http(BaseHTTPRequestHandler):
         allowed = (f"127.0.0.1:{HTTP_PORT}", f"localhost:{HTTP_PORT}")
         if self.headers.get("Origin") is None and host in allowed:
             return False
+        # Read what was sent first: on Windows, closing with it unread resets the
+        # connection and the caller loses the 403.
+        self.rfile.read(int(self.headers.get("Content-Length", 0)))
         self._json(403, {"ok": False, "error": "refused: browser or foreign host"})
         return True
 

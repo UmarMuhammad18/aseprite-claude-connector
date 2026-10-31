@@ -135,6 +135,15 @@ return editCel(function(img, s)
   local function put(x, y, c) if x >= 0 and y >= 0 and x < s.width and y < s.height then img:drawPixel(x, y, c) end end
   local c1 = Color{ r = R1, g = G1, b = B1, a = A1 }
   local c2 = Color{ r = R2, g = G2, b = B2, a = A2 }
+  local ramp = {}
+  for i = 0, BANDS do
+    local k = i / BANDS
+    ramp[i] = Color{
+      r = math.floor(R1 + (R2 - R1) * k + 0.5),
+      g = math.floor(G1 + (G2 - G1) * k + 0.5),
+      b = math.floor(B1 + (B2 - B1) * k + 0.5),
+      a = math.floor(A1 + (A2 - A1) * k + 0.5) }
+  end
   for yy = 0, H - 1 do
     for xx = 0, W - 1 do
       local t
@@ -144,7 +153,12 @@ return editCel(function(img, s)
       local px, py = X + xx, Y + yy
       if DITHER then
         local thr = (bayer[(yy % 4) * 4 + (xx % 4) + 1] + 0.5) / 16.0
-        put(px, py, (t > thr) and c2 or c1)
+        local pos = t * BANDS
+        local i = math.min(math.floor(pos), BANDS - 1)
+        local frac = pos - i
+        -- With several bands, each stays solid and only the seams between them dither.
+        if BANDS > 1 then frac = math.max(0, math.min(1, (frac - 0.3) / 0.4)) end
+        put(px, py, (frac > thr) and ramp[i + 1] or ramp[i])
       else
         put(px, py, Color{
           r = math.floor(R1 + (R2 - R1) * t + 0.5),
@@ -422,12 +436,17 @@ def register(mcp):
         color2: str,
         direction: str = "vertical",
         dither: bool = False,
+        bands: int = 1,
         file: str | None = None,
     ) -> dict:
         """Fill a rectangle with a linear gradient from ``color1`` to ``color2``.
         ``direction`` is horizontal | vertical | diagonal. ``dither`` true uses an
         ordered Bayer dither between the two colors instead of blending RGB — the
-        palette-friendly way. One undo step. Headless: pass ``file``."""
+        palette-friendly way. With ``dither``, ``bands`` above 1 steps through that
+        many solid colors and dithers only the seams, which reads far cleaner than one
+        dither across a tall area. One undo step. Headless: pass ``file``."""
+        if not 1 <= bands <= 32:
+            raise ToolError("bands must be 1-32")
         d = {"horizontal": 0, "vertical": 1, "diagonal": 2}.get(direction.strip().lower())
         if d is None:
             raise ToolError("direction must be horizontal | vertical | diagonal")
@@ -441,6 +460,7 @@ def register(mcp):
                 H=int(height),
                 DIR=d,
                 DITHER=dither,
+                BANDS=int(bands),
                 R1=r1,
                 G1=g1,
                 B1=b1,

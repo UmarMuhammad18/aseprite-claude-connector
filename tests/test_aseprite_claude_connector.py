@@ -23,7 +23,7 @@ from aseprite_claude_connector.tools.export import _resolve_written
 from aseprite_claude_connector.tools.unity_export import _gen_meta
 
 ASEPRITE = _default_aseprite()
-HAS_ASEPRITE = os.path.isfile(ASEPRITE)
+HAS_ASEPRITE = os.path.isfile(os.environ.get("ASEPRITE_PATH") or ASEPRITE)
 
 
 def _run(coro):

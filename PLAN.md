@@ -12,7 +12,7 @@ What it lacks is what makes the Blender connector feel good: Claude can't actual
 
 ## Project details and status
 
-Phases 1 to 4 are merged into `main`, and **phase 5: Godot export** is next. On Umar's Windows PC, Claude can see the canvas, look up Aseprite's docs, and work behind safety rails, and setup is one command plus one permission click in Aseprite. Mac testing is on hold by choice, so nothing has run on a Mac yet.
+Phases 1 to 4 are merged into `main`, and **phase 5: Godot export** is built but hasn't been opened in real Godot yet. On Umar's Windows PC, Claude can see the canvas, look up Aseprite's docs, and work behind safety rails, and setup is one command plus one permission click in Aseprite. Mac testing is on hold by choice, so nothing has run on a Mac yet.
 
 | | |
 | --- | --- |
@@ -83,12 +83,12 @@ These are what it takes to beat the Blender connector. The first two matter most
 
 - [x] **Show Claude the canvas.** A `look` tool that returns the current frame as an image straight into the chat, scaled up with sharp pixels so a 32×32 sprite is readable. Options: one layer, all layers, a selection, or a zoomed-in crop.
 - [x] **Show Claude the animation.** A `look_animation` tool that returns a strip or grid of frames for a tag in one image, plus the onion-skin view returned as an image instead of a file.
-- [x] **Look after every edit, optionally.** A flag on drawing tools that sends back a before/after picture, so Claude can catch its own mistakes without an extra step. Covers the 10 tools in `draw.py`, not yet the isometric, polygon or stamp tools.
+- [x] **Look after every edit, optionally.** A flag on drawing tools that sends back a before/after picture, so Claude can catch its own mistakes without an extra step. Covers the drawing tools in `draw.py`, the isometric tools, polygons and stamps.
 - [x] **One-step setup.** The server starts the relay itself, and `aseprite-claude-connector setup` installs the Aseprite extension, which connects automatically on launch. `setup --out` also writes a `.aseprite-extension` file for installing by hand.
 - [x] **Searchable Aseprite docs.** `search_api_docs` searches the Lua API reference, bundled because it's MIT licensed. `search_manual` searches the user manual, which has no licence, so it downloads to the user's cache instead of shipping with us.
 - [x] **Better state reading.** A `describe_sprite` tool giving one compact summary: size, colour mode, layers, frames, tags, slices, palette and what's selected.
 - [x] **Safety rails.** A dry-run mode, a cap on how many pixels one call can change (250,000 by default), and `edit_batch`, which makes several tools one undo step. The server can't see where a request starts or ends, so Claude has to choose `edit_batch`. `run_lua` isn't capped.
-- [ ] **Godot export.** One-action export to Godot (sprite sheet plus a `SpriteFrames` `.tres` resource with animations from tags), to match the Unity export that already exists.
+- [x] **Godot export.** `export_godot` writes a sprite sheet plus a `SpriteFrames` `.tres` resource with animations from tags, to match the Unity export. Still needs opening in real Godot.
 - [ ] **Works on your OS.** Test the full live setup on Windows and Mac, with standalone Aseprite. Windows is done; Mac is on hold.
 
 ## Cool to have
@@ -131,7 +131,7 @@ Nice extras once the must-haves work. Roughly ordered by how much they'd help da
 Claude (desktop app or Claude Code)
    |  tool calls  ↓        ↑  images back
 Our MCP server (Python)
-   ├─ Typed tools: 147, including look tools
+   ├─ Typed tools: 150, including look tools
    ├─ Relay, auto-started: WebSocket on this computer
    │     └─ live → Aseprite (open), via bridge extension, one undo per edit
    ├─ Docs search: Lua API and user manual
@@ -150,7 +150,7 @@ Each phase only starts once the one before passes its finish line. The Mac tests
 | 2. Claude's eyes | `look` tool, animation strips, before/after views | Claude spots its own mistake from a picture | Done |
 | 3. Easy setup | Auto-start relay, Aseprite extension, Windows and Mac tests | Install takes one step | Done on Windows; Mac on hold |
 | 4. Smarter help | Docs search, `describe_sprite`, safety rails, then the cool extras | It beats the Blender connector for sprite work | Must-haves done; cool extras not started |
-| 5. Godot export | One-action sprite sheet plus `SpriteFrames` `.tres`, with animations from tags | A sprite exported in one action plays its tagged animations in Godot | Next |
+| 5. Godot export | One-action sprite sheet plus `SpriteFrames` `.tres`, with animations from tags | A sprite exported in one action plays its tagged animations in Godot | Built; needs checking in Godot |
 
 ## Limits, risks and open questions
 

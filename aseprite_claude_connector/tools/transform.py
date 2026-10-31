@@ -93,6 +93,10 @@ local function modename(cm)
   return tostring(cm)
 end
 local old = modename(s.colorMode)
+-- A new sprite's palette has one entry, and converting to it would blank the art.
+if MODE == "indexed" and #s.palettes[1] <= 1 then
+  app.command.ColorQuantization{ ui = false, withAlpha = false, maxColors = 256 }
+end
 if DITHER ~= nil then
   app.command.ChangePixelFormat{ format = MODE, dithering = DITHER }
 else

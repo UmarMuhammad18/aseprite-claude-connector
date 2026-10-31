@@ -785,6 +785,61 @@ async def main() -> int:
     )
     if not os.path.isfile(onion_png):
         failures.append(("render_onion_composite", "no PNG written"))
+    # --- polish: targeting, banded gradients, previews, indexed, Godot ---
+    pol = os.path.join(d, "polish.aseprite")
+    await step("create_sprite", {"width": 16, "height": 16, "color_mode": "rgb", "file": pol})
+    await step(
+        "draw_gradient",
+        {
+            "x": 0,
+            "y": 0,
+            "width": 16,
+            "height": 16,
+            "color1": "#102040",
+            "color2": "#f0a060",
+            "dither": True,
+            "bands": 4,
+            "file": pol,
+        },
+    )
+    await step("add_frames", {"count": 2, "file": pol})
+    await step("add_layer", {"name": "top", "file": pol})
+    await step("select_frame", {"number": 1, "file": pol})
+    await step("select_layer", {"name": "top", "file": pol})
+    await step(
+        "edit_batch",
+        {
+            "steps": [
+                {"tool": "select_frame", "args": {"number": 2}},
+                {"tool": "select_layer", "args": {"name": "top"}},
+                {
+                    "tool": "draw_rectangle",
+                    "args": {"x": 1, "y": 1, "width": 3, "height": 3, "color": "#00ff00"},
+                },
+            ],
+            "file": pol,
+        },
+    )
+    await step("create_tag", {"name": "walk", "from_frame": 1, "to_frame": 2, "file": pol})
+    await step("set_tag_direction", {"name": "walk", "direction": "pingpong", "file": pol})
+    godot_png = os.path.join(d, "godot_sheet.png")
+    await step("export_godot", {"png_path": godot_png, "file": pol})
+    if not os.path.isfile(godot_png[:-4] + ".tres"):
+        failures.append(("export_godot", "no .tres written"))
+    await step(
+        "draw_iso_box",
+        {
+            "center_x": 8,
+            "center_y": 10,
+            "half_width": 4,
+            "height": 3,
+            "color": "#6080c0",
+            "preview": True,
+            "file": pol,
+        },
+    )
+    await step("set_color_mode", {"mode": "indexed", "file": pol})
+
     # --- phase 4: docs, summary, rails ---
     await step("describe_sprite", {"file": v2})
     await step("search_api_docs", {"query": "Image:drawImage"})

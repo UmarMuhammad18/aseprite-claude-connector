@@ -172,4 +172,3 @@ Each phase only starts once the one before passes its finish line. The Mac tests
 
 - Live exports: Claude's code gets full trust. Umar grants it in Aseprite's permission prompt the first time an export runs; we never write it to Aseprite's settings ourselves.
 - When do we rename the package, command and server? They still say `aseprite-live-mcp`.
-- Why hasn't GitHub's CI run on our repo? Until it does, tests have only run locally on Windows.

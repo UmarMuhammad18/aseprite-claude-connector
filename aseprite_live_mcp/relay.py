@@ -23,6 +23,7 @@ import asyncio
 import json
 import logging
 import os
+import socketserver
 import sys
 import threading
 import uuid
@@ -160,6 +161,12 @@ class _HttpServer(ThreadingHTTPServer):
     # On Windows SO_REUSEADDR lets a second process share the port, which would hide
     # the fact that a relay is already running.
     allow_reuse_address = os.name != "nt"
+
+    def server_bind(self):
+        # HTTPServer's own version does a reverse DNS lookup that nothing here uses and
+        # that can stall startup on a Mac, before the relay is listening.
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
 
 
 async def main(on_ready=None):

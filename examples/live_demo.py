@@ -1,7 +1,7 @@
 """Live demo: drive the RUNNING Aseprite editor via the MCP server.
 
-Prereq: the relay is running (python bridge/relay_server.py) and, in Aseprite,
-File > Scripts > Claude Bridge is connected. Then:
+Prereq: the relay is running (python -m aseprite_live_mcp.relay) and Aseprite is
+open with the Claude Bridge extension installed. Then:
 
     ASEPRITE_MCP_BACKEND=live python examples/live_demo.py
 

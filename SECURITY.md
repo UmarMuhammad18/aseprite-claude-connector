@@ -14,9 +14,18 @@ deliberately simple and explicit.
 - **Localhost only.** Both the WebSocket (default `9877`) and HTTP (default `9878`)
   listeners bind to `127.0.0.1`. Nothing is exposed to the network. Do not
   port-forward, reverse-proxy, or bind these to `0.0.0.0`.
-- **Explicit trust.** Aseprite prompts you to grant the client script full trust
-  the first time you run it; the bridge cannot start without your click. Closing
-  the bridge dialog stops it.
+- **Browsers are refused.** Any web page can send a plain POST to `127.0.0.1`, so the
+  relay turns away HTTP requests that carry an `Origin` header or a foreign `Host`,
+  and WebSocket clients with a web `Origin`. Any other program running as you can
+  still reach it: this is not authentication.
+- **The relay starts with the server.** It runs whenever a live MCP server is
+  running, and stops with it. Set `ASEPRITE_MCP_NO_RELAY=1` to start it yourself
+  instead.
+- **Explicit trust.** Aseprite asks before the Claude Bridge extension first connects;
+  the bridge can't connect without your click, and `setup` never edits that setting.
+  Once allowed, the extension connects every time Aseprite starts. Use the Pause
+  toggle in **File → Scripts → Claude Bridge** to reject commands, or disable the
+  extension in **Edit → Preferences → Extensions** to stop it.
 - **One undo per edit.** Every edit an agent makes is wrapped in `app.transaction`,
   so a single Ctrl+Z reverts it like any manual action — you are never more than
   one keystroke away from undoing what the agent did.
@@ -29,8 +38,8 @@ deliberately simple and explicit.
 
 ## Recommendations
 
-- Run the relay only while you are actively driving Aseprite with an agent; stop
-  it (close the dialog) when you're done.
+- Pause or disable the bridge if you aren't using it and don't want a running
+  agent to reach your open documents.
 - Never expose the relay ports beyond localhost. If you need remote access, put it
   behind an authenticated tunnel you control — that is out of scope and
   unsupported here.

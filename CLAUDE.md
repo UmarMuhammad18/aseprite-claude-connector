@@ -19,7 +19,7 @@ all still say `aseprite-live-mcp` / `aseprite_live_mcp`.
 ## How it works
 
 ```
-Claude ⇄ MCP server (stdio) ⇄ HTTP :9878 ⇄ relay ⇄ WS :9877 ⇄ claude-bridge.lua in Aseprite
+Claude ⇄ MCP server (stdio, runs the relay) ⇄ WS :9877 ⇄ Claude Bridge extension in Aseprite
 ```
 
 - **`aseprite_live_mcp/`** — FastMCP server with 139 tools. One module per group in
@@ -27,30 +27,31 @@ Claude ⇄ MCP server (stdio) ⇄ HTTP :9878 ⇄ relay ⇄ WS :9877 ⇄ claude-b
   `run()` in `tools/_common.py`.
 - **Two backends, one tool surface** — `live` (default) runs Lua in the open editor
   via the relay; `headless` runs `aseprite --batch` against files on disk.
-- **`bridge/relay_server.py`** — hosts the WebSocket, because Aseprite's Lua
-  `WebSocket` can only dial out. Binds to `127.0.0.1` only.
-- **`aseprite_client/claude-bridge.lua`** — runs inside Aseprite and executes the Lua
-  it receives. Stop it by closing its panel.
+- **`aseprite_live_mcp/relay.py`** — hosts the WebSocket, because Aseprite's Lua
+  `WebSocket` can only dial out. Runs on a thread inside the server and binds to
+  `127.0.0.1` only.
+- **`aseprite_live_mcp/extension/`** — the Claude Bridge extension, which runs inside
+  Aseprite, connects on launch, and executes the Lua it receives.
+- **`aseprite_live_mcp/setup.py`** — the `aseprite-live-mcp setup` command.
 
-The relay and the Lua script are not in the wheel; they ship only in this repo.
 Read `docs/ARCHITECTURE.md` before changing anything in the live path, and
 `SECURITY.md` before changing what can reach `/exec`.
 
-## Run it (Windows, this machine)
+## Run it
 
 ```bash
 python -m venv .venv
-.venv/Scripts/python -m pip install -e ".[relay,dev]"
-.venv/Scripts/python bridge/relay_server.py        # keep running
+.venv/Scripts/python -m pip install -e ".[dev]"
+.venv/Scripts/aseprite-live-mcp setup
 ```
 
-Install the bridge once by copying `aseprite_client/claude-bridge.lua` to
-`%APPDATA%\Aseprite\scripts\`. Re-copy it after every edit: Aseprite runs the
-installed copy, not the one in this repo.
+`setup` registers the server with Claude Code in the user's own config, so no
+`.mcp.json` is needed or wanted. It also installs the extension to Aseprite's user
+folder. Run it again after editing anything in `aseprite_live_mcp/extension/`:
+Aseprite runs the installed copy, not the one in this repo, and only reads it at
+launch, so quit Aseprite fully and reopen it.
 
-In Aseprite, open a sprite and run **File > Scripts > claude-bridge**, allowing access
-when prompted. The Status line must read `connected to Claude`; `connecting...` and
-`bridge started - waiting for Claude` both mean it isn't connected yet. To confirm:
+The server starts the relay. To check the connection while a server is running:
 
 ```bash
 curl http://127.0.0.1:9878/status    # {"connected": true, "info": "aseprite 1.3.17.2 | ..."}
@@ -58,11 +59,6 @@ curl http://127.0.0.1:9878/status    # {"connected": true, "info": "aseprite 1.3
 
 `config.py` auto-detects standard Aseprite install paths, including `Program Files
 (x86)`. Set `ASEPRITE_PATH` for anything else.
-
-Claude Code connects through a local-scope registration, which is stored in the
-user's config rather than the repo. Set one up with `claude mcp add-json`, using the
-venv's `aseprite-live-mcp.exe` and `ASEPRITE_MCP_BACKEND=live`. Don't add a
-`.mcp.json`.
 
 ## Checks
 
@@ -88,7 +84,11 @@ Ruff isn't in the `dev` extra, so install it separately. Set
 - **Logs go to stderr.** Stdout is JSON-RPC on stdio.
 - **Keep the sockets on `127.0.0.1`.** `/exec` is equivalent to local code execution.
 - **Don't "fix" the networking details:** `onreceive(messageType, data)`,
-  `compression=None` on the relay, and the `Timer` heartbeat are all deliberate.
+  `compression=None` on the relay, the `Timer` heartbeat, and the allowed `ws://`
+  Origin are all deliberate.
+- **Never write to Aseprite's trust settings.** The access prompt is the user's call.
+- **Test the live path against real Aseprite.** A fake client passed the Origin check
+  that locked out the real one.
 - **Test edits on a new layer, and never save them to the user's art.** Saving to a
   `.png` flattens it.
 - **Check visual work with `look`, not just tool results.** A tool can report success
@@ -111,8 +111,15 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   entry, which is the default for a new sprite. Apply a palette first.
 - **`tween_frames` does nothing for frames made with the drawing tools**, because
   they leave every cel at (0, 0). Set the end cel with `set_cel_position` first.
-- **Other tools that write files from Lua can hit the security prompt live**, such as
-  the exports. So far it has only been seen with `Image:saveAs`.
+- **Tools that write files from Lua should hit the security prompt live**, such as
+  the exports. The bridge runs received code under the chunk name `claude`, which
+  Aseprite trusts separately from the extension. Only `Image:saveAs` has been seen
+  doing this so far.
+- **The Mac setup is untested.** The extension folder path comes from Aseprite's
+  source, but nothing here has run on a Mac.
+- **`setup` run through `uvx` would register a temporary path.** Install with `pip`.
+- **Right after a relay handover, calls fail for a few seconds** until the extension
+  reconnects.
 
 ## Roadmap
 
@@ -131,10 +138,12 @@ in `draw.py` return pictures straight to Claude. Finish line met in the live edi
 `look_animation` exposed a broken tween that every tool result had reported as a
 success.
 
-### 3. One-step setup
+### 3. Easy setup — done on Windows
 
-Start the relay automatically and package the bridge as an Aseprite extension, so
-nobody has to copy a script, run a terminal, or open File > Scripts by hand.
+`aseprite-live-mcp setup` registers the server and installs the extension. The server
+starts the relay, and Aseprite connects on launch after one access prompt.
+
+Remaining: test the full setup on a Mac.
 
 ### 4. Docs search, `describe_sprite`, and safety rails
 

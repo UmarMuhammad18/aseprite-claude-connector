@@ -17,7 +17,7 @@ def get_backend() -> Backend:
         if cfg.backend == "headless":
             _backend = HeadlessBackend(cfg.aseprite_path, cfg.exec_timeout)
         else:
-            _backend = LiveBackend(cfg.relay_url, cfg.exec_timeout)
+            _backend = LiveBackend(cfg.relay_url, cfg.exec_timeout, cfg.relay_autostart)
     return _backend
 
 

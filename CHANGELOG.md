@@ -22,10 +22,28 @@ once (uvx reuses its cached version otherwise).
 - **`preview`** on the 10 drawing tools in `draw.py` adds a before/after picture plus
   the changed-pixel count and bbox. The edit is still one undo step.
 
+### Added — one-step setup
+
+- **`aseprite-live-mcp setup`** registers the server with Claude Code and installs the
+  bridge. `--out` writes a `.aseprite-extension` file instead.
+- **The Claude Bridge extension** replaces the script you had to run by hand. It
+  connects when Aseprite starts and keeps retrying. **File → Scripts → Claude Bridge**
+  opens the status panel, and Pause is remembered between runs.
+- **The server starts the relay itself**, and takes over if another session's relay
+  stops. `ASEPRITE_MCP_NO_RELAY=1` turns this off.
+
+### Security
+
+- The relay refuses browsers: HTTP requests with an `Origin` or a foreign `Host`, and
+  WebSocket clients with a web `Origin`.
+
 ### Changed
 
-- The relay accepts WebSocket messages up to 64 MiB, for pixel data. Restart it after
-  updating.
+- The relay moved to `aseprite_live_mcp/relay.py` (run it with
+  `python -m aseprite_live_mcp.relay`) and the bridge to `aseprite_live_mcp/extension/`.
+  Remove any old `claude-bridge.lua` from Aseprite's scripts folder.
+- `websockets` is now a core dependency; the `relay` extra is gone.
+- The relay accepts WebSocket messages up to 64 MiB, for pixel data.
 - The `mcp` dependency now requires `>=1.19.0,<2`.
 
 ## [0.2.0] — 2026-07-16

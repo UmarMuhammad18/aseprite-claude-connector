@@ -1,6 +1,6 @@
 # Aseprite Connector: Fork Plan
 
-Last updated 30 Oct 2026
+Last updated 31 Oct 2026
 
 ## Summary
 
@@ -12,7 +12,7 @@ What it lacks is what makes the Blender connector feel good: Claude can't actual
 
 ## Project details and status
 
-We are in **phase 1: fork and run**. Live mode works on Umar's Windows PC: a test edit landed in an open sprite and undid cleanly. Left in phase 1: register the server with Claude Code, set `ASEPRITE_PATH` for headless mode, and commit `CLAUDE.md` plus the `mcp>=1.10.0,<2` pin (mcp 2.x removed `FastMCP`).
+Phases 1 to 3 are merged into `main`, and **phase 4: smarter help** is next. On Umar's Windows PC, Claude can see the canvas, and setup is one command plus one permission click in Aseprite. Mac testing is on hold by choice, so nothing has run on a Mac yet.
 
 | | |
 | --- | --- |
@@ -24,14 +24,14 @@ We are in **phase 1: fork and run**. Live mode works on Umar's Windows PC: a tes
 | Game engines | Godot and Unity |
 | Visibility | Public on GitHub. Never commit secrets, API keys or personal file paths |
 | Built with | Claude Code in VS Code |
-| Key files | `aseprite_live_mcp/tools/` (one module per tool group), `aseprite_live_mcp/backends/live.py`, `bridge/relay_server.py`, `aseprite_client/claude-bridge.lua`, `docs/ARCHITECTURE.md` |
+| Key files | `aseprite_live_mcp/tools/` (one module per tool group), `aseprite_live_mcp/tools/look.py`, `aseprite_live_mcp/backends/live.py`, `aseprite_live_mcp/relay.py`, `aseprite_live_mcp/extension/`, `aseprite_live_mcp/setup.py`, `docs/ARCHITECTURE.md` |
 | Ports | Relay WebSocket 9877, relay HTTP 9878. Avoid 9876 (Blender connector) |
 
 **Notes for Claude Code**
 
 - Read `docs/ARCHITECTURE.md` before changing the relay or the Lua bridge; it lists networking fixes that must not regress.
 - Keep every edit inside `app.transaction()` so each request is one Ctrl-Z.
-- Ask before pushing to GitHub. Work on a branch per phase.
+- Work on a branch per phase. Create and merge pull requests on our repo, and never open one on the original repo.
 - Keep `CLAUDE.md` updated with the current phase and what's done.
 
 ## Can we fork it?
@@ -71,7 +71,7 @@ The Blender connector doesn't win on number of tools. It wins because Claude can
 | --- | --- | --- |
 | Screenshot the window or one panel and show it to Claude | Writes PNGs to disk only | Big |
 | Render the viewport or a thumbnail | Onion-skin render to a file | Medium |
-| Search the Python API docs and the user manual | One static docs resource | Big |
+| Search the Python API docs and the user manual | None | Big |
 | Summarise the file: objects, missing files, linked libraries | Sprite info, layers, tags, palette | Small |
 | Jump the UI to a tab or an object | Set zoom and scroll | Small |
 | Run code in the live app | `run_lua` plus 139 typed tools | None |
@@ -81,15 +81,15 @@ The Blender connector doesn't win on number of tools. It wins because Claude can
 
 These are what it takes to beat the Blender connector. The first two matter most.
 
-- [ ] **Show Claude the canvas.** A `look` tool that returns the current frame as an image straight into the chat, scaled up with sharp pixels so a 32×32 sprite is readable. Options: one layer, all layers, a selection, or a zoomed-in crop.
-- [ ] **Show Claude the animation.** A `look_animation` tool that returns a strip or grid of frames for a tag in one image, plus the onion-skin view returned as an image instead of a file.
-- [ ] **Look after every edit, optionally.** A flag on drawing tools that sends back a before/after picture, so Claude can catch its own mistakes without an extra step.
-- [ ] **One-step setup.** The server starts the relay itself, and the Aseprite side ships as a proper `.aseprite-extension` you double-click to install, which connects automatically on launch.
+- [x] **Show Claude the canvas.** A `look` tool that returns the current frame as an image straight into the chat, scaled up with sharp pixels so a 32×32 sprite is readable. Options: one layer, all layers, a selection, or a zoomed-in crop.
+- [x] **Show Claude the animation.** A `look_animation` tool that returns a strip or grid of frames for a tag in one image, plus the onion-skin view returned as an image instead of a file.
+- [x] **Look after every edit, optionally.** A flag on drawing tools that sends back a before/after picture, so Claude can catch its own mistakes without an extra step. Covers the 10 tools in `draw.py`, not yet the isometric, polygon or stamp tools.
+- [x] **One-step setup.** The server starts the relay itself, and `aseprite-live-mcp setup` installs the Aseprite extension, which connects automatically on launch. `setup --out` also writes a `.aseprite-extension` file for installing by hand.
 - [ ] **Searchable Aseprite docs.** Bundle the Lua API reference and the user manual, with `search_api_docs` and `search_manual` tools, so Claude writes correct scripts first time.
 - [ ] **Better state reading.** A `describe_sprite` tool giving one compact summary: size, colour mode, layers, frames, tags, slices, palette and what's selected.
 - [ ] **Safety rails.** A dry-run mode, a cap on how many pixels one call can change, and a single undo step per request so you can always roll back.
 - [ ] **Godot export.** One-action export to Godot (sprite sheet plus a `SpriteFrames` `.tres` resource with animations from tags), to match the Unity export that already exists.
-- [ ] **Works on your OS.** Test the full live setup on Windows and Mac, with standalone Aseprite.
+- [ ] **Works on your OS.** Test the full live setup on Windows and Mac, with standalone Aseprite. Windows is done; Mac is on hold.
 
 ## Cool to have
 
@@ -129,29 +129,27 @@ Nice extras once the must-haves work. Roughly ordered by how much they'd help da
 
 ```
 Claude (desktop app or Claude Code)
-   |  tool calls  ↓        ↑  images back (new)
+   |  tool calls  ↓        ↑  images back
 Our MCP server (Python)
-   ├─ Typed tools: 139 today, plus look tools (new)
-   ├─ Relay, auto-started (new): WebSocket on this computer
-   │     └─ live → Aseprite (open), via bridge extension (new), one undo per edit
+   ├─ Typed tools: 142, including look tools
+   ├─ Relay, auto-started: WebSocket on this computer
+   │     └─ live → Aseprite (open), via bridge extension, one undo per edit
    ├─ Docs search (new): Lua API and user manual
    └─ or → aseprite --batch: files on disk, no window
 ```
 
-The shape stays the same as today. What changes is that the relay starts on its own, Aseprite connects through an installed extension, and pictures of the canvas come back to Claude instead of landing on disk.
+The shape is the same as the original project. What changed is that the relay starts on its own, Aseprite connects through an installed extension, and pictures of the canvas come back to Claude instead of landing on disk.
 
 ## Roadmap
 
-Each phase only starts once the one before passes its finish line.
+Each phase only starts once the one before passes its finish line. The Mac tests in phase 3 are the one exception: they're on hold by choice, so phase 4 can start without them.
 
-| Phase | Work | Done when |
-| --- | --- | --- |
-| 1. Fork and run (current) | Fork on GitHub; get live mode working on Umar's computer | A test edit lands live in the open sprite |
-| 2. Claude's eyes | `look` tool, animation strips, before/after views | Claude spots its own mistake from a picture |
-| 3. Easy setup | Auto-start relay, Aseprite extension, Windows and Mac tests | Install takes one step |
-| 4. Smarter help | Docs search, `describe_sprite`, safety rails, then the cool extras | It beats the Blender connector for sprite work |
-
-Phase 2 makes the biggest difference, so it comes straight after the fork is running.
+| Phase | Work | Done when | Status |
+| --- | --- | --- | --- |
+| 1. Fork and run | Fork on GitHub; get live mode working on Umar's computer | A test edit lands live in the open sprite | Done |
+| 2. Claude's eyes | `look` tool, animation strips, before/after views | Claude spots its own mistake from a picture | Done |
+| 3. Easy setup | Auto-start relay, Aseprite extension, Windows and Mac tests | Install takes one step | Done on Windows; Mac on hold |
+| 4. Smarter help | Docs search, `describe_sprite`, safety rails, then the cool extras | It beats the Blender connector for sprite work | Next |
 
 ## Limits, risks and open questions
 
@@ -166,7 +164,12 @@ Phase 2 makes the biggest difference, so it comes straight after the fork is run
 - The original author may change direction. Keep the fork close to theirs and offer improvements back upstream where they fit.
 - Aseprite updates can change the Lua API. Pin a tested version and test on each new release.
 - Live edits run real code in the editor. Keep the Pause toggle and undo-per-request, and never auto-save over the user's files.
+- The relay refuses browsers, but any other program on the computer can still reach it. It has no password or token.
+- One undo per request isn't true yet: today it's one undo per tool call. Safety rails in phase 4 need to close that gap.
 
 **Open questions**
 
-- None right now.
+- Which phase does Godot export belong to? It's a must-have, but no phase includes it yet.
+- When do we rename the package, command and server? They still say `aseprite-live-mcp`.
+- Should Claude's code get full trust for live exports? Exports should raise an Aseprite permission prompt, and full trust lets that code read and write files without asking. This is Umar's call.
+- Why hasn't GitHub's CI run on our repo? Until it does, tests have only run locally on Windows.

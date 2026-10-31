@@ -24,7 +24,7 @@ sys.path.insert(0, REPO)
 import anyio  # noqa: E402
 from mcp.server.fastmcp import FastMCP  # noqa: E402
 
-from aseprite_live_mcp import server as srv  # noqa: E402
+from aseprite_claude_connector import server as srv  # noqa: E402
 
 # Module -> human category (order = display order).
 CATEGORIES = [

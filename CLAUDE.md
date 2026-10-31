@@ -1,12 +1,9 @@
 # aseprite-claude-connector
 
 A fork of [aseprite-live-mcp](https://github.com/oaktreegames/aseprite-live-mcp)
-(MIT, © Kyle Ocheltree / OakTree Games) that is becoming **aseprite-claude-connector**:
+(MIT, © Kyle Ocheltree / OakTree Games), renamed **aseprite-claude-connector**:
 Claude drawing in a running Aseprite, with setup simple enough to need no terminal
 babysitting. Our remote is `UmarMuhammad18/aseprite-claude-connector`.
-
-The rename hasn't started: the package, CLI, MCP server name, and PyPI references
-all still say `aseprite-live-mcp` / `aseprite_live_mcp`.
 
 ## Targets
 
@@ -22,17 +19,17 @@ all still say `aseprite-live-mcp` / `aseprite_live_mcp`.
 Claude ⇄ MCP server (stdio, runs the relay) ⇄ WS :9877 ⇄ Claude Bridge extension in Aseprite
 ```
 
-- **`aseprite_live_mcp/`** — FastMCP server with 139 tools. One module per group in
+- **`aseprite_claude_connector/`** — FastMCP server with 142 tools. One module per group in
   `tools/`, each exposing `register(mcp)`. Tools generate Lua and run it through
   `run()` in `tools/_common.py`.
 - **Two backends, one tool surface** — `live` (default) runs Lua in the open editor
   via the relay; `headless` runs `aseprite --batch` against files on disk.
-- **`aseprite_live_mcp/relay.py`** — hosts the WebSocket, because Aseprite's Lua
+- **`aseprite_claude_connector/relay.py`** — hosts the WebSocket, because Aseprite's Lua
   `WebSocket` can only dial out. Runs on a thread inside the server and binds to
   `127.0.0.1` only.
-- **`aseprite_live_mcp/extension/`** — the Claude Bridge extension, which runs inside
+- **`aseprite_claude_connector/extension/`** — the Claude Bridge extension, which runs inside
   Aseprite, connects on launch, and executes the Lua it receives.
-- **`aseprite_live_mcp/setup.py`** — the `aseprite-live-mcp setup` command.
+- **`aseprite_claude_connector/setup.py`** — the `aseprite-claude-connector setup` command.
 
 Read `docs/ARCHITECTURE.md` before changing anything in the live path, and
 `SECURITY.md` before changing what can reach `/exec`.
@@ -42,12 +39,12 @@ Read `docs/ARCHITECTURE.md` before changing anything in the live path, and
 ```bash
 python -m venv .venv
 .venv/Scripts/python -m pip install -e ".[dev]"
-.venv/Scripts/aseprite-live-mcp setup
+.venv/Scripts/aseprite-claude-connector setup
 ```
 
 `setup` registers the server with Claude Code in the user's own config, so no
 `.mcp.json` is needed or wanted. It also installs the extension to Aseprite's user
-folder. Run it again after editing anything in `aseprite_live_mcp/extension/`:
+folder. Run it again after editing anything in `aseprite_claude_connector/extension/`:
 Aseprite runs the installed copy, not the one in this repo, and only reads it at
 launch, so quit Aseprite fully and reopen it.
 
@@ -100,9 +97,8 @@ Ruff isn't in the `dev` extra, so install it separately. Set
 
 - **`mcp` is pinned to `<2`.** The 2.x SDK replaced `mcp.server.fastmcp` with
   `MCPServer`, so the server can't import on it. Migrating is separate work.
-- **`uvx aseprite-live-mcp` installs the upstream package**, not this fork.
-- **The update check queries upstream's PyPI entry**, so `status` reports upstream's
-  releases until `update_check.py` is pointed elsewhere.
+- **This package isn't on PyPI**, so install from GitHub, and the update check finds
+  nothing until a release is published under this name.
 - **`test_headless_roundtrip` ignores `ASEPRITE_PATH`** and only checks the
   auto-detected paths, so it skips on non-standard installs.
 - **The relay keeps a stale `info`** in `/status` after a disconnect. Trust
@@ -130,8 +126,6 @@ Done: the package installs, the relay and bridge connect, and a test edit landed
 an open sprite and undid cleanly. The server is registered with Claude Code at local
 scope, and headless mode finds Aseprite on its own.
 
-Not yet scheduled: renaming the package, CLI, and server to aseprite-claude-connector.
-
 ### 2. Claude's eyes — done
 
 `look`, `look_animation`, `look_onion`, and a `preview` flag on the 10 drawing tools
@@ -141,7 +135,7 @@ success.
 
 ### 3. Easy setup — done on Windows
 
-`aseprite-live-mcp setup` registers the server and installs the extension. The server
+`aseprite-claude-connector setup` registers the server and installs the extension. The server
 starts the relay, and Aseprite connects on launch after one access prompt.
 
 On hold by choice: testing the full setup on a Mac.

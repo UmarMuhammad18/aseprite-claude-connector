@@ -8,10 +8,16 @@ All notable changes to this project are documented here. The format follows
 **How you'll know it's time to update:** the `status` tool reports your installed
 version and whether a newer release exists (checked against PyPI at most once a
 day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
-`pip install -U aseprite-live-mcp`, or for uvx run `uvx aseprite-live-mcp@latest`
-once (uvx reuses its cached version otherwise).
+`pip install -U git+https://github.com/UmarMuhammad18/aseprite-claude-connector`.
 
 ## [Unreleased]
+
+### Changed — renamed to aseprite-claude-connector
+
+- The package, command, import name, and server name are now
+  `aseprite-claude-connector` (`aseprite_claude_connector` in Python). Earlier
+  entries below this one keep the names they shipped with. Install from GitHub;
+  this name isn't on PyPI yet.
 
 ### Added — canvas vision
 
@@ -24,7 +30,7 @@ once (uvx reuses its cached version otherwise).
 
 ### Added — one-step setup
 
-- **`aseprite-live-mcp setup`** registers the server with Claude Code and installs the
+- **`aseprite-claude-connector setup`** registers the server with Claude Code and installs the
   bridge. `--out` writes a `.aseprite-extension` file instead.
 - **The Claude Bridge extension** replaces the script you had to run by hand. It
   connects when Aseprite starts and keeps retrying. **File → Scripts → Claude Bridge**
@@ -39,8 +45,8 @@ once (uvx reuses its cached version otherwise).
 
 ### Changed
 
-- The relay moved to `aseprite_live_mcp/relay.py` (run it with
-  `python -m aseprite_live_mcp.relay`) and the bridge to `aseprite_live_mcp/extension/`.
+- The relay moved to `aseprite_claude_connector/relay.py` (run it with
+  `python -m aseprite_claude_connector.relay`) and the bridge to `aseprite_claude_connector/extension/`.
   Remove any old `claude-bridge.lua` from Aseprite's scripts folder.
 - `websockets` is now a core dependency; the `relay` extra is gone.
 - The relay accepts WebSocket messages up to 64 MiB, for pixel data.
@@ -128,7 +134,7 @@ tell you when it's out of date.
 - Art-QA sweep: size/grid/palette checks plus transparent sticker-padding
   measurement.
 
-[Unreleased]: https://github.com/oaktreegames/aseprite-live-mcp/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/UmarMuhammad18/aseprite-claude-connector/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/oaktreegames/aseprite-live-mcp/releases/tag/v0.2.0
 [0.1.2]: https://github.com/oaktreegames/aseprite-live-mcp/releases/tag/v0.1.2
 [0.1.1]: https://github.com/oaktreegames/aseprite-live-mcp/releases/tag/v0.1.1

@@ -11,10 +11,10 @@ import pytest
 from websockets.exceptions import InvalidStatus
 from websockets.sync.client import connect
 
-from aseprite_live_mcp import __version__, relay
-from aseprite_live_mcp.backends.live import LiveBackend
-from aseprite_live_mcp.config import load_config
-from aseprite_live_mcp.setup import (
+from aseprite_claude_connector import __version__, relay
+from aseprite_claude_connector.backends.live import LiveBackend
+from aseprite_claude_connector.config import load_config
+from aseprite_claude_connector.setup import (
     EXTENSION_DIR,
     EXTENSION_FILE,
     build_extension,

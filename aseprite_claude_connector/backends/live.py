@@ -59,7 +59,7 @@ class LiveBackend:
                 ok=False,
                 error=(
                     f"relay unreachable at {self.relay_url} ({e.reason}). It normally "
-                    "starts with this server; run python -m aseprite_live_mcp.relay "
+                    "starts with this server; run python -m aseprite_claude_connector.relay "
                     "to see why it can't."
                 ),
             )

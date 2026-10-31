@@ -14,7 +14,7 @@ The MCP server runs this on a daemon thread, so it lives and dies with the serve
 ports owns the relay. Logs go to stderr because stdout carries JSON-RPC.
 
 Localhost only, and browsers are refused: /exec is local code execution, and any web
-page can send a plain POST to 127.0.0.1. Run standalone: python -m aseprite_live_mcp.relay
+page can send a plain POST to 127.0.0.1. Run standalone: python -m aseprite_claude_connector.relay
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ async def submit(code: str, timeout: float = 60.0) -> dict:
         return {
             "ok": False,
             "error": "Aseprite isn't connected. Open Aseprite with the Claude Bridge "
-            "extension installed (run: aseprite-live-mcp setup).",
+            "extension installed (run: aseprite-claude-connector setup).",
         }
     mid = uuid.uuid4().hex[:8]
     fut = asyncio.get_running_loop().create_future()

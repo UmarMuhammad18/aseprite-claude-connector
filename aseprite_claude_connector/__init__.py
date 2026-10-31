@@ -1,4 +1,4 @@
-"""aseprite-live-mcp — a Unity-first MCP server for the live Aseprite editor.
+"""aseprite-claude-connector — a Unity-first MCP server for the live Aseprite editor.
 
 The same typed tools run against the artist's *running* Aseprite (via the local
 relay, one undo step per edit) or a headless ``aseprite --batch`` process, because

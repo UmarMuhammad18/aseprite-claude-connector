@@ -6,8 +6,8 @@ focused PRs are welcome.
 ## Dev setup
 
 ```bash
-git clone https://github.com/oaktreegames/aseprite-live-mcp
-cd aseprite-live-mcp
+git clone https://github.com/UmarMuhammad18/aseprite-claude-connector
+cd aseprite-claude-connector
 pip install -e ".[dev]"
 ```
 
@@ -28,7 +28,7 @@ caught there.
 
 ## Adding a tool
 
-Each tool group is a module in `aseprite_live_mcp/tools/` exposing `register(mcp)`.
+Each tool group is a module in `aseprite_claude_connector/tools/` exposing `register(mcp)`.
 A tool:
 
 - builds its Lua with `lua_locals(...)` + a static template (never string-formats Lua

@@ -1,8 +1,9 @@
-# aseprite-live-mcp
+# aseprite-claude-connector
 
-[![PyPI](https://img.shields.io/pypi/v/aseprite-live-mcp)](https://pypi.org/project/aseprite-live-mcp/)
-[![Downloads](https://img.shields.io/pypi/dm/aseprite-live-mcp)](https://pypi.org/project/aseprite-live-mcp/)
-[![CI](https://img.shields.io/github/actions/workflow/status/oaktreegames/aseprite-live-mcp/ci.yml?label=CI)](https://github.com/oaktreegames/aseprite-live-mcp/actions/workflows/ci.yml)
+A fork of [aseprite-live-mcp](https://github.com/oaktreegames/aseprite-live-mcp) by
+Kyle Ocheltree / OakTree Games.
+
+[![CI](https://img.shields.io/github/actions/workflow/status/UmarMuhammad18/aseprite-claude-connector/ci.yml?label=CI)](https://github.com/UmarMuhammad18/aseprite-claude-connector/actions/workflows/ci.yml)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
@@ -71,36 +72,24 @@ generated `.meta`: ten Multiple-mode sprites, rects y-flipped, every pivot baked
 
 ## Install
 
-One command, no clone:
+Requires **Python 3.10+** and **Aseprite 1.3+**. One command installs the package,
+registers the server with Claude Code, and adds the Aseprite extension:
 
 ```bash
-uvx aseprite-live-mcp        # or: pipx run aseprite-live-mcp
+pip install git+https://github.com/UmarMuhammad18/aseprite-claude-connector && aseprite-claude-connector setup
 ```
-
-Requires **Python 3.10+** and **Aseprite 1.3+**. That's it for headless; the live
-editor needs one extra step (below).
-
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=aseprite-live&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22aseprite-live-mcp%22%5D%7D)
-[![Install in Cursor](https://img.shields.io/badge/Cursor-Install_Server-000000?style=flat-square)](https://cursor.com/install-mcp?name=aseprite-live&config=eyJjb21tYW5kIjoidXZ4IGFzZXByaXRlLWxpdmUtbWNwIn0%3D)
-
-<details>
-<summary><b>Claude Code</b></summary>
-
-```bash
-claude mcp add aseprite-live -- uvx aseprite-live-mcp
-```
-
-</details>
 
 <details>
 <summary><b>Claude Desktop / any JSON-config client</b></summary>
 
+Install with the command above, using `setup --no-register`, then add:
+
 ```jsonc
 {
   "mcpServers": {
-    "aseprite-live": {
-      "command": "uvx",
-      "args": ["aseprite-live-mcp"],
+    "aseprite": {
+      "command": "python",
+      "args": ["-m", "aseprite_claude_connector"],
       "env": {
         "ASEPRITE_MCP_BACKEND": "headless",           // or "live" — see below
         "ASEPRITE_PATH": "C:/Program Files/Aseprite/Aseprite.exe"
@@ -119,8 +108,8 @@ omit it.
 <summary><b>From source</b></summary>
 
 ```bash
-git clone https://github.com/oaktreegames/aseprite-live-mcp
-cd aseprite-live-mcp
+git clone https://github.com/UmarMuhammad18/aseprite-claude-connector
+cd aseprite-claude-connector
 pip install -e .
 ```
 
@@ -140,7 +129,7 @@ The live backend edits your **running** Aseprite, one undo step per edit. Set it
 with one command:
 
 ```bash
-pip install git+https://github.com/UmarMuhammad18/aseprite-claude-connector && aseprite-live-mcp setup
+pip install git+https://github.com/UmarMuhammad18/aseprite-claude-connector && aseprite-claude-connector setup
 ```
 
 `setup` registers the server with Claude Code and installs the Claude Bridge
@@ -152,9 +141,9 @@ Tools act on your active document; watch edits appear and press Ctrl-Z to undo e
 one. **File → Scripts → Claude Bridge** opens a status panel with live activity and
 a Pause toggle.
 
-Using another MCP client? Run `aseprite-live-mcp setup --no-register` and add the
+Using another MCP client? Run `aseprite-claude-connector setup --no-register` and add the
 server to that client yourself. To install the extension by hand instead,
-`aseprite-live-mcp setup --out <folder>` writes a `.aseprite-extension` file you can
+`aseprite-claude-connector setup --out <folder>` writes a `.aseprite-extension` file you can
 add in **Edit → Preferences → Extensions**.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it works.
@@ -203,7 +192,7 @@ PyPI — whether a newer release exists. Your agent sees it, so *you* see it:
 ```json
 { "backend": "live", "connected": true,
   "server": { "current": "0.2.0", "latest": "0.2.1", "update_available": true,
-              "how": "pip install -U aseprite-live-mcp (uvx users: run uvx aseprite-live-mcp@latest once — uvx reuses its cached version otherwise)" } }
+              "how": "pip install -U git+https://github.com/UmarMuhammad18/aseprite-claude-connector" } }
 ```
 
 Also surfaced as the `aseprite://update` resource, one stderr log line, and the
@@ -559,7 +548,7 @@ tool behavior, patches are fixes).
 
 ## About
 
-Built solo by [Kyle Ocheltree](https://github.com/oaktreegames) (OakTree Games)
+The original project was built solo by [Kyle Ocheltree](https://github.com/oaktreegames) (OakTree Games)
 for a real production pipeline — the Unity export, padding QA, and isometric
 tools exist because Cosmic Scale (an isometric factory game) needed
 them. Developed with an AI-native workflow: AI assists the coding; every tool
@@ -574,6 +563,6 @@ Issues and PRs welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md). Run
 
 MIT — see [`LICENSE`](LICENSE). © 2026 Kyle Ocheltree / OakTree Games.
 
-<!-- mcp-name: io.github.oaktreegames/aseprite-live-mcp -->
+<!-- mcp-name: io.github.UmarMuhammad18/aseprite-claude-connector -->
 <!-- The line above is the MCP Registry PyPI ownership marker (ships in the PyPI
      description). It must match the "name" in server.json. Do not remove. -->

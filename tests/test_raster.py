@@ -5,7 +5,7 @@ from __future__ import annotations
 import struct
 import zlib
 
-from aseprite_live_mcp.raster import (
+from aseprite_claude_connector.raster import (
     Raster,
     diff,
     encode_png,

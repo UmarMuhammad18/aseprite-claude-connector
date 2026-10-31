@@ -1,18 +1,18 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.oaktreegames/aseprite-live-mcp",
-  "title": "Aseprite Live",
+  "name": "io.github.UmarMuhammad18/aseprite-claude-connector",
+  "title": "Aseprite Claude Connector",
   "description": "Live+headless Aseprite MCP: Unity export, art-QA, tilemaps, in-editor dialogs, update-aware",
   "status": "active",
   "repository": {
-    "url": "https://github.com/oaktreegames/aseprite-live-mcp",
+    "url": "https://github.com/UmarMuhammad18/aseprite-claude-connector",
     "source": "github"
   },
   "version": "0.2.0",
   "packages": [
     {
       "registryType": "pypi",
-      "identifier": "aseprite-live-mcp",
+      "identifier": "aseprite-claude-connector",
       "version": "0.2.0",
       "transport": {
         "type": "stdio"

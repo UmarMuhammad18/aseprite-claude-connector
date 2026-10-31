@@ -1,6 +1,6 @@
 """Live demo: drive the RUNNING Aseprite editor via the MCP server.
 
-Prereq: the relay is running (python -m aseprite_live_mcp.relay) and Aseprite is
+Prereq: the relay is running (python -m aseprite_claude_connector.relay) and Aseprite is
 open with the Claude Bridge extension installed. Then:
 
     ASEPRITE_MCP_BACKEND=live python examples/live_demo.py
@@ -19,7 +19,7 @@ import tempfile
 os.environ.setdefault("ASEPRITE_MCP_BACKEND", "live")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from aseprite_live_mcp.server import build_server  # noqa: E402
+from aseprite_claude_connector.server import build_server  # noqa: E402
 
 PNG = os.path.join(tempfile.gettempdir(), "aselm_live_demo.png")
 

@@ -27,7 +27,8 @@ import urllib.request
 
 from . import __version__
 
-_PYPI_URL = "https://pypi.org/pypi/aseprite-live-mcp/json"
+_PYPI_URL = "https://pypi.org/pypi/aseprite-claude-connector/json"
+_UPGRADE = "pip install -U git+https://github.com/UmarMuhammad18/aseprite-claude-connector"
 _CACHE_TTL = 24 * 60 * 60  # one network check per day, tops
 _FETCH_TIMEOUT = 4.0
 
@@ -47,7 +48,7 @@ def _cache_path() -> str:
         base = os.path.expanduser("~/Library/Caches")
     else:
         base = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
-    return os.path.join(base, "aseprite-live-mcp", "update_check.json")
+    return os.path.join(base, "aseprite-claude-connector", "update_check.json")
 
 
 def _read_cache() -> dict | None:
@@ -91,8 +92,8 @@ def _set_latest(latest: str, announce: bool) -> None:
         _LATEST = latest
     if announce and is_newer(latest):
         print(
-            f"[aseprite-live-mcp] update available: {__version__} -> {latest} "
-            f"(pip install -U aseprite-live-mcp / uvx aseprite-live-mcp@latest). "
+            f"[aseprite-claude-connector] update available: {__version__} -> {latest} "
+            f"({_UPGRADE}). "
             f"Set ASEPRITE_MCP_NO_UPDATE_CHECK=1 to silence this check.",
             file=sys.stderr,
         )
@@ -101,7 +102,8 @@ def _set_latest(latest: str, announce: bool) -> None:
 def _fetch_and_store() -> None:
     try:
         req = urllib.request.Request(
-            _PYPI_URL, headers={"User-Agent": f"aseprite-live-mcp/{__version__} update-check"}
+            _PYPI_URL,
+            headers={"User-Agent": f"aseprite-claude-connector/{__version__} update-check"},
         )
         with urllib.request.urlopen(req, timeout=_FETCH_TIMEOUT) as resp:
             data = json.load(resp)
@@ -134,8 +136,5 @@ def get_update_info() -> dict:
         return {"current": __version__, "check": "pending"}
     info: dict = {"current": __version__, "latest": latest, "update_available": is_newer(latest)}
     if info["update_available"]:
-        info["how"] = (
-            "pip install -U aseprite-live-mcp (uvx users: run uvx aseprite-live-mcp@latest "
-            "once — uvx reuses its cached version otherwise)"
-        )
+        info["how"] = _UPGRADE
     return info

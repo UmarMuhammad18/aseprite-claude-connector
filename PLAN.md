@@ -24,7 +24,7 @@ Phases 1 to 3 are merged into `main`, and **phase 4: smarter help** is next. On 
 | Game engines | Godot and Unity |
 | Visibility | Public on GitHub. Never commit secrets, API keys or personal file paths |
 | Built with | Claude Code in VS Code |
-| Key files | `aseprite_live_mcp/tools/` (one module per tool group), `aseprite_live_mcp/tools/look.py`, `aseprite_live_mcp/backends/live.py`, `aseprite_live_mcp/relay.py`, `aseprite_live_mcp/extension/`, `aseprite_live_mcp/setup.py`, `docs/ARCHITECTURE.md` |
+| Key files | `aseprite_claude_connector/tools/` (one module per tool group), `aseprite_claude_connector/tools/look.py`, `aseprite_claude_connector/backends/live.py`, `aseprite_claude_connector/relay.py`, `aseprite_claude_connector/extension/`, `aseprite_claude_connector/setup.py`, `docs/ARCHITECTURE.md` |
 | Ports | Relay WebSocket 9877, relay HTTP 9878. Avoid 9876 (Blender connector) |
 
 **Notes for Claude Code**
@@ -84,7 +84,7 @@ These are what it takes to beat the Blender connector. The first two matter most
 - [x] **Show Claude the canvas.** A `look` tool that returns the current frame as an image straight into the chat, scaled up with sharp pixels so a 32×32 sprite is readable. Options: one layer, all layers, a selection, or a zoomed-in crop.
 - [x] **Show Claude the animation.** A `look_animation` tool that returns a strip or grid of frames for a tag in one image, plus the onion-skin view returned as an image instead of a file.
 - [x] **Look after every edit, optionally.** A flag on drawing tools that sends back a before/after picture, so Claude can catch its own mistakes without an extra step. Covers the 10 tools in `draw.py`, not yet the isometric, polygon or stamp tools.
-- [x] **One-step setup.** The server starts the relay itself, and `aseprite-live-mcp setup` installs the Aseprite extension, which connects automatically on launch. `setup --out` also writes a `.aseprite-extension` file for installing by hand.
+- [x] **One-step setup.** The server starts the relay itself, and `aseprite-claude-connector setup` installs the Aseprite extension, which connects automatically on launch. `setup --out` also writes a `.aseprite-extension` file for installing by hand.
 - [ ] **Searchable Aseprite docs.** Bundle the Lua API reference and the user manual, with `search_api_docs` and `search_manual` tools, so Claude writes correct scripts first time.
 - [ ] **Better state reading.** A `describe_sprite` tool giving one compact summary: size, colour mode, layers, frames, tags, slices, palette and what's selected.
 - [ ] **Safety rails.** A dry-run mode, a cap on how many pixels one call can change, and a single undo step per request so you can always roll back.
@@ -171,4 +171,4 @@ Each phase only starts once the one before passes its finish line. The Mac tests
 **Decisions and open questions**
 
 - Live exports: Claude's code gets full trust. Umar grants it in Aseprite's permission prompt the first time an export runs; we never write it to Aseprite's settings ourselves.
-- When do we rename the package, command and server? They still say `aseprite-live-mcp`.
+- Renamed: the package, command and server are all `aseprite-claude-connector` now. It isn't on PyPI yet, so installs come from GitHub.

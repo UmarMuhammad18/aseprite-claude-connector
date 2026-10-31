@@ -21,8 +21,8 @@ import base64
 
 from mcp.shared.memory import create_connected_server_and_client_session
 
-from aseprite_live_mcp.server import build_server
-from aseprite_live_mcp.tools._common import ToolError
+from aseprite_claude_connector.server import build_server
+from aseprite_claude_connector.tools._common import ToolError
 
 # The exact success shape the live backend returns for an ordinary open sprite
 # (no ``error`` key — that key only ever appears in the failure shape).
@@ -74,7 +74,7 @@ def _text(res) -> str:
 
 
 def test_get_sprite_info_success_passes_wire_validation(monkeypatch):
-    monkeypatch.setattr("aseprite_live_mcp.tools.inspect.run", _stub_run(LIVE_SPRITE_INFO))
+    monkeypatch.setattr("aseprite_claude_connector.tools.inspect.run", _stub_run(LIVE_SPRITE_INFO))
     res = _wire_call("get_sprite_info")
     assert res.isError is False, f"schema rejected a normal sprite: {_text(res)}"
     assert res.structuredContent["width"] == 64
@@ -85,7 +85,7 @@ def test_get_sprite_info_no_sprite_is_a_tool_error(monkeypatch):
     """The Lua failure shape must surface as a ToolError (isError=True with the
     real message), never as a success payload or an output-validation crash."""
     monkeypatch.setattr(
-        "aseprite_live_mcp.tools.inspect.run",
+        "aseprite_claude_connector.tools.inspect.run",
         _stub_run({"error": "no active sprite"}),
     )
     res = _wire_call("get_sprite_info")
@@ -98,14 +98,14 @@ def test_get_sprite_info_no_sprite_is_a_tool_error(monkeypatch):
 
 
 def test_measure_padding_empty_sprite_passes_wire_validation(monkeypatch):
-    monkeypatch.setattr("aseprite_live_mcp.tools.artqa.run", _stub_run(PADDING_EMPTY))
+    monkeypatch.setattr("aseprite_claude_connector.tools.artqa.run", _stub_run(PADDING_EMPTY))
     res = _wire_call("measure_padding")
     assert res.isError is False, f"schema rejected the empty-sprite branch: {_text(res)}"
     assert res.structuredContent["empty"] is True
 
 
 def test_measure_padding_normal_passes_wire_validation(monkeypatch):
-    monkeypatch.setattr("aseprite_live_mcp.tools.artqa.run", _stub_run(PADDING_NORMAL))
+    monkeypatch.setattr("aseprite_claude_connector.tools.artqa.run", _stub_run(PADDING_NORMAL))
     res = _wire_call("measure_padding")
     assert res.isError is False, _text(res)
     assert res.structuredContent["padding"]["left"] == 8
@@ -113,7 +113,7 @@ def test_measure_padding_normal_passes_wire_validation(monkeypatch):
 
 def test_qa_sweep_passes_wire_validation_on_both_branches(monkeypatch):
     for shape in (PADDING_NORMAL, PADDING_EMPTY):
-        monkeypatch.setattr("aseprite_live_mcp.tools.artqa.run", _stub_run(shape))
+        monkeypatch.setattr("aseprite_claude_connector.tools.artqa.run", _stub_run(shape))
         res = _wire_call("qa_sweep", {"expected_width": 64, "expected_height": 64})
         assert res.isError is False, _text(res)
         assert "passed" in res.structuredContent
@@ -124,7 +124,7 @@ def test_qa_sweep_passes_wire_validation_on_both_branches(monkeypatch):
 
 def test_export_unity_sprite_passes_wire_validation(monkeypatch, tmp_path):
     monkeypatch.setattr(
-        "aseprite_live_mcp.tools.unity_export.run",
+        "aseprite_claude_connector.tools.unity_export.run",
         _stub_run({"frames": 3, "width": 16, "height": 16}),
     )
     png = str(tmp_path / "strip.png")
@@ -138,7 +138,7 @@ def test_export_unity_sprite_passes_wire_validation(monkeypatch, tmp_path):
 
 def test_export_unity_slices_passes_wire_validation(monkeypatch, tmp_path):
     monkeypatch.setattr(
-        "aseprite_live_mcp.tools.unity_export.run",
+        "aseprite_claude_connector.tools.unity_export.run",
         _stub_run(
             {
                 "width": 32,
@@ -179,7 +179,7 @@ def _images(res):
 
 def test_look_returns_an_image_over_the_wire(monkeypatch):
     meta = {"rgba": RED_PIXEL, "width": 1, "height": 1, "frame": 1, "frames": 1, "layer": "all"}
-    monkeypatch.setattr("aseprite_live_mcp.tools.look.run", _stub_run(meta))
+    monkeypatch.setattr("aseprite_claude_connector.tools.look.run", _stub_run(meta))
     res = _wire_call("look")
     assert res.isError is False, _text(res)
     assert _images(res)[0].mimeType == "image/png"
@@ -197,7 +197,7 @@ def test_look_animation_lists_cells(monkeypatch):
         "columns": 2,
         "tag": "run",
     }
-    monkeypatch.setattr("aseprite_live_mcp.tools.look.run", _stub_run(meta))
+    monkeypatch.setattr("aseprite_claude_connector.tools.look.run", _stub_run(meta))
     res = _wire_call("look_animation", {"tag": "run"})
     assert res.isError is False, _text(res)
     assert len(_images(res)) == 1
@@ -206,7 +206,7 @@ def test_look_animation_lists_cells(monkeypatch):
 
 def test_look_rejects_truncated_pixels(monkeypatch):
     meta = {"rgba": RED_PIXEL, "width": 2, "height": 2}
-    monkeypatch.setattr("aseprite_live_mcp.tools.look.run", _stub_run(meta))
+    monkeypatch.setattr("aseprite_claude_connector.tools.look.run", _stub_run(meta))
     res = _wire_call("look")
     assert res.isError is True
     assert "bad pixel data" in _text(res)
@@ -217,7 +217,7 @@ DRAWN = {"drawn": "rectangle"}
 
 
 def test_preview_off_leaves_a_drawing_tool_unchanged(monkeypatch):
-    monkeypatch.setattr("aseprite_live_mcp.tools.draw.run", _stub_run(DRAWN))
+    monkeypatch.setattr("aseprite_claude_connector.tools.draw.run", _stub_run(DRAWN))
     res = _wire_call("draw_rectangle", RECT_ARGS)
     assert res.isError is False, _text(res)
     assert not _images(res)
@@ -230,8 +230,8 @@ def test_preview_adds_a_picture_and_keeps_structured_output(monkeypatch):
     def snapshot(body, **kwargs):
         return {"rgba": next(shots), "width": 1, "height": 1, "frame": 1}
 
-    monkeypatch.setattr("aseprite_live_mcp.tools.look.run", snapshot)
-    monkeypatch.setattr("aseprite_live_mcp.tools.draw.run", _stub_run(DRAWN))
+    monkeypatch.setattr("aseprite_claude_connector.tools.look.run", snapshot)
+    monkeypatch.setattr("aseprite_claude_connector.tools.draw.run", _stub_run(DRAWN))
     res = _wire_call("draw_rectangle", {**RECT_ARGS, "preview": True})
     assert res.isError is False, _text(res)
     assert len(_images(res)) == 1
@@ -243,8 +243,8 @@ def test_a_failed_preview_never_loses_the_edit(monkeypatch):
     def broken(body, **kwargs):
         raise ToolError("no pictures today")
 
-    monkeypatch.setattr("aseprite_live_mcp.tools.look.run", broken)
-    monkeypatch.setattr("aseprite_live_mcp.tools.draw.run", _stub_run(DRAWN))
+    monkeypatch.setattr("aseprite_claude_connector.tools.look.run", broken)
+    monkeypatch.setattr("aseprite_claude_connector.tools.draw.run", _stub_run(DRAWN))
     res = _wire_call("draw_rectangle", {**RECT_ARGS, "preview": True})
     assert res.isError is False, _text(res)
     assert res.structuredContent == {"result": DRAWN}

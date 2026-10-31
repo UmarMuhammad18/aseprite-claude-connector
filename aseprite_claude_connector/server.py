@@ -92,9 +92,9 @@ _EXTRA_MODULES = (
 
 def build_server() -> FastMCP:
     mcp = FastMCP(
-        "aseprite-live-mcp",
+        "aseprite-claude-connector",
         instructions=_INSTRUCTIONS,
-        website_url="https://github.com/oaktreegames/aseprite-live-mcp",
+        website_url="https://github.com/UmarMuhammad18/aseprite-claude-connector",
     )
     # FastMCP doesn't forward a version, so serverInfo would report the SDK's —
     # set the lowlevel server's version so clients see the real release.

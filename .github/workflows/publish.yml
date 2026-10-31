@@ -3,8 +3,8 @@ name: Publish to PyPI
 # Publishes the package to PyPI via Trusted Publishing (OIDC) — no API token is
 # stored anywhere. PyPI must have a matching publisher configured under the project's
 # Publishing settings:
-#   Owner:       oaktreegames
-#   Repository:  aseprite-live-mcp
+#   Owner:       UmarMuhammad18
+#   Repository:  aseprite-claude-connector
 #   Workflow:    publish.yml
 #   Environment: (none)
 #

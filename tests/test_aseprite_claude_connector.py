@@ -1,4 +1,4 @@
-"""Test suite for aseprite-live-mcp.
+"""Test suite for aseprite-claude-connector.
 
 Unit tests (no Aseprite needed) cover registration and the pure-Python helpers.
 The headless integration test drives real tools through the MCP layer and is
@@ -14,13 +14,13 @@ import os
 
 import pytest
 
-from aseprite_live_mcp import backends
-from aseprite_live_mcp.config import _default_aseprite
-from aseprite_live_mcp.lua import build_lua, lua_locals
-from aseprite_live_mcp.server import build_server
-from aseprite_live_mcp.tools._common import ToolError, parse_color
-from aseprite_live_mcp.tools.export import _resolve_written
-from aseprite_live_mcp.tools.unity_export import _gen_meta
+from aseprite_claude_connector import backends
+from aseprite_claude_connector.config import _default_aseprite
+from aseprite_claude_connector.lua import build_lua, lua_locals
+from aseprite_claude_connector.server import build_server
+from aseprite_claude_connector.tools._common import ToolError, parse_color
+from aseprite_claude_connector.tools.export import _resolve_written
+from aseprite_claude_connector.tools.unity_export import _gen_meta
 
 ASEPRITE = _default_aseprite()
 HAS_ASEPRITE = os.path.isfile(ASEPRITE)

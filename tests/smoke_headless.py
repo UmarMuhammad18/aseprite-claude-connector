@@ -18,7 +18,7 @@ import tempfile
 os.environ.setdefault("ASEPRITE_MCP_BACKEND", "headless")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from aseprite_live_mcp.server import build_server  # noqa: E402
+from aseprite_claude_connector.server import build_server  # noqa: E402
 
 
 def _text(res) -> str:

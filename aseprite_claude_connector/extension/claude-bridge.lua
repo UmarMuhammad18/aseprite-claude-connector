@@ -1,5 +1,5 @@
 -- claude-bridge.lua - live control channel into THIS running Aseprite.
--- Part of aseprite-live-mcp. Ships as the Claude Bridge extension.
+-- Part of aseprite-claude-connector. Ships as the Claude Bridge extension.
 --
 -- Connects to the local relay on launch and keeps retrying in the background, so
 -- nothing has to be started by hand. File > Scripts > Claude Bridge opens a status

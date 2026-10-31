@@ -6,7 +6,7 @@ body:
     id: version
     attributes:
       label: Server version
-      description: Ask your agent to run the `status` tool, or `pip show aseprite-live-mcp`.
+      description: Ask your agent to run the `status` tool, or `pip show aseprite-claude-connector`.
       placeholder: "0.2.0"
     validations:
       required: true

@@ -1,4 +1,4 @@
-"""One-step setup: ``aseprite-live-mcp setup``.
+"""One-step setup: ``aseprite-claude-connector setup``.
 
 Registers this server with Claude Code and installs the Claude Bridge extension. It
 never touches Aseprite's trust settings: the access prompt stays yours to answer,
@@ -65,7 +65,7 @@ def register_claude_code(name: str) -> str:
     config = {
         "type": "stdio",
         "command": sys.executable,
-        "args": ["-m", "aseprite_live_mcp"],
+        "args": ["-m", "aseprite_claude_connector"],
         "env": {"ASEPRITE_MCP_BACKEND": "live"},
     }
     add = [claude, "mcp", "add-json", name, json.dumps(config), "--scope", "user"]
@@ -77,7 +77,7 @@ def register_claude_code(name: str) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="aseprite-live-mcp setup",
+        prog="aseprite-claude-connector setup",
         description="Connect Claude to Aseprite: register the server and install the extension.",
     )
     parser.add_argument("--name", default="aseprite", help="server name in Claude Code")

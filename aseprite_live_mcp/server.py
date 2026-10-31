@@ -28,6 +28,7 @@ from .tools import (
     isometric,
     layers,
     live,
+    look,
     lua_escape,
     palette,
     prompts,
@@ -47,12 +48,14 @@ _INSTRUCTIONS = """\
 Drive Aseprite from an AI agent. Tools operate on the *active sprite*: the live
 editor's active document (live backend) or a file you pass via `file` (headless
 backend). Mutating tools are one undo step each. Start with `status`, then
-`get_sprite_info`. Colors are #rrggbb or #rrggbbaa.
+`get_sprite_info`. Colors are #rrggbb or #rrggbbaa. Use `look` to see the canvas
+as an image, and check your work with it rather than editing blind.
 """
 
 # Tool modules (each exposes register(mcp)).
 _TOOL_MODULES = (
     inspect,
+    look,
     session,
     canvas,
     layers,

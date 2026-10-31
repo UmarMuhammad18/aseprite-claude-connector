@@ -13,6 +13,21 @@ once (uvx reuses its cached version otherwise).
 
 ## [Unreleased]
 
+### Added — canvas vision
+
+- **`look`** returns a frame as an image in the conversation, scaled up with sharp
+  pixels: all layers or one, a crop, or the selection.
+- **`look_animation`** returns a tag or frame range as one strip or grid image.
+- **`look_onion`** returns the onion-skin view as an image.
+- **`preview`** on the 10 drawing tools in `draw.py` adds a before/after picture plus
+  the changed-pixel count and bbox. The edit is still one undo step.
+
+### Changed
+
+- The relay accepts WebSocket messages up to 64 MiB, for pixel data. Restart it after
+  updating.
+- The `mcp` dependency now requires `>=1.19.0,<2`.
+
 ## [0.2.0] — 2026-07-16
 
 The tool surface closes the gaps we found surveying the other Aseprite MCP

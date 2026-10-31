@@ -17,10 +17,12 @@ needed and each schema shape is pinned exactly.
 from __future__ import annotations
 
 import asyncio
+import base64
 
 from mcp.shared.memory import create_connected_server_and_client_session
 
 from aseprite_live_mcp.server import build_server
+from aseprite_live_mcp.tools._common import ToolError
 
 # The exact success shape the live backend returns for an ordinary open sprite
 # (no ``error`` key — that key only ever appears in the failure shape).
@@ -162,3 +164,88 @@ def test_export_unity_slices_passes_wire_validation(monkeypatch, tmp_path):
     assert sc["mode"] == "slices"
     assert sc["texture_size"] == {"width": 32, "height": 32}
     assert (tmp_path / "atlas.png.meta").is_file()
+
+
+# --- look tools ------------------------------------------------------------------
+
+
+RED_PIXEL = base64.b64encode(bytes((255, 0, 0, 255))).decode()
+CLEAR_PIXEL = base64.b64encode(bytes(4)).decode()
+
+
+def _images(res):
+    return [c for c in res.content if c.type == "image"]
+
+
+def test_look_returns_an_image_over_the_wire(monkeypatch):
+    meta = {"rgba": RED_PIXEL, "width": 1, "height": 1, "frame": 1, "frames": 1, "layer": "all"}
+    monkeypatch.setattr("aseprite_live_mcp.tools.look.run", _stub_run(meta))
+    res = _wire_call("look")
+    assert res.isError is False, _text(res)
+    assert _images(res)[0].mimeType == "image/png"
+    assert '"image_width": 32' in _text(res)
+
+
+def test_look_animation_lists_cells(monkeypatch):
+    meta = {
+        "frames": [RED_PIXEL, CLEAR_PIXEL],
+        "durations": [100, 250],
+        "width": 1,
+        "height": 1,
+        "first_frame": 3,
+        "last_frame": 4,
+        "columns": 2,
+        "tag": "run",
+    }
+    monkeypatch.setattr("aseprite_live_mcp.tools.look.run", _stub_run(meta))
+    res = _wire_call("look_animation", {"tag": "run"})
+    assert res.isError is False, _text(res)
+    assert len(_images(res)) == 1
+    assert '"frame": 4' in _text(res) and '"duration_ms": 250' in _text(res)
+
+
+def test_look_rejects_truncated_pixels(monkeypatch):
+    meta = {"rgba": RED_PIXEL, "width": 2, "height": 2}
+    monkeypatch.setattr("aseprite_live_mcp.tools.look.run", _stub_run(meta))
+    res = _wire_call("look")
+    assert res.isError is True
+    assert "bad pixel data" in _text(res)
+
+
+RECT_ARGS = {"x": 0, "y": 0, "width": 1, "height": 1, "color": "#ff0000"}
+DRAWN = {"drawn": "rectangle"}
+
+
+def test_preview_off_leaves_a_drawing_tool_unchanged(monkeypatch):
+    monkeypatch.setattr("aseprite_live_mcp.tools.draw.run", _stub_run(DRAWN))
+    res = _wire_call("draw_rectangle", RECT_ARGS)
+    assert res.isError is False, _text(res)
+    assert not _images(res)
+    assert '"drawn": "rectangle"' in _text(res)
+
+
+def test_preview_adds_a_picture_and_keeps_structured_output(monkeypatch):
+    shots = iter([CLEAR_PIXEL, RED_PIXEL])
+
+    def snapshot(body, **kwargs):
+        return {"rgba": next(shots), "width": 1, "height": 1, "frame": 1}
+
+    monkeypatch.setattr("aseprite_live_mcp.tools.look.run", snapshot)
+    monkeypatch.setattr("aseprite_live_mcp.tools.draw.run", _stub_run(DRAWN))
+    res = _wire_call("draw_rectangle", {**RECT_ARGS, "preview": True})
+    assert res.isError is False, _text(res)
+    assert len(_images(res)) == 1
+    assert res.structuredContent == {"result": DRAWN}
+    assert '"changed_pixels": 1' in _text(res)
+
+
+def test_a_failed_preview_never_loses_the_edit(monkeypatch):
+    def broken(body, **kwargs):
+        raise ToolError("no pictures today")
+
+    monkeypatch.setattr("aseprite_live_mcp.tools.look.run", broken)
+    monkeypatch.setattr("aseprite_live_mcp.tools.draw.run", _stub_run(DRAWN))
+    res = _wire_call("draw_rectangle", {**RECT_ARGS, "preview": True})
+    assert res.isError is False, _text(res)
+    assert res.structuredContent == {"result": DRAWN}
+    assert "no pictures today" in _text(res)

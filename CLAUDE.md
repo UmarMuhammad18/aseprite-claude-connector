@@ -114,7 +114,8 @@ Ruff isn't in the `dev` extra, so install it separately. Set
 - **Tools that write files from Lua should hit the security prompt live**, such as
   the exports. The bridge runs received code under the chunk name `claude`, which
   Aseprite trusts separately from the extension. Only `Image:saveAs` has been seen
-  doing this so far.
+  doing this so far. Umar has chosen to give that code full trust, by answering the
+  prompt in Aseprite the first time it appears.
 - **The Mac setup is untested, and on hold by choice.** The extension folder path
   comes from Aseprite's source, but nothing here has run on a Mac.
 - **`setup` run through `uvx` would register a temporary path.** Install with `pip`.
@@ -152,7 +153,7 @@ On hold by choice: testing the full setup on a Mac.
 - Safety rails: a dry-run mode, a cap on how many pixels one call can change, and a
   single undo step per request so you can always roll back.
 
-### Godot export (must-have, no phase assigned yet)
+### 5. Godot export
 
 One-action export to Godot (sprite sheet plus a `SpriteFrames` `.tres` resource with
 animations from tags), to match the Unity export that already exists.

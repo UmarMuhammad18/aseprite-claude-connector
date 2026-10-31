@@ -150,6 +150,7 @@ Each phase only starts once the one before passes its finish line. The Mac tests
 | 2. Claude's eyes | `look` tool, animation strips, before/after views | Claude spots its own mistake from a picture | Done |
 | 3. Easy setup | Auto-start relay, Aseprite extension, Windows and Mac tests | Install takes one step | Done on Windows; Mac on hold |
 | 4. Smarter help | Docs search, `describe_sprite`, safety rails, then the cool extras | It beats the Blender connector for sprite work | Next |
+| 5. Godot export | One-action sprite sheet plus `SpriteFrames` `.tres`, with animations from tags | A sprite exported in one action plays its tagged animations in Godot | Not started |
 
 ## Limits, risks and open questions
 
@@ -167,9 +168,8 @@ Each phase only starts once the one before passes its finish line. The Mac tests
 - The relay refuses browsers, but any other program on the computer can still reach it. It has no password or token.
 - One undo per request isn't true yet: today it's one undo per tool call. Safety rails in phase 4 need to close that gap.
 
-**Open questions**
+**Decisions and open questions**
 
-- Which phase does Godot export belong to? It's a must-have, but no phase includes it yet.
+- Live exports: Claude's code gets full trust. Umar grants it in Aseprite's permission prompt the first time an export runs; we never write it to Aseprite's settings ourselves.
 - When do we rename the package, command and server? They still say `aseprite-live-mcp`.
-- Should Claude's code get full trust for live exports? Exports should raise an Aseprite permission prompt, and full trust lets that code read and write files without asking. This is Umar's call.
 - Why hasn't GitHub's CI run on our repo? Until it does, tests have only run locally on Windows.

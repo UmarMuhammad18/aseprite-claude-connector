@@ -1,0 +1,49 @@
+name: Mac
+
+# The full check on a real Mac: compile Aseprite, then run setup and every tool against
+# it. Compiling takes a while, so this runs when something Mac-sensitive changes, once a
+# week, and on demand. Aseprite's licence lets you compile it for your own use, so the
+# binary stays on the runner: it's never uploaded or cached.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+  pull_request:
+    paths:
+      - ".github/workflows/mac.yml"
+      - "aseprite_claude_connector/config.py"
+      - "aseprite_claude_connector/setup.py"
+      - "aseprite_claude_connector/extension/**"
+      - "scripts/check_mac.py"
+
+env:
+  ASEPRITE_TAG: v1.3.17.2
+
+jobs:
+  aseprite:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Install build tools
+        run: brew install ninja cmake || true
+      - name: Compile Aseprite
+        run: |
+          git clone --recursive --depth 1 --shallow-submodules --branch "$ASEPRITE_TAG" \
+            https://github.com/aseprite/aseprite.git "$RUNNER_TEMP/aseprite"
+          cd "$RUNNER_TEMP/aseprite"
+          ./build.sh --auto --norun
+          echo "ASEPRITE_PATH=$RUNNER_TEMP/aseprite/build/bin/aseprite" >> "$GITHUB_ENV"
+      - name: Install this package
+        run: python -m pip install ".[dev]"
+      - name: Setup lands where real Aseprite looks
+        run: python scripts/check_mac.py
+      - name: Every tool against real Aseprite
+        env:
+          ASEPRITE_MCP_BACKEND: headless
+          ASEPRITE_MCP_NO_UPDATE_CHECK: "1"
+        run: python tests/smoke_headless.py

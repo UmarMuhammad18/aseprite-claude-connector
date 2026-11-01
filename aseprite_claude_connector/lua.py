@@ -164,19 +164,44 @@ local function __celChanges(a, b, limit)
   end
   return n
 end
-local function __countChanges(before, after, limit)
+local function __countChanges(before, after, limit, touched)
   local n = 0
   for key, a in pairs(before) do
-    n = n + __celChanges(a, after[key], limit - n)
+    local c = __celChanges(a, after[key], limit - n)
+    if c > 0 then touched[key] = true end
+    n = n + c
     if n > limit then return n end
   end
   for key, b in pairs(after) do
     if not before[key] then
-      n = n + __celChanges(nil, b, limit - n)
+      local c = __celChanges(nil, b, limit - n)
+      if c > 0 then touched[key] = true end
+      n = n + c
       if n > limit then return n end
     end
   end
   return n
+end
+-- Which frames and layers changed, for the session journal.
+local function __touchedReport(s, touched, pixels)
+  local frames, layers, fseen, lseen = {}, {}, {}, {}
+  for key in pairs(touched) do
+    local place, frame = key:match("^(.*/)(%d+)$")
+    frame = tonumber(frame)
+    if not fseen[frame] then fseen[frame] = true; frames[#frames + 1] = frame end
+    local node, container = nil, s
+    for i in place:gmatch("(%d+)/") do
+      node = container.layers and container.layers[tonumber(i)]
+      if not node then break end
+      container = node
+    end
+    if node and not lseen[node.name] then
+      lseen[node.name] = true
+      layers[#layers + 1] = node.name
+    end
+  end
+  table.sort(frames)
+  return J({ frames = frames, layers = layers, pixels = pixels })
 end
 """
 
@@ -215,7 +240,12 @@ def _build_railed(body: str, undo_label: str, dry_run: bool, max_pixels: int) ->
     """Measure the edit inside its transaction. Raising from there makes Aseprite roll
     the transaction back, so a stopped edit leaves nothing on the undo stack."""
     rails = lua_locals(
-        __DRY=dry_run, __CAP=max_pixels, __LABEL=undo_label, __MSG_DRY=_DRY_MSG, __MSG_CAP=_CAP_MSG
+        __DRY=dry_run,
+        __CAP=max_pixels,
+        __LABEL=undo_label,
+        __MSG_DRY=_DRY_MSG,
+        __MSG_CAP=_CAP_MSG,
+        CHANGES_MARK=CHANGES_MARK,
     )
     return (
         LUA_PRELUDE
@@ -228,6 +258,7 @@ local __limit = (__DRY or __CAP <= 0) and math.huge or __CAP
 local __before = __snapshot(__s)
 local __layers, __frames = #__s.layers, #__s.frames
 local __r
+local __touched, __changes = {}, nil
 local __ok, __err = pcall(function()
   app.transaction(__LABEL, function()
     __r = (function()
@@ -235,7 +266,8 @@ local __ok, __err = pcall(function()
         + body
         + """
     end)()
-    local n = __countChanges(__before, __snapshot(__s), __limit)
+    local n = __countChanges(__before, __snapshot(__s), __limit, __touched)
+    __changes = __touchedReport(__s, __touched, n)
     if __DRY then
       error(string.format(__MSG_DRY, n, __layers, #__s.layers, __frames, #__s.frames), 0)
     elseif n > __limit then
@@ -244,10 +276,14 @@ local __ok, __err = pcall(function()
   end)
 end)
 if not __ok then error(__err, 0) end
-return __r
+if __r == nil then return CHANGES_MARK .. __changes .. CHANGES_MARK end
+return CHANGES_MARK .. __changes .. CHANGES_MARK .. tostring(__r)
 """
     )
 
+
+# Fences the journal report off from the tool's own result on the way back to Python.
+CHANGES_MARK = "@@changes@@"
 
 _DRY_MSG = (
     "dry run: this edit would change %d pixels (layers %d -> %d, frames %d -> %d). "

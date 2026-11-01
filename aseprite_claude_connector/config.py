@@ -24,6 +24,7 @@ _DEFAULT_ASEPRITE_PATHS = [
     r"C:\Program Files\Aseprite\Aseprite.exe",
     r"C:\Program Files (x86)\Aseprite\Aseprite.exe",
     "/Applications/Aseprite.app/Contents/MacOS/aseprite",
+    "~/Applications/Aseprite.app/Contents/MacOS/aseprite",
     "/usr/bin/aseprite",
     "/usr/local/bin/aseprite",
 ]
@@ -40,7 +41,8 @@ class Config:
 
 
 def _default_aseprite() -> str:
-    for p in _DEFAULT_ASEPRITE_PATHS:
+    for candidate in _DEFAULT_ASEPRITE_PATHS:
+        p = os.path.expanduser(candidate)
         if os.path.isfile(p):
             return p
     return "aseprite"  # rely on PATH

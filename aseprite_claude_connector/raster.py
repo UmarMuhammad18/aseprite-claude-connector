@@ -108,6 +108,128 @@ def diff(a: Raster, b: Raster) -> dict:
     return {"changed_pixels": changed, "bbox": bbox}
 
 
+def blit(dest: bytearray, dest_width: int, src: Raster, left: int, top: int) -> None:
+    """Copy ``src`` into a raw RGBA buffer, replacing what's there."""
+    for y in range(src.height):
+        start = ((top + y) * dest_width + left) * 4
+        dest[start : start + src.width * 4] = src.rgba[y * src.width * 4 : (y + 1) * src.width * 4]
+
+
+def strip(frames: list[Raster]) -> Raster:
+    """Same-sized frames in a row, touching, on transparency: a sprite strip."""
+    w, h = frames[0].width, frames[0].height
+    out = bytearray(len(frames) * w * h * 4)
+    for n, frame in enumerate(frames):
+        blit(out, len(frames) * w, frame, n * w, 0)
+    return Raster(len(frames) * w, h, bytes(out))
+
+
+def remap(src: Raster, colors: dict[tuple[int, int, int], tuple[int, int, int]]) -> Raster:
+    """Swap exact RGB colors, keeping each pixel's alpha."""
+    table = {bytes(k): bytes(v) for k, v in colors.items()}
+    out = bytearray(src.rgba)
+    for i in range(0, len(out), 4):
+        if out[i + 3]:
+            hit = table.get(bytes(out[i : i + 3]))
+            if hit:
+                out[i : i + 3] = hit
+    return Raster(src.width, src.height, bytes(out))
+
+
+class _NearestInCube(dict):
+    """Color bytes to an index in the 6x7x6 cube, worked out once per color."""
+
+    def __missing__(self, c):
+        index = (round(c[0] / 51) * 7 + round(c[1] * 6 / 255)) * 6 + round(c[2] / 51)
+        self[c] = index
+        return index
+
+
+def _gif_palette(frames: list[Raster]) -> tuple[list[tuple[int, int, int]], dict]:
+    """A palette for these frames: the exact colors if they fit, or else a 6x7x6 color
+    cube. Returns the palette and a lookup from color bytes to index."""
+    seen: dict[bytes, int] = {}
+    for frame in frames:
+        for i in range(0, len(frame.rgba), 4):
+            seen.setdefault(frame.rgba[i : i + 3], len(seen))
+        if len(seen) > 256:
+            cube = [
+                (r * 51, g * 255 // 6, b * 51) for r in range(6) for g in range(7) for b in range(6)
+            ]
+            return cube, _NearestInCube()
+    return [tuple(c) for c in seen], seen
+
+
+def _lzw(indices: bytes, min_code: int) -> bytes:
+    """GIF's variable-width LZW, with its codes packed low bit first."""
+    clear, stop = 1 << min_code, (1 << min_code) + 1
+    table = {bytes((i,)): i for i in range(clear)}
+    next_code, width = stop + 1, min_code + 1
+    out, bits, count = bytearray(), 0, 0
+
+    def emit(code: int) -> None:
+        nonlocal bits, count
+        bits |= code << count
+        count += width
+        while count >= 8:
+            out.append(bits & 255)
+            bits >>= 8
+            count -= 8
+
+    emit(clear)
+    run = b""
+    for i in range(len(indices)):
+        grown = run + indices[i : i + 1]
+        if grown in table:
+            run = grown
+            continue
+        emit(table[run])
+        if next_code == 4096:
+            emit(clear)
+            table = {bytes((c,)): c for c in range(clear)}
+            next_code, width = stop + 1, min_code + 1
+        else:
+            table[grown] = next_code
+            if next_code == 1 << width:
+                width += 1
+            next_code += 1
+        run = indices[i : i + 1]
+    if run:
+        emit(table[run])
+    emit(stop)
+    if count:
+        out.append(bits & 255)
+    return bytes(out)
+
+
+def encode_gif(frames: list[Raster], delay_ms: int) -> bytes:
+    """Encode same-sized frames as a looping GIF. Flatten them with ``over_background``
+    first: alpha is ignored here."""
+    palette, lookup = _gif_palette(frames)
+    size = max(2, (len(palette) - 1).bit_length())
+    table = b"".join(bytes(c) for c in palette).ljust((1 << size) * 3, b"\0")
+    w, h = frames[0].width, frames[0].height
+    parts = [
+        b"GIF89a",
+        struct.pack("<HHBBB", w, h, 0xF0 | (size - 1), 0, 0),
+        table,
+        b"!\xff\x0bNETSCAPE2.0\x03\x01\x00\x00\x00",
+    ]
+    delay = max(2, round(delay_ms / 10))
+    for frame in frames:
+        rgba = frame.rgba
+        indices = bytes(lookup[rgba[i : i + 3]] for i in range(0, len(rgba), 4))
+        parts.append(b"!\xf9\x04\x00" + struct.pack("<H", delay) + b"\x00\x00")
+        parts.append(b"," + struct.pack("<HHHHB", 0, 0, w, h, 0) + bytes((size,)))
+        data = _lzw(indices, size)
+        for i in range(0, len(data), 255):
+            block = data[i : i + 255]
+            parts.append(bytes((len(block),)) + block)
+        parts.append(b"\x00")
+    parts.append(b";")
+    return b"".join(parts)
+
+
 def encode_png(src: Raster) -> bytes:
     """Encode as an 8-bit RGBA PNG."""
 

@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import json
 import re
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from ..backends import get_backend
 from ..config import load_config
-from ..lua import build_lua
+from ..lua import CHANGES_MARK, build_lua
 
 
 class ToolError(Exception):
@@ -37,6 +39,15 @@ class Rails:
 
 
 rails = Rails()
+
+JOURNAL_LIMIT = 500
+
+# Every edit this server process made, oldest first, for change_summary and
+# explain_changes. It's kept here rather than in Aseprite so it survives the headless
+# backend, where each call is its own process.
+journal: list[dict] = []
+# Called with the sprite file after each edit; the session recorder hangs off this.
+after_edit: list[Callable[[str | None], None]] = []
 
 # Effects a rolled-back transaction can't undo: files, and which documents are open.
 _OUTSIDE_THE_SPRITE = re.compile(
@@ -86,7 +97,28 @@ def run(
     res = backend.exec(lua, file=file, save=do_save)
     if not res.ok:
         raise ToolError(res.error or "unknown Aseprite error")
-    return _parse(res.result)
+    changes, result = _split_changes(res.result)
+    if mutates and not rails.dry_run:
+        _note_edit(undo_label, changes, file)
+    return _parse(result)
+
+
+def _split_changes(result: str | None) -> tuple[dict | None, str | None]:
+    """Part the journal report from the tool's own result. A rail-less edit has none."""
+    if not result or not result.startswith(CHANGES_MARK):
+        return None, result
+    report, _, rest = result[len(CHANGES_MARK) :].partition(CHANGES_MARK)
+    try:
+        return json.loads(report), rest
+    except ValueError:
+        return None, rest
+
+
+def _note_edit(label: str, changes: dict | None, file: str | None) -> None:
+    journal.append({"label": label, "at": time.time(), **(changes or {})})
+    del journal[:-JOURNAL_LIMIT]
+    for hook in after_edit:
+        hook(file)
 
 
 def _parse(s: str):

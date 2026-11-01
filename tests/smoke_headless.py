@@ -1117,6 +1117,334 @@ async def main() -> int:
             else:
                 failures.append((live_tool, f"unexpected error text: {e}"))
 
+    # --- the cool extras ---
+
+    def payload(res):
+        """The JSON part of a result, picture or no picture."""
+        if isinstance(res, tuple):
+            res = res[0]
+        parts = res if isinstance(res, list) else [res]
+        for part in parts:
+            text = getattr(part, "text", None)
+            if text:
+                return json.loads(text)
+        raise ValueError(f"no JSON in {res}")
+
+    def has_picture(res):
+        parts = res[0] if isinstance(res, tuple) else res
+        return any(getattr(p, "type", "") == "image" for p in parts)
+
+    def check(name, ok, detail=""):
+        if ok:
+            print(f"  OK  {name}")
+        else:
+            failures.append((name, detail or "check failed"))
+
+    # in-betweening: two poses of different shape, one frame apart
+    ib = os.path.join(d, "inbetween.aseprite")
+    await step("create_sprite", {"width": 24, "height": 24, "color_mode": "rgb", "file": ib})
+    await step("add_layer", {"name": "backdrop", "file": ib})
+    await step("add_frame", {"file": ib})
+    await step(
+        "run_lua",
+        {
+            "file": ib,
+            "edit": True,
+            "save": True,
+            "code": """
+local s = app.activeSprite
+local a = Image(24, 24, ColorMode.RGB); a:clear(Color{ r = 200, g = 40, b = 40 })
+local b = Image(24, 24, ColorMode.RGB)
+for x = 0, 3 do for y = 0, 5 do b:drawPixel(x + 2, y + 2, Color{ r = 200, g = 40, b = 40 }) end end
+local c = Image(24, 24, ColorMode.RGB)
+for x = 0, 7 do for y = 0, 1 do c:drawPixel(x + 14, y + 18, Color{ r = 40, g = 40, b = 200 }) end end
+s.layers[1]:cel(1).image = b
+s:newCel(s.layers[1], 2, c, Point(0, 0))
+s:newCel(s.layers[2], 1, a, Point(0, 0))
+s:newCel(s.layers[2], 2, a, Point(0, 0))
+app.activeLayer = s.layers[1]
+s.layers[2].isVisible = false
+return J({ ok = true })
+""",
+        },
+    )
+    res = await step(
+        "inbetween",
+        {"from_frame": 1, "count": 3, "layer": "Layer 1", "smear": True, "file": ib},
+    )
+    made = payload(res)["result"]
+    check("inbetween adds frames", made["frames"] == 5 and made["inserted"] == [2, 3, 4], made)
+    check("inbetween shows the result", has_picture(res))
+    colors = await step(
+        "run_lua",
+        {
+            "file": ib,
+            "code": """
+local s = app.activeSprite
+local seen, counts = {}, {}
+for n = 1, 5 do
+  local cel = s.layers[1]:cel(n)
+  local solid = 0
+  for it in cel.image:pixels() do
+    local v = it()
+    if app.pixelColor.rgbaA(v) > 0 then solid = solid + 1; seen[v] = true end
+  end
+  counts[n] = solid
+end
+local kinds = 0
+for _ in pairs(seen) do kinds = kinds + 1 end
+return J({ kinds = kinds, counts = counts, held = s.layers[2]:cel(3) ~= nil })
+""",
+        },
+    )
+    found = json.loads(_text(colors))
+    check("inbetween invents no colors", found["kinds"] == 2, found)
+    check("inbetween keeps art on every frame", min(found["counts"]) > 0, found)
+    check("other layers hold through inbetween", found["held"], found)
+
+    # walk cycle
+    wk = os.path.join(d, "walk.aseprite")
+    await step("create_sprite", {"width": 64, "height": 64, "color_mode": "rgb", "file": wk})
+    res = await step(
+        "walk_cycle_template", {"body_height": 48, "frames": 8, "gait": "run", "file": wk}
+    )
+    made = json.loads(_text(res))
+    check(
+        "walk cycle uses a blank sprite", made["first_frame"] == 1 and made["last_frame"] == 8, made
+    )
+    tags = json.loads(_text(await step("list_tags", {"file": wk})))
+    check("walk cycle is tagged", "run" in str(tags), tags)
+    loop = json.loads(_text(await step("check_loop", {"tag": "run", "file": wk})))
+    check("a walk cycle loops cleanly", loop["verdict"] == "smooth", loop)
+    res = await step(
+        "walk_cycle_template", {"body_height": 40, "frames": 4, "facing": "left", "file": wk}
+    )
+    check("a second cycle goes after the first", json.loads(_text(res))["first_frame"] == 9)
+    try:
+        await mcp.call_tool("walk_cycle_template", {"body_height": 200, "file": wk})
+        failures.append(("walk_cycle_template", "should refuse a canvas too small"))
+    except Exception as e:
+        check("walk cycle refuses a small canvas", "canvas" in str(e), e)
+
+    # timing and loop checks
+    res = await step("apply_timing", {"preset": "ease_in_out", "tag": "run", "file": wk})
+    check("timing returns durations", len(json.loads(_text(res))["durations_ms"]) == 8)
+    info = await step(
+        "run_lua",
+        {
+            "file": wk,
+            "code": "local s = app.activeSprite\n"
+            "return J({ a = s.frames[1].duration, b = s.frames[4].duration })",
+        },
+    )
+    speeds = json.loads(_text(info))
+    check("timing lands on the frames", speeds["a"] > speeds["b"], speeds)
+
+    still = os.path.join(d, "still.aseprite")
+    await step("create_sprite", {"width": 8, "height": 8, "color_mode": "rgb", "file": still})
+    await step(
+        "draw_rectangle",
+        {"x": 1, "y": 1, "width": 3, "height": 3, "color": "#ff0000", "file": still},
+    )
+    await step("duplicate_frame", {"number": 1, "file": still})
+    await step("duplicate_frame", {"number": 1, "file": still})
+    verdict = json.loads(_text(await step("check_loop", {"file": still})))["verdict"]
+    check("identical frames read as static", verdict == "static", verdict)
+
+    # strays, and the extended outline
+    st = os.path.join(d, "stray.aseprite")
+    await step("create_sprite", {"width": 16, "height": 16, "color_mode": "rgb", "file": st})
+    await step(
+        "draw_rectangle", {"x": 2, "y": 2, "width": 5, "height": 5, "color": "#20a040", "file": st}
+    )
+    await step(
+        "draw_rectangle",
+        {"x": 12, "y": 12, "width": 1, "height": 1, "color": "#ff00ff", "file": st},
+    )
+    res = await step("find_stray_pixels", {"file": st})
+    report = payload(res)
+    check("the stray pixel is found", report["first_isolated"] == [[12, 12]], report)
+    check("strays come with a picture", has_picture(res))
+
+    res = await step("add_outline", {"selective": True, "all_frames": True, "file": st})
+    made = json.loads(_text(res))
+    check("selective outline covers the cel", made["frames"] == 1 and made["pixels"] > 20, made)
+    px = await step(
+        "run_lua",
+        {
+            "file": st,
+            "code": """
+local s = app.activeSprite
+local i = Image(s.width, s.height, ColorMode.RGB); i:drawSprite(s, 1)
+local v = i:getPixel(1, 4)
+local pc = app.pixelColor
+return J({ r = pc.rgbaR(v), g = pc.rgbaG(v), b = pc.rgbaB(v), a = pc.rgbaA(v) })
+""",
+        },
+    )
+    edge = json.loads(_text(px))
+    check(
+        "selective outline darkens the art's color", edge["a"] == 255 and 0 < edge["g"] < 160, edge
+    )
+
+    # variants, GameMaker, atlas
+    out_dir = os.path.join(d, "out")
+    res = await step(
+        "recolor_variants",
+        {
+            "variants": {"blue": {"#20a040": "#2040c0"}, "gold": {"#123456": "#c0a020"}},
+            "output_dir": out_dir,
+            "name": "gem",
+            "file": st,
+        },
+    )
+    meta = payload(res)
+    check("variants are written", all(os.path.getsize(p) > 0 for p in meta["files"].values()), meta)
+    check("unmatched colors are reported", meta["unmatched"] == {"gold": ["#123456"]}, meta)
+
+    res = json.loads(
+        _text(await step("export_gamemaker", {"output_dir": out_dir, "name": "runner", "file": wk}))
+    )
+    names = [s["file"] for s in res["strips"]]
+    check("GameMaker strips follow its naming", "runner_run_strip8.png" in names, names)
+    await step(
+        "open_sprite",
+        {
+            "path": os.path.join(out_dir, "runner_run_strip8.png"),
+        },
+    )
+
+    atlas = os.path.join(out_dir, "atlas.png")
+    res = await step("pack_atlas", {"sprites": [wk, st], "out_png": atlas})
+    made = json.loads(_text(res))
+    with open(made["json"], encoding="utf-8") as f:
+        mapped = json.load(f)
+    check(
+        "the atlas maps every frame",
+        "walk 0" in mapped["frames"] and "stray 0" in mapped["frames"],
+        list(mapped["frames"])[:4],
+    )
+
+    # reference layer
+    await step("run_lua", {"file": st, "code": "return J({ ok = true })"})
+    ref_png = os.path.join(out_dir, "gem_blue.png")
+    made = json.loads(_text(await step("add_reference_image", {"image_path": ref_png, "file": wk})))
+    check("the reference covers every frame", made["frames"] == 12, made)
+    layers = await step(
+        "run_lua",
+        {
+            "file": wk,
+            "code": """
+local s = app.activeSprite
+local top = s.layers[#s.layers]
+return J({ name = top.name, locked = not top.isEditable, opacity = top.opacity })
+""",
+        },
+    )
+    top = json.loads(_text(layers))
+    check(
+        "the reference is faded and locked",
+        top == {"name": "Reference", "locked": True, "opacity": 90},
+        top,
+    )
+
+    # "fix this bit": a selection can't persist in a file, so make it in the same script
+    from aseprite_claude_connector.tools._common import Captured, rails, run
+    from aseprite_claude_connector.tools.safety import _clipped
+
+    fx = os.path.join(d, "fix.aseprite")
+    await step("create_sprite", {"width": 16, "height": 16, "color_mode": "rgb", "file": fx})
+    await step(
+        "draw_rectangle",
+        {"x": 0, "y": 0, "width": 16, "height": 16, "color": "#101010", "file": fx},
+    )
+    rails.capturing = True
+    try:
+        tool = mcp._tool_manager.get_tool("draw_rectangle")
+        tool.fn(x=0, y=0, width=16, height=16, color="#ffffff")
+    except Captured as caught:
+        captured = caught.body
+    finally:
+        rails.capturing = False
+    run(
+        "app.activeSprite.selection = Selection(Rectangle(4, 4, 4, 4))\n" + _clipped([captured]),
+        mutates=True,
+        undo_label="Fix this bit",
+        file=fx,
+    )
+    probe = await step(
+        "run_lua",
+        {
+            "file": fx,
+            "code": """
+local s = app.activeSprite
+local i = Image(s.width, s.height, ColorMode.RGB); i:drawSprite(s, 1)
+local pc = app.pixelColor
+return J({ inside = pc.rgbaR(i:getPixel(5, 5)), outside = pc.rgbaR(i:getPixel(1, 1)),
+  edge = pc.rgbaR(i:getPixel(8, 5)) })
+""",
+        },
+    )
+    clip = json.loads(_text(probe))
+    check("edits land inside the selection", clip["inside"] == 255, clip)
+    check(
+        "edits outside the selection are put back",
+        clip["outside"] == 16 and clip["edge"] == 16,
+        clip,
+    )
+    try:
+        await mcp.call_tool(
+            "edit_in_selection",
+            {
+                "steps": [
+                    {
+                        "tool": "draw_pixels",
+                        "args": {"pixels": [{"x": 0, "y": 0, "color": "#ffffff"}]},
+                    }
+                ],
+                "file": fx,
+            },
+        )
+        failures.append(("edit_in_selection", "should refuse with nothing selected"))
+    except Exception as e:
+        check("edit_in_selection needs a selection", "select an area" in str(e), e)
+
+    # journal, explanations, and the timelapse
+    summary = json.loads(_text(await step("change_summary", {"last": 5})))
+    check("the journal names the edit", summary["summary"][-1]["edit"] == "Fix this bit", summary)
+    check("the journal knows the frame", summary["summary"][-1]["frames"] == "1", summary)
+    explained = json.loads(_text(await step("explain_changes", {"last": 40})))
+    check(
+        "explanations come back",
+        any("Rectangle (U" in x["by_hand"] for x in explained["explanations"]),
+        explained,
+    )
+
+    rec = os.path.join(d, "rec.aseprite")
+    await step("create_sprite", {"width": 16, "height": 16, "color_mode": "rgb", "file": rec})
+    await step("start_recording", {"file": rec})
+    for n in range(3):
+        await step(
+            "draw_rectangle",
+            {"x": n * 4, "y": 2, "width": 3, "height": 3, "color": "#ffaa00", "file": rec},
+        )
+    gif = os.path.join(out_dir, "build.gif")
+    made = json.loads(_text(await step("stop_recording", {"out_path": gif, "frame_ms": 200})))
+    check(
+        "the timelapse holds the start and each edit",
+        made["frames"] == 4 and made["failed_captures"] == 0,
+        made,
+    )
+    opened = await step(
+        "run_lua",
+        {
+            "file": gif,
+            "code": "local s = app.activeSprite\nreturn J({ w = s.width, frames = #s.frames })",
+        },
+    )
+    shown = json.loads(_text(opened))
+    check("Aseprite can open the timelapse", shown["frames"] >= 4 and shown["w"] > 16, shown)
+
     # --- MCP prompt renders its guidance ---
     try:
         pr = await mcp.get_prompt(

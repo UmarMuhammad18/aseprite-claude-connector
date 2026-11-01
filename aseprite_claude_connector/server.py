@@ -14,10 +14,12 @@ from .config import load_config
 from .tools import (
     animate,
     artqa,
+    atlas,
     batch,
     brushes,
     canvas,
     cels,
+    cleanup,
     color,
     docs,
     draw,
@@ -33,12 +35,14 @@ from .tools import (
     live,
     look,
     lua_escape,
+    motion,
     palette,
     prompts,
     resources,
     safety,
     selection,
     session,
+    session_tools,
     shading,
     slices,
     tags,
@@ -57,7 +61,9 @@ as an image, and check your work with it rather than editing blind. Use
 `describe_sprite` for a one-call summary, `search_api_docs` before writing Lua, and
 `edit_batch` to make a multi-step change one undo step. `select_frame` and
 `select_layer` choose where edits land.
-Use `export_to_game` to put art straight into a Godot or Unity project.
+Use `export_to_game` to put art straight into a Godot or Unity project. When the
+artist selects an area and asks you to fix it, use `edit_in_selection`. Use
+`check_loop` before calling an animation finished.
 """
 
 # Tool modules (each exposes register(mcp)).
@@ -84,11 +90,15 @@ _TOOL_MODULES = (
     tags,
     tilemaps,
     animate,
+    motion,
     export,
     unity_export,
     godot_export,
     game_export,
+    atlas,
     artqa,
+    cleanup,
+    session_tools,
     batch,
     editor,
     live,

@@ -90,41 +90,41 @@ These are what it takes to beat the Blender connector. The first two matter most
 - [x] **Safety rails.** A dry-run mode, a cap on how many pixels one call can change (250,000 by default), and `edit_batch`, which makes several tools one undo step. The server can't see where a request starts or ends, so Claude has to choose `edit_batch`. `run_lua` isn't capped.
 - [x] **Godot export.** `export_godot` writes a sprite sheet plus a `SpriteFrames` `.tres` resource with animations from tags, to match the Unity export. Still needs opening in real Godot.
 - [x] **Export to your game.** File → Export → Export to Game... in Aseprite, or `export_to_game` through Claude, puts art in the project's sprites folder, ready to select in Godot or Unity. Still needs opening in real engines.
-- [ ] **Works on your OS.** Test the full live setup on Windows and Mac, with standalone Aseprite. Windows is done; Mac is on hold.
+- [ ] **Works on your OS.** Test the full live setup on Windows and Mac, with standalone Aseprite. Windows is done. On a Mac, the `Mac` workflow checks setup and every tool against a compiled Aseprite; only the live editor connection still needs a person with a Mac.
 
 ## Cool to have
 
-Nice extras once the must-haves work. Roughly ordered by how much they'd help day-to-day.
+All built, checked against real Aseprite headless, and the core ones checked in the live editor too.
 
 **Animation helpers**
 
-- In-betweening: you draw key poses, Claude fills the frames between using tweens and smears, then shows you the result.
-- Walk and run cycle templates: pick a body size and frame count, get a timed, tagged skeleton to draw over.
-- Timing presets: ease-in, ease-out, hold and bounce applied to frame durations in one call.
-- Loop check: compare the last and first frames and flag a jump.
+- [x] In-betweening: `inbetween` fills the frames between two key poses and shows the result. Pixels trade through a dither, so no new colours appear.
+- [x] Walk and run cycle templates: `walk_cycle_template` gives a timed, tagged skeleton to draw over.
+- [x] Timing presets: `apply_timing` applies ease-in, ease-out, hold and bounce in one call.
+- [x] Loop check: `check_loop` compares the last and first frames and flags a jump.
 
 **Colour and cleanup**
 
-- Palette ramps from one colour, with hue shifting in shadows and highlights.
-- Orphan pixel and stray-colour finder, with a picture showing where they are.
-- Auto outline, one colour or selective, per layer.
-- Recolour a sprite into team colours or seasons in one batch.
+- [x] Palette ramps from one colour: this already existed as `generate_color_ramp`, with hue shifting.
+- [x] Orphan pixel and stray-colour finder: `find_stray_pixels`, with a picture showing where they are.
+- [x] Auto outline: `add_outline` now does selective outlines, any layer, and all frames.
+- [x] Recolour in one batch: `recolor_variants` writes one strip per team or season.
 
 **Working together**
 
-- Reference images: you drop a sketch in the chat and Claude imports it as a faded guide layer.
-- "Fix this bit": you select an area in Aseprite and Claude works only inside it.
-- Change summary: after a long session, a short list of what Claude changed, frame by frame.
-- Session recording: export the whole build as a GIF timelapse.
+- [x] Reference images: `add_reference_image` makes a faded, locked guide layer. It takes a file on disk, so a picture pasted into chat needs saving first.
+- [x] "Fix this bit": `edit_in_selection` changes only what's inside your selection.
+- [x] Change summary: `change_summary` lists what Claude changed, frame by frame.
+- [x] Session recording: `start_recording` and `stop_recording` make a GIF timelapse.
 
 **Export and game engines**
 
-- GameMaker export preset beside the Unity and Godot ones.
-- Pack several sprites into one atlas with JSON data.
+- [x] GameMaker export: `export_gamemaker` writes strips named so GameMaker cuts them up itself. Not yet opened in GameMaker.
+- [x] Atlas packing: `pack_atlas` packs several sprites into one texture with JSON data.
 
 **Learning**
 
-- Explain mode: Claude says which Aseprite tool or shortcut would do what it just did, so you pick up techniques.
+- [x] Explain mode: `explain_changes` says which Aseprite tool or shortcut does what Claude just did. Shortcuts come from Aseprite's own `gui.xml`.
 
 ## How it fits together
 
@@ -132,7 +132,7 @@ Nice extras once the must-haves work. Roughly ordered by how much they'd help da
 Claude (desktop app or Claude Code)
    |  tool calls  ↓        ↑  images back
 Our MCP server (Python)
-   ├─ Typed tools: 151, including look tools
+   ├─ Typed tools: 165, including look tools
    ├─ Relay, auto-started: WebSocket on this computer
    │     └─ live → Aseprite (open), via bridge extension, one undo per edit
    ├─ Docs search: Lua API and user manual
@@ -143,14 +143,14 @@ The shape is the same as the original project. What changed is that the relay st
 
 ## Roadmap
 
-Each phase only starts once the one before passes its finish line. The Mac tests in phase 3 are the one exception: they're on hold by choice, so phase 4 can start without them.
+Each phase only starts once the one before passes its finish line. The Mac live test in phase 3 is the one exception: it needs someone with a Mac, so later phases went ahead without it.
 
 | Phase | Work | Done when | Status |
 | --- | --- | --- | --- |
 | 1. Fork and run | Fork on GitHub; get live mode working on Umar's computer | A test edit lands live in the open sprite | Done |
 | 2. Claude's eyes | `look` tool, animation strips, before/after views | Claude spots its own mistake from a picture | Done |
-| 3. Easy setup | Auto-start relay, Aseprite extension, Windows and Mac tests | Install takes one step | Done on Windows; Mac on hold |
-| 4. Smarter help | Docs search, `describe_sprite`, safety rails, then the cool extras | It beats the Blender connector for sprite work | Must-haves done; cool extras not started |
+| 3. Easy setup | Auto-start relay, Aseprite extension, Windows and Mac tests | Install takes one step | Done on Windows; Mac checked in CI except the live connection |
+| 4. Smarter help | Docs search, `describe_sprite`, safety rails, then the cool extras | It beats the Blender connector for sprite work | Done |
 | 5. Godot export | One-action sprite sheet plus `SpriteFrames` `.tres`, with animations from tags | A sprite exported in one action plays its tagged animations in Godot | Built; needs checking in Godot |
 | 6. Export to your game | One Export button plus `export_to_game`, for Godot, Unity or any folder | Art exported from Aseprite can be selected straight away in the engine | Built; needs checking in Godot and Unity |
 

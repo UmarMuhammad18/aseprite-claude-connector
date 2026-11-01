@@ -32,6 +32,7 @@ from .animate import _ONION_RENDER
 
 _MAX_FRAMES = 64
 _MAX_PREVIEW_PIXELS = 4_000_000
+_MAX_GRAB_PIXELS = 16_000_000
 
 _LOOK_HELPERS = """
 local pc = app.pixelColor
@@ -161,6 +162,48 @@ return J({ frames = packed, durations = durations, width = w, height = h,
   first_frame = first, last_frame = last, columns = cols, tag = TAG or "" })
 """
 
+_GRAB = """
+local first, last = FROM or 1, TO or #s.frames
+if TAG then
+  local hit = nil
+  for _, t in ipairs(s.tags) do if t.name == TAG then hit = t; break end end
+  if not hit then error("no tag named '" .. TAG .. "'") end
+  first, last = hit.fromFrame.frameNumber, hit.toFrame.frameNumber
+end
+if s.width * s.height * (last - first + 1) > MAX_PIXELS then
+  error("too many pixels to read at once; pass a tag, or use a smaller sprite")
+end
+local packed, durations = {}, {}
+for n = first, last do
+  packed[#packed + 1] = pack(render(n, nil))
+  durations[#durations + 1] = math.floor(s.frames[n].duration * 1000 + 0.5)
+end
+local tags = {}
+for i, t in ipairs(s.tags) do
+  tags[i] = { name = t.name, from = t.fromFrame.frameNumber, to = t.toFrame.frameNumber }
+end
+local result = J({ frames = packed, durations = durations, width = s.width, height = s.height,
+  name = s.filename, tags = tags })
+if __previous then app.activeSprite = __previous end
+return result
+"""
+
+_PICK = """
+local __previous = nil
+if PICK then
+  __previous = app.activeSprite
+  local found = false
+  for _, sp in ipairs(app.sprites) do
+    if sp.filename == PICK or sp.filename:match("[^\\\\/]+$") == PICK then
+      app.activeSprite = sp
+      found = true
+      break
+    end
+  end
+  if not found then error("no open sprite named '" .. PICK .. "'") end
+end
+"""
+
 _LOOK_ONION_TAIL = """
 return J({ rgba = pack(out), width = out.width, height = out.height, frame = FRAME,
   ghosts_prev = gp, ghosts_next = gn, note = "red = earlier frames, blue = later frames" })
@@ -202,15 +245,91 @@ def _take(res: dict, key: str = "rgba") -> Raster:
     return _raster(res.pop("width"), res.pop("height"), res.pop(key))
 
 
-def _png_content(img: Raster, meta: dict) -> list:
+def png_content(img: Raster, meta: dict) -> list:
     meta = {**meta, "image_width": img.width, "image_height": img.height}
     return [Image(data=encode_png(img), format="png"), json.dumps(meta)]
+
+
+def frames_of(tag: str | None = None, file: str | None = None, pick: str | None = None) -> dict:
+    """Read frames at full size, for tools that write their own files. ``pick`` reads
+    another open sprite by name. Frame numbers in ``tags`` are the sprite's own."""
+    opts = lua_locals(TAG=tag, FROM=None, TO=None, PICK=pick, MAX_PIXELS=_MAX_GRAB_PIXELS)
+    res = run(opts + _PICK + _LOOK_HELPERS + _GRAB, file=file)
+    if not isinstance(res, dict) or not res.get("frames"):
+        raise ToolError("no pictures came back from Aseprite")
+    w, h = res["width"], res["height"]
+    return {
+        "frames": [_raster(w, h, f) for f in res["frames"]],
+        "durations": res["durations"],
+        "tags": res["tags"],
+        "name": res["name"],
+        "size": {"width": w, "height": h},
+    }
+
+
+def animation_picture(result, first: int, last: int, *, max_size: int, file: str | None) -> list:
+    """An edit's result beside a strip of the frames it made. The edit always wins: a
+    failed picture is reported alongside it, never in place of it."""
+    try:
+        return _animation(
+            lua_locals(
+                SCALE=None,
+                MAX_SIZE=int(max_size),
+                TAG=None,
+                FROM=first,
+                TO=last,
+                COLUMNS=None,
+                LAYER=None,
+                MAX_FRAMES=_MAX_FRAMES,
+            ),
+            None,
+            max_size,
+            "checker",
+            file,
+            result,
+        )
+    except ToolError as e:
+        return [json.dumps({"result": result, "preview_error": str(e)})]
+
+
+def _animation(opts: str, scale, max_size: int, bg, file: str | None, result=None) -> list:
+    res = run(opts + _LOOK_HELPERS + _LOOK_ANIMATION, file=file)
+    if not isinstance(res, dict) or not res.get("frames"):
+        raise ToolError("no pictures came back from Aseprite")
+    frames = [_raster(res["width"], res["height"], f) for f in res["frames"]]
+    cols = res["columns"]
+    rows = -(-len(frames) // cols)
+    k = fit_factor(cols * frames[0].width, rows * frames[0].height, scale, max_size)
+    sheet = tiled([over_background(resized(f, k), bg) for f in frames], cols)
+    first = res["first_frame"]
+    cells = [
+        {
+            "frame": first + i,
+            "row": i // cols + 1,
+            "column": i % cols + 1,
+            "duration_ms": ms,
+        }
+        for i, ms in enumerate(res["durations"])
+    ]
+    meta = {
+        "first_frame": first,
+        "last_frame": res["last_frame"],
+        "count": len(frames),
+        "tag": res["tag"],
+        "columns": cols,
+        "rows": rows,
+        "scale": k,
+        "cells": cells,
+    }
+    if result is not None:
+        meta["result"] = result
+    return png_content(sheet, meta)
 
 
 def _single(res: dict, scale: int | None, max_size: int, background) -> list:
     src = _take(res)
     k = fit_factor(src.width, src.height, scale, max_size)
-    return _png_content(over_background(resized(src, k), background), {**res, "scale": k})
+    return png_content(over_background(resized(src, k), background), {**res, "scale": k})
 
 
 def _snapshot(file: str | None, frame: int | None = None) -> dict:
@@ -347,51 +466,17 @@ def register(mcp):
             raise ToolError("pass either tag or a frame range, not both")
         if columns is not None and columns < 1:
             raise ToolError("columns must be >= 1")
-        body = (
-            lua_locals(
-                SCALE=scale,
-                MAX_SIZE=int(max_size),
-                TAG=tag,
-                FROM=from_frame,
-                TO=to_frame,
-                COLUMNS=columns,
-                LAYER=layer,
-                MAX_FRAMES=_MAX_FRAMES,
-            )
-            + _LOOK_HELPERS
-            + _LOOK_ANIMATION
+        opts = lua_locals(
+            SCALE=scale,
+            MAX_SIZE=int(max_size),
+            TAG=tag,
+            FROM=from_frame,
+            TO=to_frame,
+            COLUMNS=columns,
+            LAYER=layer,
+            MAX_FRAMES=_MAX_FRAMES,
         )
-        res = run(body, file=file)
-        if not isinstance(res, dict) or not res.get("frames"):
-            raise ToolError("no pictures came back from Aseprite")
-        frames = [_raster(res["width"], res["height"], f) for f in res["frames"]]
-        cols = res["columns"]
-        rows = -(-len(frames) // cols)
-        k = fit_factor(cols * frames[0].width, rows * frames[0].height, scale, max_size)
-        sheet = tiled([over_background(resized(f, k), bg) for f in frames], cols)
-        first = res["first_frame"]
-        cells = [
-            {
-                "frame": first + i,
-                "row": i // cols + 1,
-                "column": i % cols + 1,
-                "duration_ms": ms,
-            }
-            for i, ms in enumerate(res["durations"])
-        ]
-        return _png_content(
-            sheet,
-            {
-                "first_frame": first,
-                "last_frame": res["last_frame"],
-                "count": len(frames),
-                "tag": res["tag"],
-                "columns": cols,
-                "rows": rows,
-                "scale": k,
-                "cells": cells,
-            },
-        )
+        return _animation(opts, scale, max_size, bg, file)
 
     @mcp.tool(
         annotations=ToolAnnotations(title="Look at onion skin", readOnlyHint=True),

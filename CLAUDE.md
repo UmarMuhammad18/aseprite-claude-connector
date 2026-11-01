@@ -19,7 +19,7 @@ babysitting. Our remote is `UmarMuhammad18/aseprite-claude-connector`.
 Claude ⇄ MCP server (stdio, runs the relay) ⇄ WS :9877 ⇄ Claude Bridge extension in Aseprite
 ```
 
-- **`aseprite_claude_connector/`** — FastMCP server with 151 tools. One module per group in
+- **`aseprite_claude_connector/`** — FastMCP server with 165 tools. One module per group in
   `tools/`, each exposing `register(mcp)`. Tools generate Lua and run it through
   `run()` in `tools/_common.py`.
 - **Two backends, one tool surface** — `live` (default) runs Lua in the open editor
@@ -68,6 +68,10 @@ curl http://127.0.0.1:9878/status    # {"connected": true, "info": "aseprite 1.3
 .venv/Scripts/python scripts/gen_docs.py           # regenerate the README tool list
 ```
 
+The `Mac` workflow compiles Aseprite on a Mac runner and runs `scripts/check_mac.py` and
+the smoke test against it. Aseprite's licence covers compiling for your own use, so
+never upload or cache that binary.
+
 CI also runs `ruff check .`, `ruff format --check .`, and `gen_docs.py --check`.
 Ruff isn't in the `dev` extra, so install it separately. Set
 `ASEPRITE_MCP_NO_UPDATE_CHECK=1` for local runs to skip the PyPI lookup.
@@ -95,6 +99,8 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   `.png` flattens it.
 - **Check visual work with `look`, not just tool results.** A tool can report success
   while the picture is wrong.
+- **Build export files in Python where you can.** `frames_of` in `tools/look.py` reads
+  the pixels, and writing from Python never raises Aseprite's security prompt.
 - **Never write files from Lua in the look tools.** It raises a modal security prompt
   in the live editor. See "Canvas vision" in `docs/ARCHITECTURE.md`.
 
@@ -117,8 +123,16 @@ Ruff isn't in the `dev` extra, so install it separately. Set
 - **Local-scope registration matches the exact path spelling.** VS Code can open
   this folder as `c:\`, which misses a server registered under `C:/`. `setup` moves a
   local entry to user scope.
-- **The Mac setup is untested, and on hold by choice.** The extension folder path
-  comes from Aseprite's source, but nothing here has run on a Mac.
+- **The live connection hasn't run on a Mac.** CI covers setup and every tool headless
+  on a Mac, but the bridge's first connection needs a person to answer Aseprite's
+  prompt, and we never write trust settings to get round that.
+- **GameMaker strips haven't been opened in GameMaker.** Their names follow its
+  `_stripN` import rule.
+- **`edit_in_selection` can't be tested headless through the tool,** because a
+  selection doesn't survive in a file. The smoke test makes one in the same script, and
+  the tool itself was checked in the live editor.
+- **`change_summary` has no frames for edits run with `capped=False`,** or with the
+  pixel cap off, because the journal reads them from the rails.
 - **`setup` run through `uvx` would register a temporary path.** Install with `pip`.
 - **`run_lua` is only covered by the rails with `edit=true`.** Without it, the pixel
   cap doesn't apply and it refuses to run in a dry run.
@@ -147,14 +161,16 @@ success.
 `aseprite-claude-connector setup` registers the server and installs the extension. The server
 starts the relay, and Aseprite connects on launch after one access prompt.
 
-On hold by choice: testing the full setup on a Mac.
+The `Mac` workflow checks setup and every tool on a Mac. Only the live editor
+connection still needs a person with a Mac.
 
 ### 4. Docs search, `describe_sprite`, and safety rails — must-haves done
 
 `search_api_docs`, `search_manual`, `describe_sprite`, `set_safety_rails`, and
 `edit_batch` are in. Rollback and one-undo batches were checked in the live editor.
-See "Safety rails" in `docs/ARCHITECTURE.md`. The cool extras in `PLAN.md` haven't
-started.
+See "Safety rails" in `docs/ARCHITECTURE.md`. The cool extras in `PLAN.md` are built
+too: `tools/motion.py`, `tools/cleanup.py`, `tools/session_tools.py`, `tools/atlas.py`,
+and `edit_in_selection` in `tools/safety.py`.
 
 ### 5. Godot export — built, not yet confirmed in Godot
 

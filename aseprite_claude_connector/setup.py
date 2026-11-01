@@ -101,8 +101,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     print(f"Installed the Claude Bridge extension in {install_extension()}")
+    # Closing the window on a Mac leaves the app running, with the old extension loaded.
+    restart = "Quit it with Cmd+Q and reopen it" if sys.platform == "darwin" else "Reopen it"
     print(
-        "Restart Aseprite if it's open. It asks once to allow the connection: tick the "
-        "box to remember, then allow it."
+        f"Restart Aseprite if it's open. {restart}. It asks once to allow the connection: "
+        "tick the box to remember, then allow it."
     )
     return 0

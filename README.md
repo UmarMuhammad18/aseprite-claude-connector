@@ -7,7 +7,7 @@ Kyle Ocheltree / OakTree Games.
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-151-orange)
+![tools](https://img.shields.io/badge/tools-165-orange)
 
 **Let an AI agent draw in your *live* Aseprite editor — every edit one named undo — with a Unity-first, game-dev toolset.**
 
@@ -219,7 +219,7 @@ is an HTTP GET of PyPI's public JSON; nothing about you, your machine, or your
 art is sent.
 
 <!-- TOOLS:START -->
-## Tools (151)
+## Tools (165)
 
 Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), and — when it mutates — wrapped in a **named** `app.transaction`, so each edit is exactly one labeled undo step in the editor.
 
@@ -313,7 +313,7 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 - **`draw_ellipse`** — Draw an ellipse centered at (center_x, center_y) with independent x/y radii.
 - **`draw_gradient`** — Fill a rectangle with a linear gradient from ``color1`` to ``color2``.
 - **`apply_dither`** — Fill a rectangle with a uniform ordered (Bayer 4x4) dither mixing ``color1`` and ``color2``.
-- **`add_outline`** — Add a 1px outline in ``color`` around the opaque pixels of the active cel — readability against busy backgrounds.
+- **`add_outline`** — Add a 1px outline around the opaque pixels of a layer, in ``color`` — readability against busy backgrounds.
 
 </details>
 <details>
@@ -540,9 +540,10 @@ One-call "skills" that chain the tools into finished art tasks:
   dismissed. Live, use `export_spritesheet` strips or per-frame PNGs; the
   animated GIFs in this README were exported headless from the same files.
 - **Windows is the primary dev platform.** CI runs the unit + wire-validation
-  suite on Linux/macOS/Windows, but CI has no Aseprite binary — anything that
-  touches a real Aseprite (headless batch or the live bridge) is hand-tested on
-  Windows. Treat mac/linux as expected-to-work, not proven.
+  suite on Linux/macOS/Windows, and the `Mac` workflow compiles Aseprite on a Mac and
+  runs setup and every tool against it headless. The live bridge in a running editor
+  is hand-tested on Windows only, because its first connection needs a person to answer
+  Aseprite's access prompt. Linux is expected to work, not proven.
 - **`run_lua` is local code execution** by design (it's the escape hatch). The
   relay binds to `127.0.0.1` only and refuses browsers. Read
   [`SECURITY.md`](SECURITY.md).

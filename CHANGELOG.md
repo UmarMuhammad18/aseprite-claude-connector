@@ -12,6 +12,24 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
 
 ## [Unreleased]
 
+### Added — the cool extras
+
+- **`inbetween`** fills the frames between two key poses and shows the result, with no
+  new colors. **`walk_cycle_template`** lays down a timed, tagged walk or run skeleton.
+  **`apply_timing`** applies ease, hold, or bounce presets. **`check_loop`** flags a jump
+  at an animation's seam.
+- **`find_stray_pixels`** shows likely accidents in a picture. **`recolor_variants`**
+  writes team or season recolors in one batch. **`add_outline`** gains `selective`,
+  `layer`, and `all_frames`, and no longer crops art that sits past the canvas.
+- **`add_reference_image`** makes a faded, locked guide layer. **`edit_in_selection`**
+  keeps edits inside the artist's selection. **`change_summary`** lists what changed
+  frame by frame. **`start_recording`** and **`stop_recording`** make a GIF timelapse.
+  **`explain_changes`** gives the Aseprite tool or shortcut behind recent edits.
+- **`export_gamemaker`** writes `_stripN` sprite strips. **`pack_atlas`** packs several
+  sprites into one texture with JSON data.
+- A `Mac` workflow compiles Aseprite on a Mac and runs setup and every tool against it.
+  `setup` now finds `~/Applications`, and tells Mac users to quit with Cmd+Q.
+
 ### Changed — renamed to aseprite-claude-connector
 
 - The package, command, import name, and server name are now

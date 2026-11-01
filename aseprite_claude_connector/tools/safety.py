@@ -53,6 +53,101 @@ def _combine(bodies: list[str]) -> str:
     return f'local __steps = {{}}\n{steps}return "[" .. table.concat(__steps, ",") .. "]"\n'
 
 
+_CLIP_BEFORE = """
+local __s = app.activeSprite
+if __s.selection.isEmpty then error("select an area in Aseprite first") end
+local __keep = Selection()
+__keep:add(__s.selection)
+local __box = __keep.bounds
+local __frames, __w, __h = #__s.frames, __s.width, __s.height
+local __layers = {}
+local function __walk(layers)
+  for _, l in ipairs(layers) do
+    if l.isGroup then __walk(l.layers)
+    elseif not l.isTilemap then __layers[#__layers + 1] = l end
+  end
+end
+__walk(__s.layers)
+local __count = #__layers
+local __mode = __s.colorMode
+local function __blank()
+  local img = Image(__w, __h, __mode)
+  if __mode == ColorMode.INDEXED then img:clear(__s.transparentColor) end
+  return img
+end
+local __before = {}
+for i, l in ipairs(__layers) do
+  __before[i] = {}
+  for _, c in ipairs(l.cels) do
+    __before[i][c.frameNumber] = { image = c.image:clone(), x = c.position.x, y = c.position.y }
+  end
+end
+"""
+
+_CLIP_AFTER = """
+if #__s.frames ~= __frames or __s.width ~= __w or __s.height ~= __h then
+  error("edits inside a selection can't change the frames or the canvas size")
+end
+__layers = {}
+__walk(__s.layers)
+if #__layers ~= __count then
+  error("edits inside a selection can't add or remove layers")
+end
+local __reverted = 0
+for i, l in ipairs(__layers) do
+  for n = 1, __frames do
+    local old, cel = __before[i][n], l:cel(n)
+    if cel then
+      local same = old and cel.position.x == old.x and cel.position.y == old.y
+        and cel.image:isEqual(old.image)
+      if not same then
+        local kept, fresh = __blank(), __blank()
+        if old then kept:drawImage(old.image, Point(old.x, old.y)) end
+        fresh:drawImage(cel.image, cel.position)
+        local out = Image(kept)
+        for y = __box.y, __box.y + __box.height - 1 do
+          for x = __box.x, __box.x + __box.width - 1 do
+            if x >= 0 and y >= 0 and x < __w and y < __h and __keep:contains(x, y) then
+              out:drawPixel(x, y, fresh:getPixel(x, y))
+            end
+          end
+        end
+        cel.image = out
+        cel.position = Point(0, 0)
+        __reverted = __reverted + 1
+      end
+    elseif old then
+      local out = __blank()
+      local kept = __blank()
+      kept:drawImage(old.image, Point(old.x, old.y))
+      for y = 0, __h - 1 do
+        for x = 0, __w - 1 do
+          if not __keep:contains(x, y) then out:drawPixel(x, y, kept:getPixel(x, y)) end
+        end
+      end
+      if not out:isEmpty() then __s:newCel(l, n, out, Point(0, 0)) end
+    end
+  end
+end
+__s.selection = __keep
+"""
+
+
+def _clipped(bodies: list[str]) -> str:
+    """The steps, with everything outside the selection put back afterward. The drawing
+    tools write to images directly, which Aseprite's selection doesn't guard."""
+    steps = "".join(
+        f"__steps[{i}] = tostring((function()\n{body}\nend)())\n"
+        for i, body in enumerate(bodies, 1)
+    )
+    return (
+        _CLIP_BEFORE
+        + f"local __steps = {{}}\n{steps}"
+        + _CLIP_AFTER
+        + 'return "[" .. table.concat(__steps, ",") .. "]"\n'
+    )
+
+
 def register(mcp):
     @mcp.tool(annotations=ToolAnnotations(title="Set safety rails", idempotentHint=True))
     def set_safety_rails(
@@ -85,4 +180,19 @@ def register(mcp):
             raise ToolError(f"steps must hold 1-{MAX_STEPS} entries")
         bodies = _collect(mcp, steps)
         results = run(_combine(bodies), mutates=True, undo_label=label, file=file)
+        return {"steps": len(bodies), "results": results}
+
+    @mcp.tool(annotations=ToolAnnotations(title="Edit inside the selection"))
+    def edit_in_selection(
+        steps: list[dict[str, Any]], label: str = "AI edits in selection", file: str | None = None
+    ) -> dict:
+        """ "Fix this bit": run editing tools so they change only what's inside the current
+        selection, as one undo step. Anything they'd do outside it, on any layer or frame,
+        is put back. Steps are written as in ``edit_batch``. Select the area in Aseprite
+        first; ``look`` with ``selection`` shows what's selected. Steps can't change the
+        frames, layers, or canvas size. Headless: pass ``file`` here, not in the steps."""
+        if not 1 <= len(steps) <= MAX_STEPS:
+            raise ToolError(f"steps must hold 1-{MAX_STEPS} entries")
+        bodies = _collect(mcp, steps)
+        results = run(_clipped(bodies), mutates=True, undo_label=label, file=file)
         return {"steps": len(bodies), "results": results}

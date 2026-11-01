@@ -254,30 +254,67 @@ end)
 """
 
 _OUTLINE = """
-return editCel(function(img, s)
-  local col = Color{ r = R, g = G, b = B, a = A }
-  local W, H = s.width, s.height
-  local pc = app.pixelColor
-  local opaque = {}
-  for y = 0, H - 1 do
-    for x = 0, W - 1 do
-      if pc.rgbaA(img:getPixel(x, y)) > 0 then opaque[y * W + x] = true end
-    end
+local s = app.activeSprite
+if not s then error("no active sprite") end
+local layer = LAYER and findLayer(s, LAYER) or activeImageLayer(s)
+if not layer or not layer.isImage then error("no target image layer") end
+local mode = s.colorMode
+if SELECTIVE and mode ~= ColorMode.RGB then error("selective outlines need an RGB sprite") end
+local col = Color{ r = R, g = G, b = B, a = A }
+local pc = app.pixelColor
+local function solid(v)
+  if mode == ColorMode.RGB then return pc.rgbaA(v) > 0 end
+  if mode == ColorMode.GRAY then return pc.grayaA(v) > 0 end
+  return v ~= s.transparentColor
+end
+local dirs = DIAG and {{1,0},{-1,0},{0,1},{0,-1},{1,1},{1,-1},{-1,1},{-1,-1}} or {{1,0},{-1,0},{0,1},{0,-1}}
+-- Each cel grows by a pixel all round, so art at its edge still gets its outline.
+local function outline(cel)
+  local src = cel.image
+  local W, H = src.width + 2, src.height + 2
+  local img = Image(W, H, mode)
+  if mode == ColorMode.INDEXED then img:clear(s.transparentColor) end
+  img:drawImage(src, Point(1, 1))
+  local base = img:clone()
+  local function at(x, y)
+    if x < 0 or y < 0 or x >= W or y >= H then return nil end
+    local v = base:getPixel(x, y)
+    if solid(v) then return v end
+    return nil
   end
-  local function isop(x, y) return x >= 0 and y >= 0 and x < W and y < H and opaque[y * W + x] end
-  local dirs = DIAG and {{1,0},{-1,0},{0,1},{0,-1},{1,1},{1,-1},{-1,1},{-1,-1}} or {{1,0},{-1,0},{0,1},{0,-1}}
   local added = 0
   for y = 0, H - 1 do
     for x = 0, W - 1 do
-      if not isop(x, y) then
-        local edge = false
-        for _, d in ipairs(dirs) do if isop(x + d[1], y + d[2]) then edge = true; break end end
-        if edge then img:drawPixel(x, y, col); added = added + 1 end
+      if not at(x, y) then
+        for _, d in ipairs(dirs) do
+          local v = at(x + d[1], y + d[2])
+          if v then
+            if SELECTIVE then
+              img:drawPixel(x, y, pc.rgba(pc.rgbaR(v) * 45 // 100, pc.rgbaG(v) * 40 // 100,
+                math.min(255, pc.rgbaB(v) * 55 // 100 + 12), 255))
+            else
+              img:drawPixel(x, y, col)
+            end
+            added = added + 1
+            break
+          end
+        end
       end
     end
   end
-  return J({ outlined = true, pixels = added })
-end)
+  cel.image = img
+  cel.position = Point(cel.position.x - 1, cel.position.y - 1)
+  return added
+end
+local total, frames = 0, 0
+if ALL then
+  for _, cel in ipairs(layer.cels) do total = total + outline(cel); frames = frames + 1 end
+else
+  local frame = app.activeFrame or s.frames[1]
+  local cel = layer:cel(frame.frameNumber)
+  if cel then total = outline(cel); frames = 1 end
+end
+return J({ outlined = frames > 0, pixels = total, frames = frames, layer = layer.name })
 """
 
 
@@ -515,10 +552,32 @@ def register(mcp):
 
     @mcp.tool(annotations=ToolAnnotations(title="Add outline"))
     @previewable
-    def add_outline(color: str, diagonal: bool = False, file: str | None = None) -> dict:
-        """Add a 1px outline in ``color`` around the opaque pixels of the active cel —
-        readability against busy backgrounds. ``diagonal`` true also outlines
-        diagonally (8-connected). One undo step. Headless: pass ``file``."""
+    def add_outline(
+        color: str = "#000000",
+        diagonal: bool = False,
+        selective: bool = False,
+        layer: str | None = None,
+        all_frames: bool = False,
+        file: str | None = None,
+    ) -> dict:
+        """Add a 1px outline around the opaque pixels of a layer, in ``color`` — readability
+        against busy backgrounds. ``selective`` true ignores ``color`` and darkens each
+        neighbouring pixel's own color instead, for a softer outline that follows the art
+        (RGB sprites). ``diagonal`` true also outlines diagonally (8-connected). ``layer``
+        picks the layer, and ``all_frames`` outlines every cel on it rather than the
+        active one. One undo step. Headless: pass ``file``."""
         r, g, b, a = parse_color(color)
-        body = lua_locals(R=r, G=g, B=b, A=a, DIAG=diagonal) + _OUTLINE
+        body = (
+            lua_locals(
+                R=r,
+                G=g,
+                B=b,
+                A=a,
+                DIAG=diagonal,
+                SELECTIVE=selective,
+                LAYER=layer,
+                ALL=all_frames,
+            )
+            + _OUTLINE
+        )
         return run(body, mutates=True, undo_label="Add outline", file=file)

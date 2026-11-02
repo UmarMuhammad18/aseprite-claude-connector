@@ -33,6 +33,7 @@ local s = app.activeSprite
 local layer = s.layers[1]
 local spec = SPEC
 local n = 0
+local spans = {}
 for _, tag in ipairs(spec) do
   local first = n + 1
   for i, hex in ipairs(tag.colors) do
@@ -44,8 +45,12 @@ for _, tag in ipairs(spec) do
     s:newCel(layer, n, img, Point(0, 0))
     s.frames[n].duration = tag.ms[i] / 1000
   end
-  local t = s:newTag(first, n)
-  t.name = tag.name
+  spans[#spans + 1] = { tag.name, first, n }
+end
+-- Tags come last: a frame added after a tag's end stretches it.
+for _, span in ipairs(spans) do
+  local t = s:newTag(span[2], span[3])
+  t.name = span[1]
 end
 return J({ frames = #s.frames })
 """

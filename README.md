@@ -575,8 +575,9 @@ One-call "skills" that chain the tools into finished art tasks:
 - **Some live tools raise an Aseprite security prompt.** `open_sprite`, `save_sprite`,
   `load_palette`, and exports that write from Lua can, and the call times out if nobody
   answers. Importing pictures, `pack_atlas`, and exports built in Python don't.
-- **Engine imports aren't all proven.** Nobody has opened the Unity or GameMaker output
-  in those engines, and the Export to Game dialog hasn't been clicked through.
+- **Engine imports aren't all proven.** CI loads a real export in headless Godot, but
+  nobody has opened the Unity or GameMaker output in those engines, and the Export to
+  Game dialog hasn't been clicked through.
 - **No generative art.** This server draws what it's told with deterministic
   primitives; taste stays with the artist.
 

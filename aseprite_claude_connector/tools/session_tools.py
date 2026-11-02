@@ -17,14 +17,14 @@ from mcp.types import ToolAnnotations
 from ..lua import lua_locals
 from ..raster import Raster, blit, encode_gif, fit_factor, over_background, resized
 from ._common import ToolError, after_edit, journal, rails, run
-from .look import _snapshot, _take
+from .look import _snapshot, _take, image_loader
 
 _MAX_RECORDED = 300
 
 _REFERENCE = """
 local s = app.activeSprite
 if not s then error("no active sprite (create or open one first)") end
-local img = Image{ fromFile = PATH }
+local img = load_image()
 if not img then error("could not load image: " .. PATH) end
 if FIT and (img.width > s.width or img.height > s.height) then
   local k = math.min(s.width / img.width, s.height / img.height)
@@ -216,7 +216,8 @@ def register(mcp):
         if not os.path.isfile(image_path):
             raise ToolError(f"no file at {image_path}")
         body = (
-            lua_locals(PATH=image_path, OPACITY=int(opacity), FIT=bool(fit), NAME=layer_name)
+            image_loader(image_path)
+            + lua_locals(PATH=image_path, OPACITY=int(opacity), FIT=bool(fit), NAME=layer_name)
             + _REFERENCE
         )
         return run(body, mutates=True, undo_label="Add reference image", file=file, capped=False)

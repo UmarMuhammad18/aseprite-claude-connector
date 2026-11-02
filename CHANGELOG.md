@@ -12,6 +12,13 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
 
 ## [Unreleased]
 
+### Fixed
+
+- `add_reference_image`, `import_image_as_layer`, `import_spritesheet`,
+  `paint_with_stamp`, and `extract_palette_from_image` no longer stall on Aseprite's
+  security prompt in the live editor. A batch Aseprite reads the picture instead.
+- `pack_atlas` reads closed files in the live editor, as it always said it did.
+
 ### Added — the cool extras
 
 - **`inbetween`** fills the frames between two key poses and shows the result, with no

@@ -6,6 +6,7 @@ from mcp.types import ToolAnnotations
 
 from ..lua import lua_locals
 from ._common import ToolError, run
+from .look import image_loader
 
 # User-facing blend-mode name -> Aseprite BlendMode enum key.
 _BLEND_MODES = {
@@ -179,7 +180,7 @@ return J({ name = NAME, stackIndex = l.stackIndex, layers = n })
 _IMPORT = """
 local s = app.activeSprite
 if not s then error("no active sprite (create or open one first)") end
-local img = Image{ fromFile = PATH }
+local img = load_image()
 if not img then error("could not load image: " .. PATH) end
 local l = s:newLayer()
 if NAME ~= nil then l.name = NAME end
@@ -295,5 +296,9 @@ def register(mcp):
         """Import an external image file (PNG, etc.) into a new layer at (x, y) — a
         reference/trace layer for concept-art intake. One undo step. Headless: pass
         ``file``."""
-        body = lua_locals(PATH=image_path, NAME=layer_name, PX=int(x), PY=int(y)) + _IMPORT
+        body = (
+            image_loader(image_path)
+            + lua_locals(PATH=image_path, NAME=layer_name, PX=int(x), PY=int(y))
+            + _IMPORT
+        )
         return run(body, mutates=True, undo_label="Import image", file=file)

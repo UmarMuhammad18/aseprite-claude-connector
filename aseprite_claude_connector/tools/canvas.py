@@ -6,6 +6,7 @@ from mcp.types import ToolAnnotations
 
 from ..lua import lua_locals
 from ._common import ToolError, run
+from .look import image_loader
 
 _CREATE_LUA = """
 local cm = ColorMode.RGB
@@ -29,7 +30,7 @@ return J({ old = { width = ow, height = oh }, new = { width = s.width, height = 
 _IMPORT_SHEET = """
 local s = app.activeSprite
 if not s then error("no active sprite") end
-local sheet = Image{ fromFile = PATH }
+local sheet = load_image()
 if not sheet then error("could not load sheet image: " .. PATH) end
 if sheet.width % FW ~= 0 or sheet.height % FH ~= 0 then
   error("sheet " .. sheet.width .. "x" .. sheet.height .. " is not a multiple of the frame size")
@@ -99,7 +100,8 @@ def register(mcp):
         if frame_width < 1 or frame_height < 1:
             raise ToolError("frame size must be >= 1")
         body = (
-            lua_locals(PATH=str(sheet_path), FW=int(frame_width), FH=int(frame_height))
+            image_loader(str(sheet_path))
+            + lua_locals(PATH=str(sheet_path), FW=int(frame_width), FH=int(frame_height))
             + _IMPORT_SHEET
         )
         return run(body, mutates=True, undo_label="Import sprite sheet", file=file)

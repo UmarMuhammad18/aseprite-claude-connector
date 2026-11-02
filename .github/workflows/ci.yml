@@ -41,8 +41,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-15-intel]
         python-version: ["3.10", "3.13"]
+        include:
+          # Apple Silicon runners can sit unassigned until GitHub cancels the job, so
+          # this one reports without deciding the run. Intel holds the Mac result.
+          - os: macos-latest
+            python-version: "3.13"
+    continue-on-error: ${{ matrix.os == 'macos-latest' }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

@@ -103,6 +103,8 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   the pixels, and writing from Python never raises Aseprite's security prompt.
 - **Never write files from Lua in the look tools.** It raises a modal security prompt
   in the live editor. See "Canvas vision" in `docs/ARCHITECTURE.md`.
+- **Read closed files with a batch Aseprite, not the editor.** Loading one from Lua
+  raises the same prompt. `read_sprite` in `tools/atlas.py` shows the pattern.
 
 ## Known issues
 
@@ -112,9 +114,10 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   nothing until a release is published under this name.
 - **Tools that write files from Lua should hit the security prompt live**, such as
   the exports. The bridge runs received code under the chunk name `claude`, which
-  Aseprite trusts separately from the extension. Only `Image:saveAs` has been seen
-  doing this so far. Umar has chosen to give that code full trust, by answering the
-  prompt in Aseprite the first time it appears.
+  Aseprite trusts separately from the extension. `Image:saveAs`, `save_sprite`, and
+  loading a file with `Sprite{ fromFile = ... }` have all been seen doing this. Umar
+  has chosen to give that code full trust, by answering the prompt in Aseprite the
+  first time it appears.
 - **Exports haven't been opened in real Godot or Unity.** Their text is tested and
   the art was exported live, but no engine has loaded the `.tres` or `.meta`.
 - **The Export to Game dialog hasn't been clicked through.** Real Aseprite loads the

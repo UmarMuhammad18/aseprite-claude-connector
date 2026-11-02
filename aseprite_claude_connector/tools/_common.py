@@ -8,7 +8,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from ..backends import get_backend
+from ..backends import Backend, get_backend
 from ..config import load_config
 from ..lua import CHANGES_MARK, build_lua
 
@@ -70,6 +70,7 @@ def run(
     save: bool | None = None,
     batchable: bool = False,
     capped: bool = True,
+    backend: Backend | None = None,
 ):
     """Compose + execute a Lua tool body and return its parsed result.
 
@@ -77,7 +78,8 @@ def run(
     wrapped in ``app.transaction`` (one undo step). For the headless backend,
     ``file`` is the target sprite and ``save`` defaults to ``mutates``. ``batchable``
     lets a tool that edits nothing still take part in ``edit_batch``. ``capped=False``
-    skips the pixel cap for an edit that can't lose pixels.
+    skips the pixel cap for an edit that can't lose pixels. ``backend`` overrides the
+    configured one, for a read that has to bypass the live editor.
     """
     if _OUTSIDE_THE_SPRITE.search(body):
         if rails.capturing:
@@ -85,7 +87,7 @@ def run(
         refuse_in_dry_run()
     if rails.capturing and (mutates or batchable):
         raise Captured(body)
-    backend = get_backend()
+    backend = backend or get_backend()
     lua = build_lua(
         body,
         mutates=mutates,

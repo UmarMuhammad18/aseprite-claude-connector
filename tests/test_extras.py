@@ -304,3 +304,36 @@ def test_pad_to_largest_centers_smaller_pictures():
     out = pad_to_largest([small, big])
     assert (out[0].width, out[0].height) == (3, 3)
     assert out[0].rgba[(1 * 3 + 1) * 4 : (1 * 3 + 1) * 4 + 4] == bytes(RED)
+
+
+def _live_read(monkeypatch, tmp_path, error):
+    """Run read_sprite on the live backend; returns the path and the calls it made."""
+    from aseprite_claude_connector.tools import atlas
+
+    monkeypatch.setenv("ASEPRITE_MCP_BACKEND", "live")
+    path = tmp_path / "art.aseprite"
+    path.write_bytes(b"x")
+    calls = []
+
+    def fake(**kw):
+        calls.append(kw)
+        if "pick" in kw:
+            raise atlas.ToolError(error)
+        return {"name": "from disk"}
+
+    monkeypatch.setattr(atlas, "frames_of", fake)
+    return atlas, str(path), calls
+
+
+def test_a_closed_file_is_read_outside_the_live_editor(monkeypatch, tmp_path):
+    atlas, path, calls = _live_read(monkeypatch, tmp_path, "no open sprite named 'x'")
+    assert atlas.read_sprite(path) == {"name": "from disk"}
+    assert calls[1]["file"] == path
+    assert isinstance(calls[1]["backend"], atlas.HeadlessBackend)
+
+
+def test_a_timeout_never_falls_back_to_the_older_file(monkeypatch, tmp_path):
+    atlas, path, calls = _live_read(monkeypatch, tmp_path, "timeout after 60.0s")
+    with pytest.raises(atlas.ToolError):
+        atlas.read_sprite(path)
+    assert len(calls) == 1

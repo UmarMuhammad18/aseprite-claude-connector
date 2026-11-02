@@ -25,6 +25,7 @@ import json
 from mcp.server.fastmcp import Image
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 
+from ..backends import Backend
 from ..lua import lua_locals
 from ..raster import Raster, diff, encode_png, fit_factor, over_background, resized, tiled
 from ._common import ToolError, parse_color, run
@@ -250,11 +251,16 @@ def png_content(img: Raster, meta: dict) -> list:
     return [Image(data=encode_png(img), format="png"), json.dumps(meta)]
 
 
-def frames_of(tag: str | None = None, file: str | None = None, pick: str | None = None) -> dict:
+def frames_of(
+    tag: str | None = None,
+    file: str | None = None,
+    pick: str | None = None,
+    backend: Backend | None = None,
+) -> dict:
     """Read frames at full size, for tools that write their own files. ``pick`` reads
     another open sprite by name. Frame numbers in ``tags`` are the sprite's own."""
     opts = lua_locals(TAG=tag, FROM=None, TO=None, PICK=pick, MAX_PIXELS=_MAX_GRAB_PIXELS)
-    res = run(opts + _PICK + _LOOK_HELPERS + _GRAB, file=file)
+    res = run(opts + _PICK + _LOOK_HELPERS + _GRAB, file=file, backend=backend)
     if not isinstance(res, dict) or not res.get("frames"):
         raise ToolError("no pictures came back from Aseprite")
     w, h = res["width"], res["height"]

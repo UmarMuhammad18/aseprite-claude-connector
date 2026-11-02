@@ -16,6 +16,7 @@ from statistics import median
 
 from mcp.types import ToolAnnotations
 
+from ..backends import HeadlessBackend
 from ..config import load_config
 from ..raster import Raster, blit, encode_png, strip
 from ._common import ToolError, rails
@@ -115,6 +116,21 @@ def build_atlas(sheets: list[dict], image_name: str, padding: int) -> tuple[Rast
     return Raster(width, height, bytes(canvas)), {"frames": frames, "meta": meta}
 
 
+def read_sprite(sprite: str) -> dict:
+    """Frames of a sprite, preferring the open copy so unsaved edits are packed. Live, a
+    closed file is read by a batch Aseprite: loading it in the editor would raise the
+    script-security prompt. A timeout stays an error, so old pixels never pass for new."""
+    cfg = load_config()
+    if cfg.backend == "headless":
+        return frames_of(file=sprite)
+    try:
+        return frames_of(pick=sprite)
+    except ToolError as e:
+        if "no open sprite" not in str(e) or not os.path.isfile(sprite):
+            raise
+    return frames_of(file=sprite, backend=HeadlessBackend(cfg.aseprite_path, cfg.exec_timeout))
+
+
 def _refuse_rehearsal(what: str) -> None:
     if rails.capturing:
         raise ToolError(f"{what} writes files, so it can't be batched")
@@ -162,11 +178,10 @@ def register(mcp):
             raise ToolError("sprites needs at least two entries")
         if not 0 <= padding <= 64:
             raise ToolError("padding must be 0..64")
-        headless = load_config().backend == "headless"
         sheets = []
         seen: dict[str, int] = {}
         for sprite in sprites:
-            grabbed = frames_of(file=sprite) if headless else frames_of(pick=sprite)
+            grabbed = read_sprite(sprite)
             stem = sprite_name(grabbed["name"] or sprite, None)
             seen[stem] = seen.get(stem, 0) + 1
             if seen[stem] > 1:

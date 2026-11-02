@@ -70,7 +70,8 @@ curl http://127.0.0.1:9878/status    # {"connected": true, "info": "aseprite 1.3
 
 The `Mac` workflow compiles Aseprite on a Mac runner and runs `scripts/check_mac.py` and
 the smoke test against it. Aseprite's licence covers compiling for your own use, so
-never upload or cache that binary.
+never upload or cache that binary. It then runs `scripts/check_godot.py`, which has
+headless Godot import a real export and report its animations, timing, and colours.
 
 CI also runs `ruff check .`, `ruff format --check .`, and `gen_docs.py --check`.
 Ruff isn't in the `dev` extra, so install it separately. Set
@@ -119,8 +120,8 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   loading a file with `Sprite{ fromFile = ... }` have all been seen doing this. Umar
   has chosen to give that code full trust, by answering the prompt in Aseprite the
   first time it appears.
-- **Exports haven't been opened in real Godot or Unity.** Their text is tested and
-  the art was exported live, but no engine has loaded the `.tres` or `.meta`.
+- **Exports haven't been opened in real Unity.** Its licence rules out a CI check, so
+  no Unity has loaded the `.meta`. Godot is covered: see the `Mac` workflow.
 - **The Export to Game dialog hasn't been clicked through.** Real Aseprite loads the
   command and its export code passes the smoke test, but the dialog itself needs a
   person.
@@ -176,12 +177,13 @@ See "Safety rails" in `docs/ARCHITECTURE.md`. The cool extras in `PLAN.md` are b
 too: `tools/motion.py`, `tools/cleanup.py`, `tools/session_tools.py`, `tools/atlas.py`,
 and `edit_in_selection` in `tools/safety.py`.
 
-### 5. Godot export — built, not yet confirmed in Godot
+### 5. Godot export — done
 
 `export_godot` writes a sprite sheet plus a `SpriteFrames` `.tres` with animations from
-tags. The finish line, a tagged animation playing in Godot, still needs checking.
+tags. Headless Godot loads a tagged export with the frames, timing, and colours as
+drawn, on every run of the `Mac` workflow.
 
-### 6. Export to your game — built, not yet confirmed in an engine
+### 6. Export to your game — confirmed in Godot, not yet in Unity
 
 **File → Export → Export to Game...** and `export_to_game` put art straight into a
 Godot or Unity project, ready to select. Tested live and headless.

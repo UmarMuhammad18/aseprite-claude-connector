@@ -12,7 +12,7 @@ What it lacks is what makes the Blender connector feel good: Claude can't actual
 
 ## Project details and status
 
-Phases 1 to 4 are merged into `main`. **Phase 5: Godot export** and **phase 6: export to your game** are built, but nothing has been opened in a real engine yet. On Umar's Windows PC, Claude can see the canvas, look up Aseprite's docs, and work behind safety rails, and setup is one command plus one permission click in Aseprite. Mac testing is on hold by choice, so nothing has run on a Mac yet.
+Phases 1 to 4 are merged into `main`. **Phase 5: Godot export** is confirmed in headless Godot, and **phase 6: export to your game** is confirmed there too but not yet in Unity. On Umar's Windows PC, Claude can see the canvas, look up Aseprite's docs, and work behind safety rails, and setup is one command plus one permission click in Aseprite. On a Mac, CI checks setup and every tool; only the live editor connection still needs a person with a Mac.
 
 | | |
 | --- | --- |
@@ -88,8 +88,8 @@ These are what it takes to beat the Blender connector. The first two matter most
 - [x] **Searchable Aseprite docs.** `search_api_docs` searches the Lua API reference, bundled because it's MIT licensed. `search_manual` searches the user manual, which has no licence, so it downloads to the user's cache instead of shipping with us.
 - [x] **Better state reading.** A `describe_sprite` tool giving one compact summary: size, colour mode, layers, frames, tags, slices, palette and what's selected.
 - [x] **Safety rails.** A dry-run mode, a cap on how many pixels one call can change (250,000 by default), and `edit_batch`, which makes several tools one undo step. The server can't see where a request starts or ends, so Claude has to choose `edit_batch`. `run_lua` isn't capped.
-- [x] **Godot export.** `export_godot` writes a sprite sheet plus a `SpriteFrames` `.tres` resource with animations from tags, to match the Unity export. Still needs opening in real Godot.
-- [x] **Export to your game.** File → Export → Export to Game... in Aseprite, or `export_to_game` through Claude, puts art in the project's sprites folder, ready to select in Godot or Unity. Still needs opening in real engines.
+- [x] **Godot export.** `export_godot` writes a sprite sheet plus a `SpriteFrames` `.tres` resource with animations from tags, to match the Unity export. CI loads a real export in headless Godot and checks its frames, timing, and colours.
+- [x] **Export to your game.** File → Export → Export to Game... in Aseprite, or `export_to_game` through Claude, puts art in the project's sprites folder, ready to select in Godot or Unity. Checked in headless Godot; still needs opening in real Unity.
 - [ ] **Works on your OS.** Test the full live setup on Windows and Mac, with standalone Aseprite. Windows is done. On a Mac, the `Mac` workflow checks setup and every tool against a compiled Aseprite; only the live editor connection still needs a person with a Mac.
 
 ## Cool to have
@@ -151,8 +151,8 @@ Each phase only starts once the one before passes its finish line. The Mac live 
 | 2. Claude's eyes | `look` tool, animation strips, before/after views | Claude spots its own mistake from a picture | Done |
 | 3. Easy setup | Auto-start relay, Aseprite extension, Windows and Mac tests | Install takes one step | Done on Windows; Mac checked in CI except the live connection |
 | 4. Smarter help | Docs search, `describe_sprite`, safety rails, then the cool extras | It beats the Blender connector for sprite work | Done |
-| 5. Godot export | One-action sprite sheet plus `SpriteFrames` `.tres`, with animations from tags | A sprite exported in one action plays its tagged animations in Godot | Built; needs checking in Godot |
-| 6. Export to your game | One Export button plus `export_to_game`, for Godot, Unity or any folder | Art exported from Aseprite can be selected straight away in the engine | Built; needs checking in Godot and Unity |
+| 5. Godot export | One-action sprite sheet plus `SpriteFrames` `.tres`, with animations from tags | A sprite exported in one action plays its tagged animations in Godot | Done: loaded in headless Godot on CI |
+| 6. Export to your game | One Export button plus `export_to_game`, for Godot, Unity or any folder | Art exported from Aseprite can be selected straight away in the engine | Checked in Godot; needs checking in Unity |
 
 ## Limits, risks and open questions
 

@@ -15,10 +15,15 @@ on:
       - "aseprite_claude_connector/config.py"
       - "aseprite_claude_connector/setup.py"
       - "aseprite_claude_connector/extension/**"
+      - "aseprite_claude_connector/tools/game_export.py"
+      - "aseprite_claude_connector/tools/godot_export.py"
       - "scripts/check_mac.py"
+      - "scripts/check_godot.py"
+      - "scripts/godot_check.gd"
 
 env:
   ASEPRITE_TAG: v1.3.17.2
+  GODOT_TAG: 4.4.1-stable
 
 jobs:
   aseprite:
@@ -47,3 +52,8 @@ jobs:
           ASEPRITE_MCP_BACKEND: headless
           ASEPRITE_MCP_NO_UPDATE_CHECK: "1"
         run: python tests/smoke_headless.py
+      - name: A real export loads in real Godot
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/godot.zip"             "https://github.com/godotengine/godot/releases/download/$GODOT_TAG/Godot_v${GODOT_TAG}_macos.universal.zip"
+          unzip -q "$RUNNER_TEMP/godot.zip" -d "$RUNNER_TEMP/godot"
+          GODOT_PATH="$RUNNER_TEMP/godot/Godot.app/Contents/MacOS/Godot" python scripts/check_godot.py

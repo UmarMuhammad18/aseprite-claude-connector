@@ -9,15 +9,30 @@ Kyle Ocheltree / OakTree Games.
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
 ![tools](https://img.shields.io/badge/tools-165-orange)
 
-**Let an AI agent draw in your *live* Aseprite editor — every edit one named undo — with a Unity-first, game-dev toolset.**
+**Let Claude draw in your *live* Aseprite editor, see what it drew, and put the art straight into your Godot or Unity project. Every edit is one named undo.**
 
 An open-source [Model Context Protocol](https://modelcontextprotocol.io) server for
 [Aseprite](https://www.aseprite.org/). It drives your **running editor** (all open
 documents, unsaved tabs, in-editor dialogs, even asking *you* to click a point on
 the canvas) *and* runs **headless** (`aseprite --batch`) against files on disk.
-One-action **Unity sprite-sheet + `.meta` export** with per-slice pivots, a
-project-convention **art-QA sweep**, **isometric primitives**, **tilemaps**, and a
-server that **tells you when it's out of date**.
+One-action **export to Godot or Unity**, **animation helpers** like in-betweening and
+walk cycles, **safety rails** with one-undo batches, a project-convention **art-QA
+sweep**, **isometric primitives**, and **tilemaps**.
+
+This fork adds:
+
+- **Claude's eyes.** `look`, `look_animation`, and drawing previews return pictures, so
+  Claude checks the canvas instead of trusting a tool result.
+- **Simple setup.** One command registers the server and installs the extension.
+- **Export to Game.** A button in Aseprite, and `export_to_game`, that write into your
+  project's sprites folder.
+- **Safer edits.** `set_safety_rails`, dry runs, `edit_batch`, and `edit_in_selection`.
+- **Animation and cleanup.** `inbetween`, `walk_cycle_template`, `apply_timing`,
+  `check_loop`, `find_stray_pixels`, and `recolor_variants`.
+- **Working together.** `add_reference_image`, `change_summary`, `explain_changes`, and
+  session recording to a GIF.
+- **More export targets.** `export_gamemaker` strips and `pack_atlas` for several sprites
+  on one texture.
 
 ## See it in action
 
@@ -133,8 +148,9 @@ pip install git+https://github.com/UmarMuhammad18/aseprite-claude-connector && a
 ```
 
 `setup` registers the server with Claude Code and installs the Claude Bridge
-extension. Restart Aseprite if it's open. It asks once for permission to connect:
-tick the box to remember, then allow it. That's the whole setup.
+extension. Restart Aseprite if it's open, using Cmd+Q on a Mac. It asks once for
+permission to connect: tick the box to remember, then allow it. Reload your editor if
+Claude Code is running inside one, so it picks up the tools. That's the whole setup.
 
 From then on the server starts the relay itself and Aseprite connects on its own.
 Tools act on your active document; watch edits appear and press Ctrl-Z to undo each
@@ -160,6 +176,9 @@ in your engine.
 | Unity project | `Assets/Sprites` or `Assets/Art` | PNG and a `.meta`, already sliced. Exporting again keeps your prefab references |
 | Any other folder | Your `sprites` or `assets` folder, or a new `sprites` | PNG sprite sheet |
 
+For GameMaker, ask for `export_gamemaker`, which writes strips it cuts up on import. To
+put several sprites on one texture with JSON frame data, ask for `pack_atlas`.
+
 Pick a folder deeper inside a project to put the art exactly there. The first export
 from the button may ask to allow file access: allow it. To export with one key, assign
 a shortcut under **Edit → Keyboard Shortcuts**. In Godot, set the node's Texture Filter
@@ -179,6 +198,12 @@ to Nearest for sharp pixels.
 - *"Diff frames 3 and 4 — did the arm actually move?"*
 - *"Look at the walk cycle and tell me which frame pops."*
 - *"Draw the outline with a preview, and check it before you carry on."*
+- *"Fill in three frames between these two poses, then check that the walk loops cleanly."*
+- *"I've selected his arm. Fix the shading, and don't touch anything else."*
+- *"Put this sketch on a reference layer and draw over it."*
+- *"Find stray pixels, then make red, blue, and winter versions of this sprite."*
+- *"What did you change, and how would I do that by hand in Aseprite?"*
+- *"Export this to my game."*
 
 ## Where this sits (honest positioning)
 
@@ -547,8 +572,11 @@ One-call "skills" that chain the tools into finished art tasks:
 - **`run_lua` is local code execution** by design (it's the escape hatch). The
   relay binds to `127.0.0.1` only and refuses browsers. Read
   [`SECURITY.md`](SECURITY.md).
-- **Tools that write files from the live editor raise an Aseprite prompt** the first
-  time, such as the exports. Allow it in Aseprite, or the call times out.
+- **Some live tools raise an Aseprite security prompt.** `open_sprite`, `save_sprite`,
+  `load_palette`, and exports that write from Lua can, and the call times out if nobody
+  answers. Importing pictures, `pack_atlas`, and exports built in Python don't.
+- **Engine imports aren't all proven.** Nobody has opened the Unity or GameMaker output
+  in those engines, and the Export to Game dialog hasn't been clicked through.
 - **No generative art.** This server draws what it's told with deterministic
   primitives; taste stays with the artist.
 
@@ -559,7 +587,8 @@ in-process against a throwaway sprite. `python -m pytest` runs the unit suite
 plus **wire-validation** tests that exercise structured output through a real
 MCP client session — the boundary users actually hit (`pip install -e ".[dev]"`
 first). The README's tool list is generated from the code
-(`python scripts/gen_docs.py`) and CI fails if it drifts.
+(`python scripts/gen_docs.py`) and CI fails if it drifts. The `Mac` workflow compiles
+Aseprite and runs setup and every tool against it.
 
 ## Changelog & releases
 

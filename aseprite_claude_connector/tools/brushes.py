@@ -12,14 +12,14 @@ from mcp.types import ToolAnnotations
 
 from ..lua import lua_locals
 from ._common import ToolError, run
-from .look import previewable
+from .look import image_loader, previewable
 
 _STAMP = """
 local s = app.activeSprite
 if not s then error("no active sprite") end
 local stamp
 if SRC_PATH ~= nil then
-  stamp = Image{ fromFile = SRC_PATH }
+  stamp = load_image()
   if not stamp then error("could not load stamp image: " .. SRC_PATH) end
 else
   if SW < 1 or SH < 1 then error("source_rect needs positive width/height") end
@@ -74,6 +74,7 @@ def register(mcp):
                 raise ToolError("source_rect must be [x, y, width, height]") from None
         body = (
             f"local PTS = {_points_lua(points)}\n"
+            + (image_loader(source_path) if source_path else "")
             + lua_locals(SRC_PATH=source_path, SX=sx, SY=sy, SW=sw, SH=sh, LAYER=layer)
             + _STAMP
         )

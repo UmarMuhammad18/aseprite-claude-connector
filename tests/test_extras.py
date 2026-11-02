@@ -337,3 +337,32 @@ def test_a_timeout_never_falls_back_to_the_older_file(monkeypatch, tmp_path):
     with pytest.raises(atlas.ToolError):
         atlas.read_sprite(path)
     assert len(calls) == 1
+
+
+def test_only_the_shared_loader_reads_images_from_lua():
+    """Image{ fromFile } stalls on Aseprite's security prompt in the live editor."""
+    from pathlib import Path
+
+    from aseprite_claude_connector import tools
+
+    hits = [
+        p.name
+        for p in Path(tools.__file__).parent.glob("*.py")
+        if "Image{ fromFile" in p.read_text("utf-8")
+    ]
+    assert hits == ["look.py"]
+
+
+def test_a_live_image_loader_carries_the_pixels(monkeypatch, tmp_path):
+    from aseprite_claude_connector.raster import Raster
+    from aseprite_claude_connector.tools import look
+
+    monkeypatch.setenv("ASEPRITE_MCP_BACKEND", "live")
+    path = tmp_path / "ref.png"
+    path.write_bytes(b"x")
+    monkeypatch.setattr(
+        look, "frames_of", lambda **kw: {"frames": [Raster(1, 1, bytes([1, 2, 3, 255]))]}
+    )
+    lua = look.image_loader(str(path))
+    assert "010203ff" in lua
+    assert "fromFile" not in lua

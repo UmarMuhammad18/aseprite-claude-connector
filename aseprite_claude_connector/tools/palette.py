@@ -8,6 +8,7 @@ from mcp.types import ToolAnnotations
 
 from ..lua import lua_locals
 from ._common import ToolError, parse_color, run
+from .look import image_loader
 
 _GET = """
 local s = app.activeSprite
@@ -121,7 +122,7 @@ return J({ added = #COLORS, start = n, size = #pal })
 # dependency for the shipped server). Samples opaque pixels (strided if huge),
 # recursively splits the widest color bucket, averages each, sorts dark->light.
 _EXTRACT = """
-local img = Image{ fromFile = PATH }
+local img = load_image()
 if not img then error("could not load image: " .. PATH) end
 local pc = app.pixelColor
 local W, H = img.width, img.height
@@ -336,7 +337,11 @@ def register(mcp):
         Returns the colors as hex, sorted dark→light. Headless: pass ``file``."""
         if not 2 <= max_colors <= 256:
             raise ToolError("max_colors must be 2..256")
-        body = lua_locals(PATH=image_path, MAXC=int(max_colors), REPLACE=bool(replace)) + _EXTRACT
+        body = (
+            image_loader(image_path)
+            + lua_locals(PATH=image_path, MAXC=int(max_colors), REPLACE=bool(replace))
+            + _EXTRACT
+        )
         return run(body, mutates=bool(replace), undo_label="Extract palette", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Sort palette"))

@@ -21,11 +21,13 @@ import binascii
 import functools
 import inspect
 import json
+import os
 
 from mcp.server.fastmcp import Image
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 
-from ..backends import Backend
+from ..backends import Backend, HeadlessBackend
+from ..config import load_config
 from ..lua import lua_locals
 from ..raster import Raster, diff, encode_png, fit_factor, over_background, resized, tiled
 from ._common import ToolError, parse_color, run
@@ -205,6 +207,18 @@ if PICK then
 end
 """
 
+_LOAD_FILE = """
+local function load_image() return Image{ fromFile = IMAGE_PATH } end
+"""
+
+_LOAD_PIXELS = """
+local function load_image()
+  local img = Image(IMAGE_W, IMAGE_H, ColorMode.RGB)
+  img.bytes = IMAGE_HEX:gsub("%x%x", function(c) return string.char(tonumber(c, 16)) end)
+  return img
+end
+"""
+
 _LOOK_ONION_TAIL = """
 return J({ rgba = pack(out), width = out.width, height = out.height, frame = FRAME,
   ghosts_prev = gp, ghosts_next = gn, note = "red = earlier frames, blue = later frames" })
@@ -271,6 +285,26 @@ def frames_of(
         "name": res["name"],
         "size": {"width": w, "height": h},
     }
+
+
+def image_loader(path: str) -> str:
+    """Lua defining ``load_image()``, which returns the picture at ``path``. Loading a
+    file from Lua in the live editor raises the script-security prompt, so a batch
+    Aseprite reads it and the pixels travel with the script."""
+    cfg = load_config()
+    if cfg.backend == "headless":
+        return lua_locals(IMAGE_PATH=str(path)) + _LOAD_FILE
+    if not os.path.isfile(path):
+        raise ToolError(f"no file at {path}")
+    try:
+        grabbed = frames_of(file=path, backend=HeadlessBackend(cfg.aseprite_path, cfg.exec_timeout))
+    except ToolError as e:
+        raise ToolError(f"could not load image: {path} ({e})") from e
+    picture = grabbed["frames"][0]
+    return (
+        lua_locals(IMAGE_W=picture.width, IMAGE_H=picture.height, IMAGE_HEX=picture.rgba.hex())
+        + _LOAD_PIXELS
+    )
 
 
 def animation_picture(result, first: int, last: int, *, max_size: int, file: str | None) -> list:

@@ -104,7 +104,8 @@ Ruff isn't in the `dev` extra, so install it separately. Set
 - **Never write files from Lua in the look tools.** It raises a modal security prompt
   in the live editor. See "Canvas vision" in `docs/ARCHITECTURE.md`.
 - **Read closed files with a batch Aseprite, not the editor.** Loading one from Lua
-  raises the same prompt. `read_sprite` in `tools/atlas.py` shows the pattern.
+  raises the same prompt. Use `image_loader` in `tools/look.py` for pictures and
+  `read_sprite` in `tools/atlas.py` for sprites.
 
 ## Known issues
 
@@ -112,8 +113,8 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   `MCPServer`, so the server can't import on it. Migrating is separate work.
 - **This package isn't on PyPI**, so install from GitHub, and the update check finds
   nothing until a release is published under this name.
-- **Tools that write files from Lua should hit the security prompt live**, such as
-  the exports. The bridge runs received code under the chunk name `claude`, which
+- **`open_sprite`, `load_palette`, and tools that write files from Lua should hit the
+  security prompt live**, such as the exports. The bridge runs received code under the chunk name `claude`, which
   Aseprite trusts separately from the extension. `Image:saveAs`, `save_sprite`, and
   loading a file with `Sprite{ fromFile = ... }` have all been seen doing this. Umar
   has chosen to give that code full trust, by answering the prompt in Aseprite the

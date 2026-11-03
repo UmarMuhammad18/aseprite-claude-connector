@@ -43,12 +43,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-15-intel]
         python-version: ["3.10", "3.13"]
-        include:
-          # Apple Silicon runners can sit unassigned until GitHub cancels the job, so
-          # this one reports without deciding the run. Intel holds the Mac result.
-          - os: macos-latest
-            python-version: "3.13"
-    continue-on-error: ${{ matrix.os == 'macos-latest' }}
+    # Intel, because Apple Silicon jobs can sit unassigned until GitHub cancels them,
+    # which fails the run. The Mac workflow covers Apple Silicon weekly and on demand.
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

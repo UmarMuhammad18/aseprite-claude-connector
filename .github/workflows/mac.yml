@@ -33,10 +33,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15-intel, macos-latest]
-    # Apple Silicon runners can sit unassigned until GitHub cancels the job, so that
-    # one reports without deciding the run. Intel holds the Mac result.
-    continue-on-error: ${{ matrix.os == 'macos-latest' }}
+        # Apple Silicon jobs can sit unassigned until GitHub cancels them, which fails
+        # the run, so pushes and PRs wait only for Intel. The weekly and on-demand
+        # runs add Apple Silicon.
+        os: ${{ fromJSON(contains(fromJSON('["push", "pull_request"]'), github.event_name) && '["macos-15-intel"]' || '["macos-15-intel", "macos-latest"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     steps:

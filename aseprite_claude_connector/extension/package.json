@@ -2,7 +2,7 @@
   "name": "aseprite-claude-connector",
   "displayName": "Claude Bridge",
   "description": "Lets Claude work in this Aseprite through a local connection.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": { "name": "aseprite-claude-connector contributors" },
   "license": "MIT",
   "categories": ["Scripts"],

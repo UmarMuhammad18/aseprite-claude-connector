@@ -9,8 +9,9 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 6 * * 1"
-  pull_request:
-    paths:
+  push:
+    branches: ["main"]
+    paths: &mac_paths
       - ".github/workflows/mac.yml"
       - "aseprite_claude_connector/config.py"
       - "aseprite_claude_connector/setup.py"
@@ -20,6 +21,8 @@ on:
       - "scripts/check_mac.py"
       - "scripts/check_godot.py"
       - "scripts/godot_check.gd"
+  pull_request:
+    paths: *mac_paths
 
 env:
   ASEPRITE_TAG: v1.3.17.2
@@ -27,7 +30,14 @@ env:
 
 jobs:
   aseprite:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15-intel, macos-latest]
+    # Apple Silicon runners can sit unassigned until GitHub cancels the job, so that
+    # one reports without deciding the run. Intel holds the Mac result.
+    continue-on-error: ${{ matrix.os == 'macos-latest' }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4

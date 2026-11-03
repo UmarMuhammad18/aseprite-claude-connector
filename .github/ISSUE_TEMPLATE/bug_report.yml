@@ -7,7 +7,7 @@ body:
     attributes:
       label: Server version
       description: Ask your agent to run the `status` tool, or `pip show aseprite-claude-connector`.
-      placeholder: "0.2.0"
+      placeholder: "0.3.0"
     validations:
       required: true
   - type: dropdown

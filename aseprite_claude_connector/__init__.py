@@ -1,4 +1,4 @@
-"""aseprite-claude-connector — a Unity-first MCP server for the live Aseprite editor.
+"""aseprite-claude-connector — Claude drawing in a running Aseprite.
 
 The same typed tools run against the artist's *running* Aseprite (via the local
 relay, one undo step per edit) or a headless ``aseprite --batch`` process, because
@@ -6,4 +6,4 @@ relay, one undo step per edit) or a headless ``aseprite --batch`` process, becau
 editor exposes for the active document.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"

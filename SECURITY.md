@@ -62,5 +62,4 @@ deliberately simple and explicit.
 
 This is a solo-maintained tool. For anything security-relevant, use GitHub's
 private vulnerability reporting (the repo's Security tab → "Report a
-vulnerability"), or email hello@oaktree-games.com — please don't open a public
-issue for security problems.
+vulnerability") — please don't open a public issue for security problems.

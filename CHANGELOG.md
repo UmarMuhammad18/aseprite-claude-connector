@@ -12,6 +12,8 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-11-03
+
 ### Fixed
 
 - `add_reference_image`, `import_image_as_layer`, `import_spritesheet`,
@@ -205,7 +207,8 @@ tell you when it's out of date.
 - Art-QA sweep: size/grid/palette checks plus transparent sticker-padding
   measurement.
 
-[Unreleased]: https://github.com/UmarMuhammad18/aseprite-claude-connector/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/UmarMuhammad18/aseprite-claude-connector/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/UmarMuhammad18/aseprite-claude-connector/releases/tag/v0.3.0
 [0.2.0]: https://github.com/oaktreegames/aseprite-live-mcp/releases/tag/v0.2.0
 [0.1.2]: https://github.com/oaktreegames/aseprite-live-mcp/releases/tag/v0.1.2
 [0.1.1]: https://github.com/oaktreegames/aseprite-live-mcp/releases/tag/v0.1.1

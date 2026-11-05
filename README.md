@@ -7,7 +7,7 @@ Kyle Ocheltree / OakTree Games.
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-165-orange)
+![tools](https://img.shields.io/badge/tools-167-orange)
 
 **Let Claude draw in your *live* Aseprite editor, see what it drew, and put the art straight into your Godot or Unity project. Every edit is one named undo.**
 
@@ -29,6 +29,9 @@ This fork adds:
 - **Safer edits.** `set_safety_rails`, dry runs, `edit_batch`, and `edit_in_selection`.
 - **Animation and cleanup.** `inbetween`, `walk_cycle_template`, `apply_timing`,
   `check_loop`, `find_stray_pixels`, and `recolor_variants`.
+- **Art from a reference.** `pixelate_reference` turns a photo or painting into a
+  pixel-art layer at your size and palette, and `compare_to_reference` shows where the
+  canvas still differs from it, with scores.
 - **Working together.** `add_reference_image`, `change_summary`, `explain_changes`, and
   session recording to a GIF.
 - **More export targets.** `export_gamemaker` strips and `pack_atlas` for several sprites
@@ -201,6 +204,7 @@ to Nearest for sharp pixels.
 - *"Fill in three frames between these two poses, then check that the walk loops cleanly."*
 - *"I've selected his arm. Fix the shading, and don't touch anything else."*
 - *"Put this sketch on a reference layer and draw over it."*
+- *"Recreate this photo as 128-pixel-wide pixel art with 24 colours, then fix wherever it still differs."*
 - *"Find stray pixels, then make red, blue, and winter versions of this sprite."*
 - *"What did you change, and how would I do that by hand in Aseprite?"*
 - *"Export this to my game."*
@@ -244,7 +248,7 @@ is an HTTP GET of PyPI's public JSON; nothing about you, your machine, or your
 art is sent.
 
 <!-- TOOLS:START -->
-## Tools (165)
+## Tools (167)
 
 Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), and — when it mutates — wrapped in a **named** `app.transaction`, so each edit is exactly one labeled undo step in the editor.
 

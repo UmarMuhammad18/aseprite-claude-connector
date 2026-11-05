@@ -110,6 +110,8 @@ async def main() -> int:
         "merge_layer_down",
         "move_layer",
         "import_image_as_layer",
+        "pixelate_reference",
+        "compare_to_reference",
         "create_slice",
         "set_slice_pivot",
         "set_slice_center",
@@ -1346,6 +1348,31 @@ return J({ name = top.name, locked = not top.isEditable, opacity = top.opacity }
         "the reference is faded and locked",
         top == {"name": "Reference", "locked": True, "opacity": 90},
         top,
+    )
+
+    # recreate a reference as pixel art, then measure the result against it
+    px_ase = os.path.join(d, "pixelated.aseprite")
+    await step("create_sprite", {"width": 16, "height": 16, "color_mode": "rgb", "file": px_ase})
+    made = json.loads(
+        _text(
+            await step(
+                "pixelate_reference",
+                {"image_path": ref_png, "width": 16, "height": 16, "colors": 8, "file": px_ase},
+            )
+        )
+    )
+    check(
+        "pixelate_reference fills a layer from the picture",
+        made["layer"] == "Reference pixels" and 2 <= len(made["colors"]) <= 8,
+        made,
+    )
+    res = await step("compare_to_reference", {"image_path": ref_png, "file": px_ase})
+    scores = payload(res)
+    check("compare_to_reference shows the difference", has_picture(res))
+    check(
+        "a fresh pixelation scores close to its reference",
+        scores["score"] > 80 and scores["worst_areas"],
+        scores,
     )
 
     # "fix this bit": a selection can't persist in a file, so make it in the same script

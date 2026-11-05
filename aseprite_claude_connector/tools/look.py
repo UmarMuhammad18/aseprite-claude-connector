@@ -291,16 +291,27 @@ def image_loader(path: str) -> str:
     """Lua defining ``load_image()``, which returns the picture at ``path``. Loading a
     file from Lua in the live editor raises the script-security prompt, so a batch
     Aseprite reads it and the pixels travel with the script."""
-    cfg = load_config()
-    if cfg.backend == "headless":
+    if load_config().backend == "headless":
         return lua_locals(IMAGE_PATH=str(path)) + _LOAD_FILE
+    return pixels_loader(read_picture(path))
+
+
+def read_picture(path: str) -> Raster:
+    """The first frame of the picture at ``path``, read by a batch Aseprite so the
+    live editor never sees the file."""
     if not os.path.isfile(path):
         raise ToolError(f"no file at {path}")
+    cfg = load_config()
     try:
         grabbed = frames_of(file=path, backend=HeadlessBackend(cfg.aseprite_path, cfg.exec_timeout))
     except ToolError as e:
         raise ToolError(f"could not load image: {path} ({e})") from e
-    picture = grabbed["frames"][0]
+    return grabbed["frames"][0]
+
+
+def pixels_loader(picture: Raster) -> str:
+    """Lua defining ``load_image()``, which returns ``picture``. The pixels travel
+    with the script, so nothing is read from disk in the editor."""
     return (
         lua_locals(IMAGE_W=picture.width, IMAGE_H=picture.height, IMAGE_HEX=picture.rgba.hex())
         + _LOAD_PIXELS

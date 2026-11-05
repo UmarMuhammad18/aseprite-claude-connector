@@ -38,6 +38,7 @@ from .tools import (
     motion,
     palette,
     prompts,
+    reference,
     resources,
     safety,
     selection,
@@ -64,12 +65,16 @@ as an image, and check your work with it rather than editing blind. Use
 Use `export_to_game` to put art straight into a Godot or Unity project. When the
 artist selects an area and asks you to fix it, use `edit_in_selection`. Use
 `check_loop` before calling an animation finished.
+To recreate a reference picture, start from `pixelate_reference` rather than
+drawing it from memory, then refine by hand and check with `compare_to_reference`
+until its worst areas are fixed.
 """
 
 # Tool modules (each exposes register(mcp)).
 _TOOL_MODULES = (
     inspect,
     look,
+    reference,
     docs,
     safety,
     session,

@@ -7,7 +7,7 @@ Kyle Ocheltree / OakTree Games.
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-167-orange)
+![tools](https://img.shields.io/badge/tools-171-orange)
 
 **Let Claude draw in your *live* Aseprite editor, see what it drew, and put the art straight into your Godot or Unity project. Every edit is one named undo.**
 
@@ -32,6 +32,10 @@ This fork adds:
 - **Art from a reference.** `pixelate_reference` turns a photo or painting into a
   pixel-art layer at your size and palette, and `compare_to_reference` shows where the
   canvas still differs from it, with scores.
+- **Living scenes.** `ambient_motion` loops a still scene with wind, water shimmer, a
+  light glint, and motes, snow, rain, or embers. `split_into_layers` separates a
+  picture into parts from a few points, `extend_scene` widens it with its own
+  texture, and `clean_pixel_art` makes a pixelated picture read as drawn.
 - **Working together.** `add_reference_image`, `change_summary`, `explain_changes`, and
   session recording to a GIF.
 - **More export targets.** `export_gamemaker` strips and `pack_atlas` for several sprites
@@ -205,6 +209,8 @@ to Nearest for sharp pixels.
 - *"I've selected his arm. Fix the shading, and don't touch anything else."*
 - *"Put this sketch on a reference layer and draw over it."*
 - *"Recreate this photo as 128-pixel-wide pixel art with 24 colours, then fix wherever it still differs."*
+- *"Make this a 384×128 banner, then animate it: wind in the grass, a glint on the armour, and fireflies."*
+- *"Split the knight from the meadow so I can recolour his armour."*
 - *"Find stray pixels, then make red, blue, and winter versions of this sprite."*
 - *"What did you change, and how would I do that by hand in Aseprite?"*
 - *"Export this to my game."*
@@ -248,7 +254,7 @@ is an HTTP GET of PyPI's public JSON; nothing about you, your machine, or your
 art is sent.
 
 <!-- TOOLS:START -->
-## Tools (167)
+## Tools (171)
 
 Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), and — when it mutates — wrapped in a **named** `app.transaction`, so each edit is exactly one labeled undo step in the editor.
 
@@ -556,6 +562,9 @@ One-call "skills" that chain the tools into finished art tasks:
 - `concept_to_placeholder` — external concept image → correctly-padded, in-palette placeholder
 - `tileset_and_map` — author a tileset from a terrain spec, lay out the map, export the strip
 - `live_review_loop` — wait for the artist to finish touching up, re-QA, ask for the ship call in-editor
+- `recreate_picture` — turn a photo or painting into pixel art, then refine it until it matches
+- `make_banner` — turn a picture into a wide banner, keeping the subject and extending the scene
+- `animate_scene` — bring a still scene to life as a seamless loop: wind, glints, water, particles
 
 ## Limitations (honest ones)
 

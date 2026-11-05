@@ -22,6 +22,21 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
   side by side, with scores and the areas that differ most.
 - The server's instructions tell Claude to start from `pixelate_reference` when asked
   to recreate a picture, instead of drawing it from memory.
+- `ambient_motion` brings a still scene to life as a seamless loop: wind rolling
+  through it, water shimmer, a light glint, and a layer of motes, snow, rain, or
+  embers. It adds and tags the frames itself.
+- `split_into_layers` separates a picture into named parts from a few seed points,
+  at the parts' real edges, so each can be edited or animated alone.
+- `extend_scene` grows the canvas and fills the new space by continuing the picture's
+  own texture, like turning a portrait into a wide banner.
+- `clean_pixel_art` merges noise specks and firms up edges with the art's own colours.
+- Three new prompts: `recreate_picture`, `make_banner`, and `animate_scene`.
+
+### Changed
+
+- The pixel cap no longer counts cels on layers or frames an edit made itself, since
+  they can't overwrite anything. Importing a long sprite sheet onto a new layer no
+  longer needs the cap raised.
 
 ## [0.3.0] — 2026-11-03
 

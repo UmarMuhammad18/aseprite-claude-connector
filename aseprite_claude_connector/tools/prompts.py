@@ -149,3 +149,62 @@ def register(mcp):
             "5. On 'Export to Unity': `export_unity_sprite` and report the files. On 'Keep editing': "
             "go back to step 2. Always `stop_watching_changes` before you finish."
         )
+
+    @mcp.prompt(
+        title="Recreate a picture",
+        description="Turn a photo or painting into faithful pixel art, then refine it until it matches.",
+    )
+    def recreate_picture(image_path: str, width: str = "128", colors: str = "24") -> str:
+        return (
+            f"Recreate the picture at {image_path} as pixel art in Aseprite. Work from its "
+            "pixels, never from memory:\n"
+            f"1. `create_sprite` at a width of {width} and the picture's aspect (or the size the "
+            "user asked for), then `pixelate_reference` with that width and "
+            f"colors={colors}. It makes its own layer; delete the empty 'Layer 1'.\n"
+            "2. `compare_to_reference` and note the score and the worst areas.\n"
+            "3. `clean_pixel_art` so it reads as drawn, then `compare_to_reference` again. If the "
+            "score fell by more than 3, `undo` it and try a smaller min_region.\n"
+            "4. Refine the worst areas by hand: clean edges on the subject, readable shapes, "
+            "using the sprite's own colours. `look` at each fix, and compare again after each "
+            "round. Stop when the worst areas are about details, not shapes or light.\n"
+            "5. Show the user the result beside the comparison, with the scores."
+        )
+
+    @mcp.prompt(
+        title="Make a banner",
+        description="Turn a picture into a wide banner: the subject kept, the scene extended to fill.",
+    )
+    def make_banner(image_path: str, size: str = "384x128", subject_side: str = "right") -> str:
+        return (
+            f"Make a {size} banner from {image_path}, with the subject on the {subject_side}.\n"
+            "1. Work out the subject's part of the picture with `look` after step 2, then "
+            "`create_sprite` with the banner's height and the width that crop of the picture "
+            "needs at that height.\n"
+            "2. `pixelate_reference` with crop_* around the subject and that size.\n"
+            f"3. `extend_scene` to reach {size}, adding the margin on the side away from the "
+            "subject, with sample_* on plain background (meadow, sky, wall), never the subject.\n"
+            "4. `look` at the seam. If the subject is cut off at the old edge (an arm, a tail), "
+            "draw the rest of it so it doesn't end at a straight line.\n"
+            "5. `clean_pixel_art`, `look` at the whole banner, and show it to the user. Offer to "
+            "leave a calm area for a title, and to animate it with `ambient_motion`."
+        )
+
+    @mcp.prompt(
+        title="Animate a scene",
+        description="Bring a still scene to life as a seamless loop: wind, glints, water, particles.",
+    )
+    def animate_scene(effects: str = "wind, glint, motes", frames: str = "16") -> str:
+        return (
+            f"Animate the active scene as a {frames}-frame loop with: {effects}.\n"
+            "1. `look`, then `split_into_layers` with seeds on each part that moves differently "
+            "(sky, water, foliage, the subject). Put a seed on every distinct area of a part, "
+            "and `look` with layer= at each part: if one leaked into another, `undo` and add "
+            "seeds there.\n"
+            "2. `ambient_motion` once per part: wind=1 on grass and foliage, shimmer=1 on water, "
+            "glint=0.8 on metal, nothing on what should stay still. Use the same frames and "
+            "duration every time. Add particles (motes, snow, rain, embers) on the last call.\n"
+            "3. `check_loop`, then `look_animation` to see it. Calm anything that boils by "
+            "undoing and halving its strength.\n"
+            "4. Tell the user what moves, the loop length, and to save as .aseprite to keep the "
+            "layers, or export a GIF."
+        )

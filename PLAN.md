@@ -132,7 +132,7 @@ All built, checked against real Aseprite headless, and the core ones checked in 
 Claude (desktop app or Claude Code)
    |  tool calls  ↓        ↑  images back
 Our MCP server (Python)
-   ├─ Typed tools: 171, including look tools
+   ├─ Typed tools: 178, including look tools
    ├─ Relay, auto-started: WebSocket on this computer
    │     └─ live → Aseprite (open), via bridge extension, one undo per edit
    ├─ Docs search: Lua API and user manual

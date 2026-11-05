@@ -18,6 +18,8 @@ on:
       - "aseprite_claude_connector/extension/**"
       - "aseprite_claude_connector/tools/game_export.py"
       - "aseprite_claude_connector/tools/godot_export.py"
+      - "aseprite_claude_connector/tiles.py"
+      - "aseprite_claude_connector/tools/tiles.py"
       - "scripts/check_mac.py"
       - "scripts/check_godot.py"
       - "scripts/godot_check.gd"

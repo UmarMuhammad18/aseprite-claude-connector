@@ -26,12 +26,14 @@ from .tools import (
     editor,
     export,
     filters,
+    finish,
     frames,
     game_export,
     godot_export,
     inspect,
     isometric,
     layers,
+    light,
     live,
     look,
     lua_escape,
@@ -40,6 +42,7 @@ from .tools import (
     prompts,
     reference,
     resources,
+    rig,
     safety,
     scene,
     selection,
@@ -49,6 +52,7 @@ from .tools import (
     slices,
     tags,
     tilemaps,
+    tiles,
     transform,
     unity_export,
 )
@@ -71,6 +75,9 @@ drawing it from memory, then refine by hand and check with `compare_to_reference
 until its worst areas are fixed. `clean_pixel_art` then makes it read as drawn.
 To build a scene, `split_into_layers` separates its parts, `extend_scene` widens it
 with its own texture, and `ambient_motion` brings it to life as a loop.
+For characters, `animate_parts` poses part layers. For maps, `make_seamless` then
+`make_autotiles`. `relight_scene` makes time-of-day versions, `make_normal_map`
+readies art for 2D lights, and `export_animation` writes a GIF or animated PNG.
 """
 
 # Tool modules (each exposes register(mcp)).
@@ -79,6 +86,10 @@ _TOOL_MODULES = (
     look,
     reference,
     scene,
+    rig,
+    light,
+    tiles,
+    finish,
     docs,
     safety,
     session,

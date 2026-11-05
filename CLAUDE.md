@@ -19,7 +19,7 @@ babysitting. Our remote is `UmarMuhammad18/aseprite-claude-connector`.
 Claude ⇄ MCP server (stdio, runs the relay) ⇄ WS :9877 ⇄ Claude Bridge extension in Aseprite
 ```
 
-- **`aseprite_claude_connector/`** — FastMCP server with 171 tools. One module per group in
+- **`aseprite_claude_connector/`** — FastMCP server with 178 tools. One module per group in
   `tools/`, each exposing `register(mcp)`. Tools generate Lua and run it through
   `run()` in `tools/_common.py`.
 - **Two backends, one tool surface** — `live` (default) runs Lua in the open editor
@@ -71,7 +71,8 @@ curl http://127.0.0.1:9878/status    # {"connected": true, "info": "aseprite 1.3
 The `Mac` workflow compiles Aseprite on a Mac runner and runs `scripts/check_mac.py` and
 the smoke test against it. Aseprite's licence covers compiling for your own use, so
 never upload or cache that binary. It then runs `scripts/check_godot.py`, which has
-headless Godot import a real export and report its animations, timing, and colours.
+headless Godot import a real export and report its animations, timing, and colours,
+then paint with a `make_autotiles` TileSet and report which tile each cell got.
 
 CI also runs `ruff check .`, `ruff format --check .`, and `gen_docs.py --check`.
 Ruff isn't in the `dev` extra, so install it separately. Set
@@ -121,7 +122,9 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   has chosen to give that code full trust, by answering the prompt in Aseprite the
   first time it appears.
 - **Exports haven't been opened in real Unity.** Its licence rules out a CI check, so
-  no Unity has loaded the `.meta`. Godot is covered: see the `Mac` workflow.
+  no Unity has loaded the `.meta`, or the Rule Tile from `make_autotiles`, which needs
+  the 2D Tilemap Extras package. Godot is covered: see the `Mac` workflow, which also
+  has Godot paint with a `make_autotiles` TileSet.
 - **The Export to Game dialog hasn't been clicked through.** Real Aseprite loads the
   command and its export code passes the smoke test, but the dialog itself needs a
   person.

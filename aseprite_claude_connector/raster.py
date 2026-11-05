@@ -202,9 +202,10 @@ def _lzw(indices: bytes, min_code: int) -> bytes:
     return bytes(out)
 
 
-def encode_gif(frames: list[Raster], delay_ms: int) -> bytes:
-    """Encode same-sized frames as a looping GIF. Flatten them with ``over_background``
-    first: alpha is ignored here."""
+def encode_gif(frames: list[Raster], delay_ms: int | list[int]) -> bytes:
+    """Encode same-sized frames as a looping GIF. ``delay_ms`` is one delay for every
+    frame, or one per frame. Flatten them with ``over_background`` first: alpha is
+    ignored here."""
     palette, lookup = _gif_palette(frames)
     size = max(2, (len(palette) - 1).bit_length())
     table = b"".join(bytes(c) for c in palette).ljust((1 << size) * 3, b"\0")
@@ -215,10 +216,11 @@ def encode_gif(frames: list[Raster], delay_ms: int) -> bytes:
         table,
         b"!\xff\x0bNETSCAPE2.0\x03\x01\x00\x00\x00",
     ]
-    delay = max(2, round(delay_ms / 10))
-    for frame in frames:
+    delays = delay_ms if isinstance(delay_ms, list) else [delay_ms] * len(frames)
+    for frame, ms in zip(frames, delays, strict=True):
         rgba = frame.rgba
         indices = bytes(lookup[rgba[i : i + 3]] for i in range(0, len(rgba), 4))
+        delay = max(2, round(ms / 10))
         parts.append(b"!\xf9\x04\x00" + struct.pack("<H", delay) + b"\x00\x00")
         parts.append(b"," + struct.pack("<HHHHB", 0, 0, w, h, 0) + bytes((size,)))
         data = _lzw(indices, size)
@@ -228,6 +230,37 @@ def encode_gif(frames: list[Raster], delay_ms: int) -> bytes:
         parts.append(b"\x00")
     parts.append(b";")
     return b"".join(parts)
+
+
+def encode_apng(frames: list[Raster], delays_ms: list[int]) -> bytes:
+    """Encode same-sized frames as a looping animated PNG, keeping full alpha."""
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
+        )
+
+    w, h = frames[0].width, frames[0].height
+    stride = w * 4
+    out = [
+        b"\x89PNG\r\n\x1a\n",
+        chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0)),
+        chunk(b"acTL", struct.pack(">II", len(frames), 0)),
+    ]
+    seq = 0
+    for n, (frame, ms) in enumerate(zip(frames, delays_ms, strict=True)):
+        control = struct.pack(">IIIIIHHBB", seq, w, h, 0, 0, max(1, round(ms)), 1000, 0, 0)
+        out.append(chunk(b"fcTL", control))
+        seq += 1
+        lines = b"".join(b"\x00" + frame.rgba[y * stride : (y + 1) * stride] for y in range(h))
+        data = zlib.compress(lines, 6)
+        if n == 0:
+            out.append(chunk(b"IDAT", data))
+        else:
+            out.append(chunk(b"fdAT", struct.pack(">I", seq) + data))
+            seq += 1
+    out.append(chunk(b"IEND", b""))
+    return b"".join(out)
 
 
 def encode_png(src: Raster) -> bytes:

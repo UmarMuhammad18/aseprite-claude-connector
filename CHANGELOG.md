@@ -32,6 +32,22 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
 - `clean_pixel_art` merges noise specks and firms up edges with the art's own colours.
 - Three new prompts: `recreate_picture`, `make_banner`, and `animate_scene`.
 
+- `animate_parts` animates a character from its part layers: key poses per part,
+  frames in between filled in, a pivot for each part, and parents so a forearm follows
+  its arm. Parts turn with RotSprite-style rotation, so edges stay crisp.
+- `make_seamless` makes a texture repeat with no visible edge.
+- `make_autotiles` builds the 47-tile edge-and-corner set for one terrain over another,
+  with a Godot TileSet whose terrain paints it, or a sliced Unity sheet and Rule Tile.
+- `make_normal_map` makes a normal map for Godot's and Unity's 2D lights, as a hidden
+  layer and optionally a PNG strip.
+- `relight_scene` makes dawn, noon, sunset, or night versions of a scene on new layers,
+  with warm pools around lanterns.
+- `clean_lines` thins sketched strokes to one pixel and removes doubled corners.
+- `export_animation` writes a GIF or animated PNG at a whole-number scale, with each
+  frame's own duration, from Python, so the live editor shows no security prompt.
+- The `Mac` workflow's Godot check now has Godot paint with a `make_autotiles` TileSet
+  and checks the tile it picks for every cell.
+
 ### Changed
 
 - The pixel cap no longer counts cels on layers or frames an edit made itself, since

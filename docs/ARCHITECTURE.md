@@ -150,6 +150,16 @@ and every motion completes whole cycles over the loop, so a loop never jumps and
 art keeps its palette. Wind and shimmer never move a clear pixel onto an opaque one,
 so parts split onto separate layers don't open gaps at their edges.
 
+The game-asset tools follow the same pattern, with their image work in stdlib
+modules: `rig.py` (cut-out animation), `tiles.py` (seamless textures, the 47-tile blob
+set, and the Godot and Unity files), `light.py` (relighting and normal maps), and
+`lines.py` (line clean-up), with colour maths in `oklab.py`. Turning a part samples an
+8x Scale2x copy of it (the RotSprite idea), so rotated pixel art stays crisp; a part
+that only moves is copied exactly. Relighting writes new layers and hides the
+originals instead of editing in place, which keeps it undoable as a visibility toggle
+and outside the pixel cap. Files these tools write (`export_animation`, autotile sets,
+normal-map PNGs) are written from Python, never from Lua.
+
 `previewable` wraps a drawing tool. It renders before and after in separate
 read-only calls around the unchanged tool, so the edit stays one undo step, and it
 returns a `CallToolResult` so the tool's structured output survives next to the

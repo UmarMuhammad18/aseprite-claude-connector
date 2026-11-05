@@ -1,8 +1,10 @@
 """Load a real export in real Godot, which no text test can stand in for.
 
-Draws a tagged animation, runs ``export_to_game`` into a new project, has Godot import
-it, then compares what Godot reports with what was drawn. Run it with ``GODOT_PATH`` and
-``ASEPRITE_PATH`` set. Exits non-zero on any difference.
+Draws a tagged animation, runs ``export_to_game`` into a new project, and builds an
+autotile set there with ``make_autotiles``. Godot imports both, then reports what it
+loaded and which tile its terrain painter picks for each cell of a block, and this
+compares that with what was drawn. Run it with ``GODOT_PATH`` and ``ASEPRITE_PATH``
+set. Exits non-zero on any difference.
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ os.environ["ASEPRITE_MCP_BACKEND"] = "headless"
 os.environ["ASEPRITE_MCP_NO_UPDATE_CHECK"] = "1"
 
 from aseprite_claude_connector.server import build_server  # noqa: E402
+from aseprite_claude_connector.tiles import NE, NW, SE, SW, E, N, S, W, blob_masks  # noqa: E402
 
 SIZE = 8
 # (tag, one colour per frame, milliseconds per frame)
@@ -88,13 +91,79 @@ def _differences(report: dict) -> list[str]:
     return wrong
 
 
-async def _export(project: Path, sprite: Path) -> dict:
+def _tile_differences(report: dict) -> list[str]:
+    """Whether Godot's terrain painter picked the right tile for every painted cell."""
+    tiles = report.get("tiles")
+    if not tiles:
+        return ["no autotile report"]
+    if tiles["count"] != 47:
+        return [f"the TileSet has {tiles['count']} tiles, made 47"]
+    masks = blob_masks()
+    painted = {(c[0], c[1]): masks[c[3] * 8 + c[2]] for c in tiles["cells"]}
+    wrong = []
+    for (x, y), got in painted.items():
+        want = 0
+        for bit, dx, dy in ((N, 0, -1), (E, 1, 0), (S, 0, 1), (W, -1, 0)):
+            if (x + dx, y + dy) in painted:
+                want |= bit
+        for bit, dx, dy, a, b in (
+            (NE, 1, -1, N, E),
+            (SE, 1, 1, S, E),
+            (SW, -1, 1, S, W),
+            (NW, -1, -1, N, W),
+        ):
+            if (x + dx, y + dy) in painted and want & a and want & b:
+                want |= bit
+        if want != got:
+            wrong.append(f"terrain cell ({x}, {y}): picked tile for {got}, needs {want}")
+    return wrong
+
+
+async def _export(project: Path, sprite: Path, terrain: Path) -> dict:
     mcp = build_server()
     await mcp.call_tool("create_sprite", {"width": SIZE, "height": SIZE, "file": str(sprite)})
     code = _DRAW.replace("SPEC", _lua_spec())
     await mcp.call_tool("run_lua", {"code": code, "save": True, "file": str(sprite)})
     res = await mcp.call_tool("export_to_game", {"game_dir": str(project), "file": str(sprite)})
-    return json.loads((res[0] if isinstance(res, tuple) else res)[0].text)
+    made = json.loads((res[0] if isinstance(res, tuple) else res)[0].text)
+    await mcp.call_tool("create_sprite", {"width": 16, "height": 16, "file": str(terrain)})
+    await mcp.call_tool(
+        "draw_rectangle",
+        {
+            "x": 0,
+            "y": 0,
+            "width": 16,
+            "height": 16,
+            "color": "#4c9a3c",
+            "fill": True,
+            "file": str(terrain),
+        },
+    )
+    await mcp.call_tool("add_layer", {"name": "Dirt", "file": str(terrain)})
+    await mcp.call_tool(
+        "draw_rectangle",
+        {
+            "x": 0,
+            "y": 0,
+            "width": 16,
+            "height": 16,
+            "color": "#6a4a30",
+            "fill": True,
+            "file": str(terrain),
+        },
+    )
+    await mcp.call_tool(
+        "make_autotiles",
+        {
+            "fill_layer": "Layer 1",
+            "base_layer": "Dirt",
+            "size": 16,
+            "name": "terrain",
+            "game_dir": str(project),
+            "file": str(terrain),
+        },
+    )
+    return made
 
 
 def main() -> int:
@@ -105,7 +174,11 @@ def main() -> int:
         (project / "project.godot").write_text(
             'config_version=5\n\n[application]\n\nconfig/name="check"\n', encoding="utf-8"
         )
-        print(asyncio.run(_export(project, Path(folder) / "hero.aseprite")))
+        print(
+            asyncio.run(
+                _export(project, Path(folder) / "hero.aseprite", Path(folder) / "terrain.aseprite")
+            )
+        )
         shutil.copy(Path(__file__).with_name("godot_check.gd"), project / "godot_check.gd")
         base = [godot, "--headless", "--path", str(project)]
         subprocess.run([*base, "--import"], check=True, timeout=300)
@@ -119,11 +192,11 @@ def main() -> int:
         return 1
     report = json.loads(lines[0].removeprefix("GODOT_REPORT="))
     print(json.dumps(report, indent=2))
-    wrong = _differences(report)
+    wrong = _differences(report) + _tile_differences(report)
     for line in wrong:
         print(f"WRONG: {line}")
     if not wrong:
-        print("OK: Godot loaded every animation as drawn")
+        print("OK: Godot loaded every animation as drawn, and painted the terrain right")
     return 1 if wrong else 0
 
 

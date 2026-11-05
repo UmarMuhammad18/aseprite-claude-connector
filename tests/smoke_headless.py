@@ -116,6 +116,13 @@ async def main() -> int:
         "split_into_layers",
         "extend_scene",
         "clean_pixel_art",
+        "animate_parts",
+        "clean_lines",
+        "export_animation",
+        "make_normal_map",
+        "relight_scene",
+        "make_seamless",
+        "make_autotiles",
         "create_slice",
         "set_slice_pivot",
         "set_slice_center",
@@ -1436,6 +1443,82 @@ return J({ name = top.name, locked = not top.isEditable, opacity = top.opacity }
         await step("clean_pixel_art", {"layer": "Sand", "all_frames": True, "file": sc})
     )
     check("clean_pixel_art works through every frame", len(cleaned["frames"]) == 8, cleaned)
+
+    # game assets: a puppet animated by its parts, sketch lines, light, and exports
+    pz = os.path.join(d, "puppet.aseprite")
+    await step("create_sprite", {"width": 24, "height": 24, "color_mode": "rgb", "file": pz})
+    await step(
+        "run_lua",
+        {
+            "code": """
+local s = app.activeSprite
+local function rect(layer, x, y, w, h, c)
+  local img = Image(s.width, s.height, ColorMode.RGB)
+  for yy = y, y + h - 1 do for xx = x, x + w - 1 do img:drawPixel(xx, yy, c) end end
+  s:newCel(layer, 1, img, Point(0, 0))
+end
+local body = s.layers[1]
+body.name = "Body"
+rect(body, 8, 4, 6, 16, Color(70, 110, 165))
+local arm = s:newLayer()
+arm.name = "Arm"
+rect(arm, 13, 8, 8, 2, Color(190, 60, 60))
+local ink = s:newLayer()
+ink.name = "Ink"
+rect(ink, 2, 21, 18, 2, Color(20, 20, 20))
+return J({ ok = true })
+""",
+            "save": True,
+            "file": pz,
+        },
+    )
+    poses = [{"frame": 1, "part": "Arm", "angle": -30}, {"frame": 4, "part": "Arm", "angle": 30}]
+    moved = payload(
+        await step(
+            "animate_parts",
+            {"poses": poses, "frames": 6, "pivots": {"Arm": [13, 9]}, "file": pz},
+        )
+    )
+    check("animate_parts poses the arm over six frames", moved["frames"] == 6, moved)
+    inked = payload(await step("clean_lines", {"layer": "Ink", "frame": 1, "file": pz}))
+    check("clean_lines thins a thick stroke", inked["thinned_pixels"] > 0, inked)
+    gif, apng, nmap = (
+        os.path.join(d, n) for n in ("puppet.gif", "puppet_anim.png", "puppet_n.png")
+    )
+    await step("export_animation", {"path": gif, "scale": 2, "file": pz})
+    await step("export_animation", {"path": apng, "scale": 2, "file": pz})
+    check(
+        "export_animation writes a GIF and an animated PNG",
+        open(gif, "rb").read(6) == b"GIF89a" and b"acTL" in open(apng, "rb").read(),
+    )
+    await step("make_normal_map", {"save_path": nmap, "file": pz})
+    check("make_normal_map writes its PNG", os.path.isfile(nmap))
+    night = payload(await step("relight_scene", {"time": "night", "file": pz}))
+    check("relight_scene writes night copies", "Body (night)" in night["layers"], night)
+
+    # tiles: a seamless texture, then the 47-tile set
+    tl = os.path.join(d, "tiles.aseprite")
+    await step("create_sprite", {"width": 16, "height": 16, "color_mode": "rgb", "file": tl})
+    await step(
+        "draw_rectangle",
+        {"x": 0, "y": 0, "width": 16, "height": 16, "color": "#4c9a3c", "fill": True, "file": tl},
+    )
+    await step(
+        "draw_rectangle",
+        {"x": 3, "y": 3, "width": 4, "height": 6, "color": "#78c060", "fill": True, "file": tl},
+    )
+    await step("make_seamless", {"layer": "Layer 1", "file": tl})
+    made = payload(
+        await step(
+            "make_autotiles",
+            {"fill_layer": "Layer 1", "size": 8, "name": "smoke_tiles", "out_dir": d, "file": tl},
+        )
+    )
+    check(
+        "make_autotiles writes 47 tiles and their map",
+        made["tiles"] == 47 and os.path.isfile(os.path.join(d, "smoke_tiles.json")),
+        made,
+    )
 
     # "fix this bit": a selection can't persist in a file, so make it in the same script
     from aseprite_claude_connector.tools._common import Captured, rails, run

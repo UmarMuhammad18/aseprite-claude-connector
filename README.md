@@ -7,7 +7,7 @@ Kyle Ocheltree / OakTree Games.
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-171-orange)
+![tools](https://img.shields.io/badge/tools-178-orange)
 
 **Let Claude draw in your *live* Aseprite editor, see what it drew, and put the art straight into your Godot or Unity project. Every edit is one named undo.**
 
@@ -36,6 +36,12 @@ This fork adds:
   light glint, and motes, snow, rain, or embers. `split_into_layers` separates a
   picture into parts from a few points, `extend_scene` widens it with its own
   texture, and `clean_pixel_art` makes a pixelated picture read as drawn.
+- **Game assets.** `animate_parts` animates a character from its part layers like a
+  cut-out puppet, with crisp RotSprite-style turning. `make_seamless` and
+  `make_autotiles` build a 47-tile terrain set with a Godot TileSet or a Unity Rule
+  Tile. `make_normal_map` readies art for 2D lights, `relight_scene` makes dawn,
+  sunset, and night versions, `clean_lines` tidies sketched strokes, and
+  `export_animation` writes a GIF or animated PNG at any whole-number scale.
 - **Working together.** `add_reference_image`, `change_summary`, `explain_changes`, and
   session recording to a GIF.
 - **More export targets.** `export_gamemaker` strips and `pack_atlas` for several sprites
@@ -211,6 +217,10 @@ to Nearest for sharp pixels.
 - *"Recreate this photo as 128-pixel-wide pixel art with 24 colours, then fix wherever it still differs."*
 - *"Make this a 384×128 banner, then animate it: wind in the grass, a glint on the armour, and fireflies."*
 - *"Split the knight from the meadow so I can recolour his armour."*
+- *"Swing his arm from the shoulder over 8 frames, with the forearm following."*
+- *"Make this grass tileable, then build an autotile set over dirt for my Godot project."*
+- *"Give me a night version with a lantern by the door, and a normal map for 2D lights."*
+- *"Export the banner as a GIF at 4x."*
 - *"Find stray pixels, then make red, blue, and winter versions of this sprite."*
 - *"What did you change, and how would I do that by hand in Aseprite?"*
 - *"Export this to my game."*
@@ -254,7 +264,7 @@ is an HTTP GET of PyPI's public JSON; nothing about you, your machine, or your
 art is sent.
 
 <!-- TOOLS:START -->
-## Tools (171)
+## Tools (178)
 
 Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), and — when it mutates — wrapped in a **named** `app.transaction`, so each edit is exactly one labeled undo step in the editor.
 

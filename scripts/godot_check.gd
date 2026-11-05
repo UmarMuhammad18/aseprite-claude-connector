@@ -25,5 +25,21 @@ func _init() -> void:
 			"loop": frames.get_animation_loop(animation),
 			"frames": cells,
 		}
+	var tileset: TileSet = load("res://sprites/terrain.tres")
+	if tileset:
+		var layer := TileMapLayer.new()
+		layer.tile_set = tileset
+		var cells: Array[Vector2i] = []
+		for y in range(3):
+			for x in range(4):
+				cells.append(Vector2i(x, y))
+		cells.append(Vector2i(5, 1))
+		layer.set_cells_terrain_connect(cells, 0, 0)
+		var painted := []
+		for c in cells:
+			var at := layer.get_cell_atlas_coords(c)
+			painted.append([c.x, c.y, at.x, at.y])
+		report["tiles"] = {"count": tileset.get_source(0).get_tiles_count(), "cells": painted}
+		layer.free()
 	print("GODOT_REPORT=" + JSON.stringify(report))
 	quit()

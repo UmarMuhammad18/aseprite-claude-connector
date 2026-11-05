@@ -128,6 +128,7 @@ local function __snapshot(s)
         for _, c in ipairs(l.cels) do
           out[key .. c.frameNumber] = {
             image = c.image:clone(), x = c.position.x, y = c.position.y,
+            layer = l, frame = c.frameNumber,
           }
         end
       end
@@ -164,23 +165,44 @@ local function __celChanges(a, b, limit)
   end
   return n
 end
-local function __countChanges(before, after, limit, touched)
-  local n = 0
+-- Every image layer, for telling the layers an edit made from the ones it found.
+local function __imageLayers(s)
+  local out = {}
+  local function walk(layers)
+    for _, l in ipairs(layers) do
+      if l.isGroup then walk(l.layers) else out[#out + 1] = l end
+    end
+  end
+  walk(s.layers)
+  return out
+end
+-- A cel on a layer or frame the edit made itself can't overwrite anything, so it
+-- doesn't count toward the cap. It still counts as a change in the journal.
+local function __isFresh(entry, oldLayers, oldFrames)
+  if entry.frame > oldFrames then return true end
+  for _, l in ipairs(oldLayers) do
+    if l == entry.layer then return false end
+  end
+  return true
+end
+local function __countChanges(before, after, limit, touched, oldLayers, oldFrames)
+  local n, fresh = 0, 0
   for key, a in pairs(before) do
     local c = __celChanges(a, after[key], limit - n)
     if c > 0 then touched[key] = true end
     n = n + c
-    if n > limit then return n end
+    if n > limit then return n, fresh end
   end
   for key, b in pairs(after) do
     if not before[key] then
-      local c = __celChanges(nil, b, limit - n)
+      local isNew = __isFresh(b, oldLayers, oldFrames)
+      local c = __celChanges(nil, b, isNew and math.huge or limit - n)
       if c > 0 then touched[key] = true end
-      n = n + c
-      if n > limit then return n end
+      if isNew then fresh = fresh + c else n = n + c end
+      if n > limit then return n, fresh end
     end
   end
-  return n
+  return n, fresh
 end
 -- Which frames and layers changed, for the session journal.
 local function __touchedReport(s, touched, pixels)
@@ -256,6 +278,7 @@ local __s = app.activeSprite
 if not __s then error("no active sprite (headless: pass file=)") end
 local __limit = (__DRY or __CAP <= 0) and math.huge or __CAP
 local __before = __snapshot(__s)
+local __oldLayers = __imageLayers(__s)
 local __layers, __frames = #__s.layers, #__s.frames
 local __r
 local __touched, __changes = {}, nil
@@ -266,10 +289,11 @@ local __ok, __err = pcall(function()
         + body
         + """
     end)()
-    local n = __countChanges(__before, __snapshot(__s), __limit, __touched)
-    __changes = __touchedReport(__s, __touched, n)
+    local n, fresh = __countChanges(__before, __snapshot(__s), __limit, __touched,
+      __oldLayers, __frames)
+    __changes = __touchedReport(__s, __touched, n + fresh)
     if __DRY then
-      error(string.format(__MSG_DRY, n, __layers, #__s.layers, __frames, #__s.frames), 0)
+      error(string.format(__MSG_DRY, n + fresh, __layers, #__s.layers, __frames, #__s.frames), 0)
     elseif n > __limit then
       error(string.format(__MSG_CAP, __CAP), 0)
     end

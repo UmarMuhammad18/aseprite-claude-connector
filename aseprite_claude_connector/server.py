@@ -41,6 +41,7 @@ from .tools import (
     reference,
     resources,
     safety,
+    scene,
     selection,
     session,
     session_tools,
@@ -67,7 +68,9 @@ artist selects an area and asks you to fix it, use `edit_in_selection`. Use
 `check_loop` before calling an animation finished.
 To recreate a reference picture, start from `pixelate_reference` rather than
 drawing it from memory, then refine by hand and check with `compare_to_reference`
-until its worst areas are fixed.
+until its worst areas are fixed. `clean_pixel_art` then makes it read as drawn.
+To build a scene, `split_into_layers` separates its parts, `extend_scene` widens it
+with its own texture, and `ambient_motion` brings it to life as a loop.
 """
 
 # Tool modules (each exposes register(mcp)).
@@ -75,6 +78,7 @@ _TOOL_MODULES = (
     inspect,
     look,
     reference,
+    scene,
     docs,
     safety,
     session,

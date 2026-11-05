@@ -112,6 +112,10 @@ async def main() -> int:
         "import_image_as_layer",
         "pixelate_reference",
         "compare_to_reference",
+        "ambient_motion",
+        "split_into_layers",
+        "extend_scene",
+        "clean_pixel_art",
         "create_slice",
         "set_slice_pivot",
         "set_slice_center",
@@ -130,7 +134,7 @@ async def main() -> int:
     resource_uris = sorted(str(r.uri) for r in await mcp.list_resources())
     print(f"registered prompts ({len(prompt_names)}):", prompt_names)
     print(f"registered resources ({len(resource_uris)}):", resource_uris)
-    assert len(prompt_names) == 7, f"expected 7 prompts, got {prompt_names}"
+    assert len(prompt_names) == 10, f"expected 10 prompts, got {prompt_names}"
     assert len(resource_uris) == 6, f"expected 6 resources, got {resource_uris}"
 
     d = tempfile.mkdtemp(prefix="aselm_smoke_")
@@ -889,7 +893,22 @@ async def main() -> int:
             failures.append(("run_lua", f"expected the cap to refuse it: {e}"))
     await step("add_layer", {"name": "over", "file": dt})
     await step("move_layer", {"name": "over", "direction": "bottom", "file": dt})
+    # a layer the edit makes itself can't overwrite anything, so the cap lets it through
+    fresh = await step(
+        "run_lua",
+        {
+            "code": "local s=app.activeSprite local l=s:newLayer() l.name='fresh' "
+            "local img=Image(s.width,s.height,s.colorMode) "
+            "img:clear(app.pixelColor.rgba(9,9,9,255)) s:newCel(l,1,img,Point(0,0)) return 1",
+            "edit": True,
+            "save": True,
+            "file": dt,
+        },
+    )
+    if fresh is None or "refused" in _text(fresh):
+        failures.append(("pixel cap", "a new layer was counted against the cap"))
     await step("set_safety_rails", {"max_changed_pixels": 250000})
+    await step("delete_layer", {"name": "fresh", "file": dt})
     # export_to_game, and the button in the extension writing identical files.
     games = {
         "godot_game": "project.godot",
@@ -1374,6 +1393,49 @@ return J({ name = top.name, locked = not top.isEditable, opacity = top.opacity }
         scores["score"] > 80 and scores["worst_areas"],
         scores,
     )
+
+    # build a scene: split it into parts, animate one, widen it, and clean it up
+    sc = os.path.join(d, "scene.aseprite")
+    await step("create_sprite", {"width": 24, "height": 16, "color_mode": "rgb", "file": sc})
+    await step(
+        "draw_rectangle",
+        {"x": 0, "y": 0, "width": 12, "height": 16, "color": "#203040", "fill": True, "file": sc},
+    )
+    await step(
+        "draw_rectangle",
+        {"x": 12, "y": 0, "width": 12, "height": 16, "color": "#e0c080", "fill": True, "file": sc},
+    )
+    seeds = [{"name": "Sky", "x": 2, "y": 2}, {"name": "Sand", "x": 20, "y": 10}]
+    split = payload(await step("split_into_layers", {"seeds": seeds, "file": sc}))
+    check(
+        "split_into_layers separates the parts",
+        split["pixels"] == {"Sky": 192, "Sand": 192},
+        split,
+    )
+    anim = payload(
+        await step(
+            "ambient_motion",
+            {"layer": "Sand", "frames": 8, "glint": 1, "particles": "snow", "file": sc},
+        )
+    )
+    info = payload(await step("get_sprite_info", {"file": sc}))
+    check(
+        "ambient_motion makes a tagged loop with a particle layer",
+        anim["frames"] == 8 and info["frames"] == 8 and "Snow" in info["layers"],
+        info,
+    )
+    loop = payload(await step("check_loop", {"tag": "loop", "file": sc}))
+    check("the ambient loop has no jump", loop["verdict"] in ("smooth", "static"), loop)
+    grown = payload(await step("extend_scene", {"right": 8, "layer": "Sky", "file": sc}))
+    check(
+        "extend_scene widens the canvas on every frame",
+        grown["width"] == 32 and grown["frames"] == 8,
+        grown,
+    )
+    cleaned = payload(
+        await step("clean_pixel_art", {"layer": "Sand", "all_frames": True, "file": sc})
+    )
+    check("clean_pixel_art works through every frame", len(cleaned["frames"]) == 8, cleaned)
 
     # "fix this bit": a selection can't persist in a file, so make it in the same script
     from aseprite_claude_connector.tools._common import Captured, rails, run

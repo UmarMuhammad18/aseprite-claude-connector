@@ -143,6 +143,13 @@ double, because the plain RGB distance lets a pink flower snap to tan.
 `compare_to_reference` scores with a simpler "redmean" distance, scaled so a flat
 colour over a photo scores about 45 and a fresh pixelation about 90.
 
+`tools/scene.py` builds and animates scenes the same way: it reads a layer like
+`look` does, `scene.py` (stdlib only) works on the pixels, and the results go back
+inside the script. Animation only moves pixels or brightens them toward one colour,
+and every motion completes whole cycles over the loop, so a loop never jumps and the
+art keeps its palette. Wind and shimmer never move a clear pixel onto an opaque one,
+so parts split onto separate layers don't open gaps at their edges.
+
 `previewable` wraps a drawing tool. It renders before and after in separate
 read-only calls around the unchanged tool, so the edit stays one undo step, and it
 returns a `CallToolResult` so the tool's structured output survives next to the
@@ -158,6 +165,10 @@ entry. Three things follow from that design:
 
 - **Cels are keyed by their place in the layer tree,** because layers have no id in
   the API. A reordered layer counts as changed.
+- **Cels on layers or frames the edit made itself don't count toward the cap,** since
+  they can't overwrite anything. The journal still reports them. A layer is matched
+  by comparing layer objects from before the edit, so this holds even though keys
+  are positions.
 - **A rollback can't undo what's outside the sprite.** `run` refuses bodies that save,
   export, or open and close documents during a dry run, by matching their Lua.
 - **`edit_batch` is the only way to get one Ctrl-Z for several tools.** A transaction

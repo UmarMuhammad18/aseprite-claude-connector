@@ -12,6 +12,17 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
 
 ## [Unreleased]
 
+### Added
+
+- `pixelate_reference` turns a reference picture into a pixel-art layer. It shrinks
+  the picture by area averaging, picks a palette that keeps small accents like a
+  scatter of flowers, can snap to your own palette or dither, and clears lone noise
+  pixels.
+- `compare_to_reference` shows the reference, the canvas, and a difference heatmap
+  side by side, with scores and the areas that differ most.
+- The server's instructions tell Claude to start from `pixelate_reference` when asked
+  to recreate a picture, instead of drawing it from memory.
+
 ## [0.3.0] — 2026-11-03
 
 ### Fixed

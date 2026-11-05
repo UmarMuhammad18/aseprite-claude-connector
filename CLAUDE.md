@@ -19,7 +19,7 @@ babysitting. Our remote is `UmarMuhammad18/aseprite-claude-connector`.
 Claude ⇄ MCP server (stdio, runs the relay) ⇄ WS :9877 ⇄ Claude Bridge extension in Aseprite
 ```
 
-- **`aseprite_claude_connector/`** — FastMCP server with 165 tools. One module per group in
+- **`aseprite_claude_connector/`** — FastMCP server with 167 tools. One module per group in
   `tools/`, each exposing `register(mcp)`. Tools generate Lua and run it through
   `run()` in `tools/_common.py`.
 - **Two backends, one tool surface** — `live` (default) runs Lua in the open editor

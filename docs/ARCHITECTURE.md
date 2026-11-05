@@ -135,6 +135,14 @@ encodes the PNG. Two facts shaped this:
 Only canvases too big for the picture shrink in Lua, which keeps payloads small;
 zooming up costs nothing on the wire because it happens in Python.
 
+`tools/reference.py` works from a reference picture. A batch Aseprite reads it
+(`read_picture` in `look.py`), `pixelate.py` (stdlib only) does the image work, and
+the result goes back into the editor as pixels in the script, so the live editor
+never opens the file. Colours are picked and matched in OKLab with hue weighted
+double, because the plain RGB distance lets a pink flower snap to tan.
+`compare_to_reference` scores with a simpler "redmean" distance, scaled so a flat
+colour over a photo scores about 45 and a fresh pixelation about 90.
+
 `previewable` wraps a drawing tool. It renders before and after in separate
 read-only calls around the unchanged tool, so the edit stays one undo step, and it
 returns a `CallToolResult` so the tool's structured output survives next to the

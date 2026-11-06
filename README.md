@@ -612,7 +612,13 @@ plus **wire-validation** tests that exercise structured output through a real
 MCP client session — the boundary users actually hit (`pip install -e ".[dev]"`
 first). The README's tool list is generated from the code
 (`python scripts/gen_docs.py`) and CI fails if it drifts. The `Mac` workflow compiles
-Aseprite and runs setup and every tool against it.
+Aseprite and runs setup and every tool against it, then has real Godot load an export
+and paint with an autotile set. The `Release check` workflow installs each published
+version from PyPI on Windows, Linux, and Mac and checks it runs. The `Unity` workflow
+has real Unity import the exports and paint with the Rule Tile, once the repository
+has a Unity licence ([`unity/README.md`](unity/README.md)). To test the live
+connection on a Mac without buying Aseprite, see
+[`docs/MAC_TESTING.md`](docs/MAC_TESTING.md).
 
 ## Changelog & releases
 

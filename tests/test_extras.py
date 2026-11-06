@@ -366,3 +366,29 @@ def test_a_live_image_loader_carries_the_pixels(monkeypatch, tmp_path):
     lua = look.image_loader(str(path))
     assert "010203ff" in lua
     assert "fromFile" not in lua
+
+
+def test_a_live_palette_load_reads_the_file_outside_the_editor(monkeypatch, tmp_path):
+    """Palette{ fromFile } in the live editor stalls on Aseprite's security prompt."""
+    import asyncio
+
+    from aseprite_claude_connector.backends import HeadlessBackend
+    from aseprite_claude_connector.server import build_server
+    from aseprite_claude_connector.tools import palette
+
+    monkeypatch.setenv("ASEPRITE_MCP_BACKEND", "live")
+    path = tmp_path / "p.gpl"
+    path.write_text("GIMP Palette\n", encoding="utf-8")
+    ran = []
+
+    def fake_run(lua, **kw):
+        ran.append((lua, kw))
+        if isinstance(kw.get("backend"), HeadlessBackend):
+            return {"colors": "ff0000ff,00ff00ff"}
+        return {"size": 2}
+
+    monkeypatch.setattr(palette, "run", fake_run)
+    asyncio.run(build_server().call_tool("load_palette", {"path": str(path)}))
+    (read, _), (edit, kw) = ran
+    assert "fromFile" in read
+    assert kw["mutates"] and "fromFile" not in edit and "ff0000ff,00ff00ff" in edit

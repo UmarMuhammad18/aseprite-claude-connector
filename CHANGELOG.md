@@ -12,6 +12,21 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
 
 ## [Unreleased]
 
+### Fixed
+
+- `load_palette` no longer raises Aseprite's security prompt in the live editor. A
+  batch Aseprite reads the file and only its colours reach the editor.
+
+### Added — checks
+
+- A `Release check` workflow installs each published version from PyPI on Windows,
+  Linux, and Mac, without the repo, and checks that it runs.
+- A `Unity` workflow and test project (`unity/`) have real Unity import a sliced
+  sheet and an autotile set and paint with its Rule Tile. It skips itself until the
+  repository has a Unity licence in its secrets.
+- `docs/MAC_TESTING.md`: how to test the live connection on a Mac for free, by building
+  Aseprite from source, without Claude.
+
 ## [0.3.0] — 2026-11-06
 
 ### Added — references, scenes, and game assets

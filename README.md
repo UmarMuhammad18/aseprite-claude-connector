@@ -104,7 +104,7 @@ Requires **Python 3.10+** and **Aseprite 1.3+**. One command installs the packag
 registers the server with Claude Code, and adds the Aseprite extension:
 
 ```bash
-pip install git+https://github.com/UmarMuhammad18/aseprite-claude-connector && aseprite-claude-connector setup
+pip install aseprite-claude-connector && aseprite-claude-connector setup
 ```
 
 <details>
@@ -157,7 +157,7 @@ The live backend edits your **running** Aseprite, one undo step per edit. Set it
 with one command:
 
 ```bash
-pip install git+https://github.com/UmarMuhammad18/aseprite-claude-connector && aseprite-claude-connector setup
+pip install aseprite-claude-connector && aseprite-claude-connector setup
 ```
 
 `setup` registers the server with Claude Code and installs the Claude Bridge
@@ -254,7 +254,7 @@ PyPI — whether a newer release exists. Your agent sees it, so *you* see it:
 ```json
 { "backend": "live", "connected": true,
   "server": { "current": "0.2.0", "latest": "0.2.1", "update_available": true,
-              "how": "pip install -U git+https://github.com/UmarMuhammad18/aseprite-claude-connector" } }
+              "how": "pip install -U aseprite-claude-connector" } }
 ```
 
 Also surfaced as the `aseprite://update` resource, one stderr log line, and the

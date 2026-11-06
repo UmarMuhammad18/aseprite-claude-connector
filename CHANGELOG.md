@@ -8,11 +8,13 @@ All notable changes to this project are documented here. The format follows
 **How you'll know it's time to update:** the `status` tool reports your installed
 version and whether a newer release exists (checked against PyPI at most once a
 day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
-`pip install -U git+https://github.com/UmarMuhammad18/aseprite-claude-connector`.
+`pip install -U aseprite-claude-connector`.
 
 ## [Unreleased]
 
-### Added
+## [0.3.0] — 2026-11-06
+
+### Added — references, scenes, and game assets
 
 - `pixelate_reference` turns a reference picture into a pixel-art layer. It shrinks
   the picture by area averaging, picks a palette that keeps small accents like a
@@ -48,13 +50,14 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
 - The `Mac` workflow's Godot check now has Godot paint with a `make_autotiles` TileSet
   and checks the tile it picks for every cell.
 
-### Changed
+### Changed — the pixel cap, and installing from PyPI
+
+- This is the first release on PyPI under this name: install with
+  `pip install aseprite-claude-connector`. The update check now finds new releases.
 
 - The pixel cap no longer counts cels on layers or frames an edit made itself, since
   they can't overwrite anything. Importing a long sprite sheet onto a new layer no
   longer needs the cap raised.
-
-## [0.3.0] — 2026-11-03
 
 ### Fixed
 

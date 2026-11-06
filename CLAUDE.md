@@ -113,8 +113,6 @@ Ruff isn't in the `dev` extra, so install it separately. Set
 
 - **`mcp` is pinned to `<2`.** The 2.x SDK replaced `mcp.server.fastmcp` with
   `MCPServer`, so the server can't import on it. Migrating is separate work.
-- **This package isn't on PyPI**, so install from GitHub, and the update check finds
-  nothing until a release is published under this name.
 - **`open_sprite`, `load_palette`, and tools that write files from Lua should hit the
   security prompt live**, such as the exports. The bridge runs received code under the chunk name `claude`, which
   Aseprite trusts separately from the extension. `Image:saveAs`, `save_sprite`, and

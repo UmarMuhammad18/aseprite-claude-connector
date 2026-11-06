@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import colorsys
+import os
 
 from mcp.types import ToolAnnotations
 
+from ..backends import HeadlessBackend
+from ..config import load_config
 from ..lua import lua_locals
 from ._common import ToolError, parse_color, run
 from .look import image_loader
@@ -234,6 +237,33 @@ s:setPalette(pal)
 return J({ size = #pal, source = PATH })
 """
 
+# Live, a batch Aseprite reads the file and only its colours reach the editor: loading a
+# file from Lua there raises the script-security prompt.
+_READ_PALETTE = """
+local pal = Palette{ fromFile = PATH }
+if not pal then error("could not load palette: " .. PATH) end
+local out = {}
+for i = 0, #pal - 1 do
+  local c = pal:getColor(i)
+  out[#out + 1] = string.format("%02x%02x%02x%02x", c.red, c.green, c.blue, c.alpha)
+end
+return J({ colors = table.concat(out, ",") })
+"""
+
+_SET_PALETTE = """
+local s = app.activeSprite
+if not s then error("no active sprite") end
+local hexes = {}
+for hex in COLORS:gmatch("%x+") do hexes[#hexes + 1] = hex end
+local pal = Palette(#hexes)
+for i, hex in ipairs(hexes) do
+  pal:setColor(i - 1, Color(tonumber(hex:sub(1, 2), 16), tonumber(hex:sub(3, 4), 16),
+    tonumber(hex:sub(5, 6), 16), tonumber(hex:sub(7, 8), 16)))
+end
+s:setPalette(pal)
+return J({ size = #pal, source = PATH })
+"""
+
 _SAVE_PALETTE = """
 local s = app.activeSprite
 if not s then error("no active sprite") end
@@ -371,7 +401,17 @@ def register(mcp):
     def load_palette(path: str, file: str | None = None) -> dict:
         """Replace the sprite's palette from a palette file (.gpl, .pal, .ase,
         .png strip — anything Aseprite reads). One undo step."""
-        body = lua_locals(PATH=str(path)) + _LOAD_PALETTE
+        cfg = load_config()
+        if cfg.backend == "headless":
+            body = lua_locals(PATH=str(path)) + _LOAD_PALETTE
+            return run(body, mutates=True, undo_label="Load palette", file=file)
+        if not os.path.isfile(path):
+            raise ToolError(f"no file at {path}")
+        batch = HeadlessBackend(cfg.aseprite_path, cfg.exec_timeout)
+        read = run(lua_locals(PATH=str(path)) + _READ_PALETTE, backend=batch)
+        if not isinstance(read, dict) or not read.get("colors"):
+            raise ToolError(f"could not load palette: {path}")
+        body = lua_locals(PATH=str(path), COLORS=read["colors"]) + _SET_PALETTE
         return run(body, mutates=True, undo_label="Load palette", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Save palette file", openWorldHint=True))

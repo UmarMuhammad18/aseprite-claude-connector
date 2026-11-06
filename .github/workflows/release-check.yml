@@ -1,0 +1,68 @@
+name: Release check
+
+# Installs the published package from PyPI, the way a new user would, on every
+# platform, and checks that it runs: the server loads its tools and prompts, and setup
+# builds the Aseprite extension. It never checks out the repo, so nothing from the
+# source can stand in for what was actually published. Runs after each publish, and on
+# demand for any version.
+
+on:
+  workflow_run:
+    workflows: ["Publish to PyPI"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to check, like 0.3.0 (default: the latest on PyPI)"
+        required: false
+
+jobs:
+  install:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    strategy:
+      fail-fast: false
+      matrix:
+        # Intel, because Apple Silicon jobs can sit unassigned until GitHub cancels them.
+        os: [ubuntu-latest, windows-latest, macos-15-intel]
+        python-version: ["3.10", "3.13"]
+    runs-on: ${{ matrix.os }}
+    env:
+      ASEPRITE_MCP_NO_UPDATE_CHECK: "1"
+      # A tag push publishes, so the run that triggered this is named after the tag.
+      WANTED: ${{ inputs.version || github.event.workflow_run.head_branch }}
+    steps:
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install from PyPI
+        shell: bash
+        run: |
+          version="${WANTED#v}"
+          spec="aseprite-claude-connector${version:+==$version}"
+          # A release can take a minute to reach PyPI's index.
+          for attempt in 1 2 3 4 5 6 7 8; do
+            python -m pip install --no-cache-dir "$spec" && break
+            echo "not on PyPI yet, retrying"; sleep 30
+          done
+          python -m pip show aseprite-claude-connector
+      - name: It runs
+        shell: bash
+        working-directory: ${{ runner.temp }}
+        run: |
+          python - <<'EOF'
+          import asyncio, os
+          import aseprite_claude_connector as package
+          from aseprite_claude_connector.server import build_server
+
+          wanted = os.environ.get("WANTED", "").removeprefix("v")
+          print("installed", package.__version__, "from", os.path.dirname(package.__file__))
+          assert not wanted or package.__version__ == wanted, f"wanted {wanted}"
+          assert "site-packages" in package.__file__, "not the installed package"
+          server = build_server()
+          tools = asyncio.run(server.list_tools())
+          prompts = asyncio.run(server.list_prompts())
+          print(len(tools), "tools,", len(prompts), "prompts")
+          assert len(tools) > 100 and prompts
+          EOF
+          aseprite-claude-connector setup --no-register --out "$RUNNER_TEMP/extension"
+          ls "$RUNNER_TEMP/extension"

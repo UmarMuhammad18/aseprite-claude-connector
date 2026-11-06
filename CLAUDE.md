@@ -74,6 +74,10 @@ never upload or cache that binary. It then runs `scripts/check_godot.py`, which 
 headless Godot import a real export and report its animations, timing, and colours,
 then paint with a `make_autotiles` TileSet and report which tile each cell got.
 
+The `Release check` workflow installs each published version from PyPI on Windows,
+Linux, and Mac, without the repo, and checks it runs. The `Unity` workflow has real
+Unity import the exports once the repo has a Unity licence; see `unity/README.md`.
+
 CI also runs `ruff check .`, `ruff format --check .`, and `gen_docs.py --check`.
 Ruff isn't in the `dev` extra, so install it separately. Set
 `ASEPRITE_MCP_NO_UPDATE_CHECK=1` for local runs to skip the PyPI lookup.
@@ -113,16 +117,18 @@ Ruff isn't in the `dev` extra, so install it separately. Set
 
 - **`mcp` is pinned to `<2`.** The 2.x SDK replaced `mcp.server.fastmcp` with
   `MCPServer`, so the server can't import on it. Migrating is separate work.
-- **`open_sprite`, `load_palette`, and tools that write files from Lua should hit the
-  security prompt live**, such as the exports. The bridge runs received code under the chunk name `claude`, which
+- **`open_sprite` and tools that write files from Lua should hit the security prompt
+  live**, such as the exports. The bridge runs received code under the chunk name `claude`, which
   Aseprite trusts separately from the extension. `Image:saveAs`, `save_sprite`, and
   loading a file with `Sprite{ fromFile = ... }` have all been seen doing this. Umar
   has chosen to give that code full trust, by answering the prompt in Aseprite the
   first time it appears.
-- **Exports haven't been opened in real Unity.** Its licence rules out a CI check, so
-  no Unity has loaded the `.meta`, or the Rule Tile from `make_autotiles`, which needs
-  the 2D Tilemap Extras package. Godot is covered: see the `Mac` workflow, which also
-  has Godot paint with a `make_autotiles` TileSet.
+- **Exports haven't been opened in real Unity.** The `Unity` workflow has Unity import a
+  sliced sheet and a `make_autotiles` set and paint with its Rule Tile, but Unity needs
+  a licence, so it skips itself until the repo has one in its secrets (see
+  `unity/README.md`), and it hasn't run yet. The Rule Tile's format matches one Unity
+  saved, field for field. Godot is covered: see the `Mac` workflow, which also has Godot
+  paint with a `make_autotiles` TileSet.
 - **The Export to Game dialog hasn't been clicked through.** Real Aseprite loads the
   command and its export code passes the smoke test, but the dialog itself needs a
   person.
@@ -131,9 +137,11 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   local entry to user scope.
 - **The live connection hasn't run on a Mac.** CI covers setup and every tool headless
   on a Mac, but the bridge's first connection needs a person to answer Aseprite's
-  prompt, and we never write trust settings to get round that.
-- **GameMaker strips haven't been opened in GameMaker.** Their names follow its
-  `_stripN` import rule.
+  prompt, and we never write trust settings to get round that. Aseprite's trial blocks
+  extensions, so `docs/MAC_TESTING.md` has a tester build it from source for free and
+  check the connection without Claude.
+- **GameMaker strips haven't been opened in GameMaker.** Their names follow the
+  `_stripN` import rule in GameMaker's manual.
 - **`edit_in_selection` can't be tested headless through the tool,** because a
   selection doesn't survive in a file. The smoke test makes one in the same script, and
   the tool itself was checked in the live editor.

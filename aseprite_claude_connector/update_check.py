@@ -28,7 +28,7 @@ import urllib.request
 from . import __version__
 
 _PYPI_URL = "https://pypi.org/pypi/aseprite-claude-connector/json"
-_UPGRADE = "pip install -U git+https://github.com/UmarMuhammad18/aseprite-claude-connector"
+_UPGRADE = "pip install -U aseprite-claude-connector"
 _CACHE_TTL = 24 * 60 * 60  # one network check per day, tops
 _FETCH_TIMEOUT = 4.0
 

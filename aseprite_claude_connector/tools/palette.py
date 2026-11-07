@@ -250,7 +250,7 @@ end
 return J({ colors = table.concat(out, ",") })
 """
 
-_SET_PALETTE = """
+_LOADED_PALETTE = """
 local s = app.activeSprite
 if not s then error("no active sprite") end
 local hexes = {}
@@ -411,7 +411,7 @@ def register(mcp):
         read = run(lua_locals(PATH=str(path)) + _READ_PALETTE, backend=batch)
         if not isinstance(read, dict) or not read.get("colors"):
             raise ToolError(f"could not load palette: {path}")
-        body = lua_locals(PATH=str(path), COLORS=read["colors"]) + _SET_PALETTE
+        body = lua_locals(PATH=str(path), COLORS=read["colors"]) + _LOADED_PALETTE
         return run(body, mutates=True, undo_label="Load palette", file=file)
 
     @mcp.tool(annotations=ToolAnnotations(title="Save palette file", openWorldHint=True))

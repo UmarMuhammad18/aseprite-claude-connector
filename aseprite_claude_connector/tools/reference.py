@@ -14,12 +14,15 @@ prompt.
 
 from __future__ import annotations
 
+import os
+
 from mcp.types import ToolAnnotations
 
+from ..backends import get_backend
 from ..lua import lua_locals
-from ..pixelate import compared, cropped, despeckled, heatmap, median_cut, quantized, shrink
+from ..pixelate import compared, cropped, heatmap, median_cut, pixelated, prepared, shrink
 from ..raster import Raster, fit_factor, over_background, resized, tiled
-from ._common import ToolError, parse_color, run
+from ._common import ToolError, new_pin, parse_color, refuse_in_dry_run, run
 from .layers import _IMPORT
 from .look import _LOOK, _LOOK_HELPERS, _take, pixels_loader, png_content, read_picture
 
@@ -47,7 +50,101 @@ def _crop(x, y, width, height) -> tuple | None:
     return (int(x), int(y), int(width), int(height))
 
 
+def _opaque_colours(pictures: list[Raster]) -> list[tuple[int, int, int]]:
+    out = []
+    for pic in pictures:
+        d = pic.rgba
+        out += [tuple(d[i : i + 3]) for i in range(0, len(d), 4) if d[i + 3] >= 128]
+    return out
+
+
+_NEW_POSE = """
+local s = Sprite(W, H)
+local l = s.layers[1]
+l.name = LAYER
+s:newCel(l, 1, load_image(), Point(0, 0))
+local t = s:newTag(1, 1)
+t.name = NAME
+if PIN then s.properties.claude_target = PIN end
+app.refresh()
+return J({ name = NAME, width = W, height = H })
+"""
+
+
 def register(mcp):
+    @mcp.tool(annotations=ToolAnnotations(title="Split a character sheet", openWorldHint=True))
+    def split_sheet(
+        image_path: str,
+        columns: int,
+        rows: int,
+        width: int,
+        height: int | None = None,
+        colors: int = 16,
+        palette: list[str] | None = None,
+        names: list[str] | None = None,
+        remove_background: bool = True,
+        clear_edges: bool = True,
+        dither: str = "none",
+        layer_name: str = "Art",
+        out_dir: str | None = None,
+    ) -> dict:
+        """Cut a character sheet (poses in a ``columns`` x ``rows`` grid) into one
+        pixel-art sprite per pose, all at the same scale and on ONE shared palette of
+        ``colors`` colours (or ``palette``), so the poses stay consistent with each
+        other. Each cell is shrunk to ``width`` x ``height`` (the cell's aspect by
+        default), its background cleared and the bits of neighbouring poses dropped.
+        Each sprite gets a tag named from ``names`` (row by row; "pose_1"... by
+        default), so ``pin_sprite(tag=...)`` can pick it. Live: opens the sprites in
+        the editor. Headless: writes ``<out_dir>/<name>.aseprite``."""
+        if columns < 1 or rows < 1 or columns * rows > 64:
+            raise ToolError("columns x rows must be 1..64 cells")
+        if not 1 <= width <= _MAX_SIDE:
+            raise ToolError(f"width must be 1..{_MAX_SIDE}")
+        if names is not None and len(names) != columns * rows:
+            raise ToolError(f"give {columns * rows} names, one per cell, or none")
+        live = get_backend().name == "live"
+        if not live and not out_dir:
+            raise ToolError("headless: pass out_dir for the sprite files")
+        if out_dir and not os.path.isdir(out_dir):
+            raise ToolError(f"no folder at {out_dir}")
+        refuse_in_dry_run("split_sheet")
+        sheet = read_picture(image_path)
+        cw, ch = sheet.width // columns, sheet.height // rows
+        if height is None:
+            height = max(1, min(_MAX_SIDE, round(width * ch / cw)))
+        cells = [
+            cropped(sheet, c * cw, r * ch, cw, ch) for r in range(rows) for c in range(columns)
+        ]
+        small = [prepared(cell, width, height, remove_background) for cell in cells]
+        if palette:
+            chosen = [parse_color(c)[:3] for c in palette]
+        else:
+            chosen = median_cut(_opaque_colours(small), colors)
+        if not chosen:
+            raise ToolError("the sheet is fully transparent")
+        made = []
+        for n, cell in enumerate(cells):
+            name = names[n] if names else f"pose_{n + 1}"
+            art = pixelated(
+                cell, width, height, chosen, dither, True, remove_background, clear_edges
+            )
+            body = (
+                pixels_loader(art)
+                + lua_locals(
+                    W=width, H=height, LAYER=layer_name, NAME=name, PIN=new_pin() if live else None
+                )
+                + _NEW_POSE
+            )
+            path = os.path.join(out_dir, name + ".aseprite") if out_dir and not live else None
+            run(body, file=path, save=bool(path), follow_pin=False)
+            made.append({"name": name, **({"file": path} if path else {})})
+        return {
+            "sprites": made,
+            "width": width,
+            "height": height,
+            "palette": ["#" + bytes(c).hex() for c in chosen],
+        }
+
     @mcp.tool(annotations=ToolAnnotations(title="Pixelate a reference picture"))
     def pixelate_reference(
         image_path: str,
@@ -64,6 +161,8 @@ def register(mcp):
         layer_name: str = "Reference pixels",
         x: int = 0,
         y: int = 0,
+        remove_background: bool = False,
+        clear_edges: bool = False,
         file: str | None = None,
     ) -> dict:
         """Turn a reference picture into pixel art on a new layer: the faithful way to
@@ -73,8 +172,13 @@ def register(mcp):
         aspect. It is then snapped to ``colors`` colours chosen from the picture, or
         to ``palette`` (#rrggbb list) to match an existing one. ``dither`` is
         ``none``, ``ordered``, or ``diffusion``. ``despeckle`` removes lone noise
-        pixels. Refine the result by hand, and check it with
-        ``compare_to_reference``. One undo step. Headless: pass ``file``."""
+        pixels. ``remove_background`` clears a white sheet or flat backdrop (and the
+        light fringe it leaves), before the palette is chosen so no colours are spent
+        on it. ``clear_edges`` drops bits of neighbouring art a crop catches at its
+        edges, keeping the subject and anything floating clear of the edges. To cut
+        every pose out of a character sheet at once, use ``split_sheet``. Refine the
+        result by hand, and check it with ``compare_to_reference``. One undo step.
+        Headless: pass ``file``."""
         if not 1 <= width <= _MAX_SIDE or (height is not None and not 1 <= height <= _MAX_SIDE):
             raise ToolError(f"width and height must be 1..{_MAX_SIDE}")
         if palette is None and not 2 <= colors <= 256:
@@ -82,21 +186,19 @@ def register(mcp):
         ref = _reference(image_path, _crop(crop_x, crop_y, crop_width, crop_height))
         if height is None:
             height = max(1, min(_MAX_SIDE, round(width * ref.height / ref.width)))
-        small = shrink(ref, width, height)
+        small = prepared(ref, width, height, remove_background)
         if palette:
             chosen = [parse_color(c)[:3] for c in palette]
         else:
-            data = small.rgba
-            seen = [tuple(data[i : i + 3]) for i in range(0, len(data), 4) if data[i + 3] >= 128]
-            chosen = median_cut(seen, colors)
+            chosen = median_cut(_opaque_colours([small]), colors)
         if not chosen:
             raise ToolError("the picture is fully transparent there")
         try:
-            art = quantized(small, chosen, dither)
+            art = pixelated(
+                ref, width, height, chosen, dither, despeckle, remove_background, clear_edges
+            )
         except ValueError as e:
             raise ToolError(str(e)) from None
-        if despeckle:
-            art = despeckled(art)
         used = sorted({art.rgba[i : i + 3] for i in range(0, len(art.rgba), 4) if art.rgba[i + 3]})
         body = (
             pixels_loader(art)

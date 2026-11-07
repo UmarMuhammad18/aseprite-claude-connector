@@ -14,8 +14,47 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
 
 ### Fixed
 
+- `set_palette` and `apply_preset_palette` work again. The `load_palette` change
+  below had replaced the Lua they share, so in 0.3.0 both failed. The Mac workflow,
+  the only CI run against real Aseprite, now runs on any change to the package, so a
+  tool can't break unseen again.
 - `load_palette` no longer raises Aseprite's security prompt in the live editor. A
   batch Aseprite reads the file and only its colours reach the editor.
+- In the live editor, clicking another tab no longer redirects Claude's edits. The
+  sprite Claude creates, opens, or picks stays its target until it picks another
+  (`pin_sprite`); if that sprite is closed, tools say so instead of editing
+  whichever sprite is active.
+
+### Added — characters
+
+- `split_sheet` cuts a character sheet into one sprite per pose, at one scale and
+  on one shared palette, with the background and bits of neighbouring poses
+  cleared.
+- `draw_eyes` redraws eyes frame by frame: where they look, blinks, lids, brows
+  (angry to worried), smiles. It returns the eye colours it used, to pass back on
+  every pose so a character's eyes match.
+- `swing_part` swings a wing, arm, or tail about its joint without opening a gap.
+- `bob_body` makes breathing, hops, and sways with the feet planted.
+- `lift_symbols` moves "!", "?", Zzz, or hearts onto their own layer and animates
+  them there.
+- These keyed tools make the frames they need, so a whole animation is one call,
+  and they stack on the same frames.
+- `check_consistency` finds colours that drift between sprites of one set (as
+  poses pixelated separately do) and differences in subject size, and
+  `match_palettes` merges the drift onto one palette.
+- `pixelate_reference` can clear a white or flat background (`remove_background`)
+  and drop bits of neighbouring art a crop catches (`clear_edges`).
+- An `animate_character` prompt walks through all of it, and asks you to pick an
+  expression from options when the mood matters.
+
+### Added — working live
+
+- `pin_sprite` picks the sprite Claude works on, by filename, by tag, or "the one
+  I have open", and `list_sprites` shows which one is pinned, and each sprite's tags.
+- `save_all_sprites` saves open work into a folder: unsaved sprites become files
+  there, and sprites that already have a file are copied, never overwritten.
+- `aseprite-claude-connector setup --desktop` also registers the server with the
+  Claude desktop app, so you can use it from a normal Claude chat.
 
 ### Added — checks
 

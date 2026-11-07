@@ -13,13 +13,10 @@ on:
     branches: ["main"]
     paths: &mac_paths
       - ".github/workflows/mac.yml"
-      - "aseprite_claude_connector/config.py"
-      - "aseprite_claude_connector/setup.py"
-      - "aseprite_claude_connector/extension/**"
-      - "aseprite_claude_connector/tools/game_export.py"
-      - "aseprite_claude_connector/tools/godot_export.py"
-      - "aseprite_claude_connector/tiles.py"
-      - "aseprite_claude_connector/tools/tiles.py"
+      # Every tool: the smoke test here is the only CI run against real Aseprite, so
+      # a tool change anywhere has to reach it (a broken set_palette once slipped by).
+      - "aseprite_claude_connector/**"
+      - "tests/smoke_headless.py"
       - "scripts/check_mac.py"
       - "scripts/check_godot.py"
       - "scripts/godot_check.gd"

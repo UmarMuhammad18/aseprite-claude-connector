@@ -208,3 +208,29 @@ def register(mcp):
             "4. Tell the user what moves, the loop length, and to save as .aseprite to keep the "
             "layers, or export a GIF."
         )
+
+    @mcp.prompt(
+        title="Bring a character to life",
+        description="Turn a character sheet into consistent, animated sprites that act out each pose.",
+    )
+    def animate_character(image_path: str, grid: str = "3x3", size: str = "80") -> str:
+        return (
+            f"Make the character in {image_path} ({grid} poses, {size} px sprites) act, "
+            "not just bob.\n"
+            f"1. `split_sheet` with columns x rows from '{grid}' and width={size}, so every pose "
+            "is its own sprite at one scale on one shared palette. `check_consistency` to "
+            "confirm, and `match_palettes` if colours drift.\n"
+            "2. For each pose (`pin_sprite(tag=...)` to work on it): `look` at scale 6+ and "
+            "measure the eye sockets (inside the ring), any floating symbols, the wings or "
+            "arms, and the top of the feet.\n"
+            "3. Decide what the pose is DOING and plan beats that show it: reading means eyes "
+            "scanning a line; sunglasses can drop into place; sleeping breathes slowly. Then "
+            "stack keyed tools on the same frames: `lift_symbols` first, then `bob_body`, "
+            "`swing_part` for wings or arms, and `draw_eyes` last. Vary the ms so holds feel "
+            "deliberate and moves snappy.\n"
+            "4. Expression is easy to misread. For a pose whose mood matters (an idle, a "
+            "profile picture), draw 3-4 options side by side and ASK the user to pick before "
+            "animating. Pass the `style` draw_eyes returns to every pose so the eyes match.\n"
+            "5. `look_animation` each pose and fix what you see; `check_loop` before calling it "
+            "done. Then `save_all_sprites` into a folder the user chooses, so nothing is lost."
+        )

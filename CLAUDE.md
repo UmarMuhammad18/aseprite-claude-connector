@@ -19,7 +19,7 @@ babysitting. Our remote is `UmarMuhammad18/aseprite-claude-connector`.
 Claude ⇄ MCP server (stdio, runs the relay) ⇄ WS :9877 ⇄ Claude Bridge extension in Aseprite
 ```
 
-- **`aseprite_claude_connector/`** — FastMCP server with 178 tools. One module per group in
+- **`aseprite_claude_connector/`** — FastMCP server with 187 tools. One module per group in
   `tools/`, each exposing `register(mcp)`. Tools generate Lua and run it through
   `run()` in `tools/_common.py`.
 - **Two backends, one tool surface** — `live` (default) runs Lua in the open editor
@@ -46,7 +46,8 @@ python -m venv .venv
 ```
 
 `setup` registers the server with Claude Code in the user's own config, so no
-`.mcp.json` is needed or wanted. It also installs the extension to Aseprite's user
+`.mcp.json` is needed or wanted. `setup --desktop` also adds it to the Claude desktop
+app's config, for use from a normal Claude chat. It also installs the extension to Aseprite's user
 folder. Run it again after editing anything in `aseprite_claude_connector/extension/`:
 Aseprite runs the installed copy, not the one in this repo, and only reads it at
 launch, so quit Aseprite fully and reopen it.
@@ -87,6 +88,10 @@ Ruff isn't in the `dev` extra, so install it separately. Set
 - **Every mutating tool is one named undo step:** `run(..., mutates=True)`.
 - **Tools target `app.activeSprite`** so the same code runs live and headless. Build
   Lua with `lua_locals(...)` and a static template, never by string-formatting Lua.
+  Live, `run()` first switches to the pinned sprite (`Target` in `tools/_common.py`);
+  tools that choose or list sprites pass `follow_pin=False`.
+- **Keep a cast consistent.** Split a sheet with `split_sheet` (one palette), reuse
+  the `style` from `draw_eyes`, and check sets with `check_consistency`.
 - **A new tool** needs a typed signature, accurate `ToolAnnotations`, and a line in
   `tests/smoke_headless.py`. New modules are registered in `server.py`.
 - **Never block inside the bridge.** Interactive tools are two-phase: a start call
@@ -152,6 +157,13 @@ Ruff isn't in the `dev` extra, so install it separately. Set
   cap doesn't apply and it refuses to run in a dry run.
 - **A dry-run report comes back as a tool error,** so that no tool has to handle a
   result that didn't happen.
+- **`save_all_sprites` saves from Lua,** so it raises Aseprite's security prompt the
+  first time, like the other tools that write files from Lua.
+- **`draw_eyes` repaints the area round each eye in one skin colour,** so shading
+  painted there is flattened.
+- **The Claude desktop app registration hasn't been tried in the app.** The config
+  it writes matches the documented format and what `setup` registers with Claude
+  Code.
 - **A reordered layer counts as changed pixels inside `edit_batch`,** because layers
   have no id in the API. `move_layer` on its own skips the cap.
 

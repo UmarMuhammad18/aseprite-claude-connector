@@ -313,3 +313,118 @@ def heatmap(art: Raster, errors: list[float]) -> Raster:
             )
         )
     return Raster(art.width, art.height, bytes(out))
+
+
+def background_removed(src: Raster, tolerance: float = 24.0) -> Raster:
+    """Clear the background: the colour most common round the picture's border,
+    flooded in from the edges wherever pixels are within ``tolerance`` of it (RGB
+    distance). Then the one-pixel fringe it leaves round the subject, pixels that
+    are mostly background colour, goes too. A white sheet or a flat backdrop comes
+    out transparent; the subject keeps its own light areas, as they aren't joined to
+    the border through background colour."""
+    w, h = src.width, src.height
+    data = bytearray(src.rgba)
+    border = [(x, y) for x in range(w) for y in (0, h - 1)] + [
+        (x, y) for y in range(h) for x in (0, w - 1)
+    ]
+    counts: dict[Color, int] = {}
+    for x, y in border:
+        i = (y * w + x) * 4
+        if data[i + 3] >= 128:
+            c = tuple(data[i : i + 3])
+            counts[c] = counts.get(c, 0) + 1
+    if not counts:
+        return src
+    bg = max(counts, key=counts.get)
+
+    def gap(i: int) -> float:
+        return sum((data[i + k] - bg[k]) ** 2 for k in range(3)) ** 0.5
+
+    stack, seen = list(border), set()
+    while stack:
+        x, y = stack.pop()
+        if (x, y) in seen or not (0 <= x < w and 0 <= y < h):
+            continue
+        seen.add((x, y))
+        i = (y * w + x) * 4
+        if data[i + 3] and gap(i) <= tolerance:
+            data[i + 3] = 0
+            stack += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+    fringe = []
+    for y in range(h):
+        for x in range(w):
+            i = (y * w + x) * 4
+            if data[i + 3] and gap(i) <= tolerance * 2:
+                for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if 0 <= nx < w and 0 <= ny < h and not data[(ny * w + nx) * 4 + 3]:
+                        fringe.append(i)
+                        break
+    for i in fringe:
+        data[i + 3] = 0
+    return Raster(w, h, bytes(data))
+
+
+def edge_bits_cleared(src: Raster) -> Raster:
+    """Clear the bits of neighbouring art a crop catches at its edges: every patch of
+    opaque pixels that touches the border, except the biggest patch (the subject).
+    Patches clear of the border, like a floating "!", stay."""
+    w, h = src.width, src.height
+    data = bytearray(src.rgba)
+    label = [0] * (w * h)
+    sizes, touches = [0], [False]
+    for start in range(w * h):
+        if label[start] or not data[start * 4 + 3]:
+            continue
+        n = len(sizes)
+        sizes.append(0)
+        touches.append(False)
+        label[start] = n
+        stack = [start]
+        while stack:
+            p = stack.pop()
+            sizes[n] += 1
+            x, y = p % w, p // w
+            if x in (0, w - 1) or y in (0, h - 1):
+                touches[n] = True
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < w and 0 <= ny < h:
+                        q = ny * w + nx
+                        if not label[q] and data[q * 4 + 3]:
+                            label[q] = n
+                            stack.append(q)
+    if len(sizes) <= 2:
+        return src
+    biggest = max(range(1, len(sizes)), key=lambda k: sizes[k])
+    for p in range(w * h):
+        k = label[p]
+        if k and k != biggest and touches[k]:
+            data[p * 4 + 3] = 0
+    return Raster(w, h, bytes(data))
+
+
+def pixelated(
+    src: Raster,
+    width: int,
+    height: int,
+    palette: list[Color],
+    dither: str = "none",
+    despeckle: bool = True,
+    remove_background: bool = False,
+    clear_edges: bool = False,
+) -> Raster:
+    """The whole reference-to-pixel-art pass, for one picture or each cell of a sheet."""
+    art = quantized(prepared(src, width, height, remove_background), palette, dither)
+    if despeckle:
+        art = despeckled(art)
+    if clear_edges:
+        art = edge_bits_cleared(art)
+    return art
+
+
+def prepared(src: Raster, width: int, height: int, remove_background: bool = False) -> Raster:
+    """Shrunk, and with the background cleared first if asked, so the palette isn't
+    spent on it."""
+    small = shrink(src, width, height)
+    return background_removed(small) if remove_background else small

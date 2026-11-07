@@ -19,6 +19,7 @@ from .tools import (
     brushes,
     canvas,
     cels,
+    character,
     cleanup,
     color,
     docs,
@@ -61,7 +62,10 @@ from .update_check import start_background_check
 _INSTRUCTIONS = """\
 Drive Aseprite from an AI agent. Tools operate on the *active sprite*: the live
 editor's active document (live backend) or a file you pass via `file` (headless
-backend). Mutating tools are one undo step each. Start with `status`, then
+backend). Live, the sprite you create, open, or pick with `set_active_sprite` or
+`pin_sprite` stays your target even if the artist clicks another tab;
+`list_sprites` shows which. `save_all_sprites` keeps open work from being lost.
+Mutating tools are one undo step each. Start with `status`, then
 `get_sprite_info`. Colors are #rrggbb or #rrggbbaa. Use `look` to see the canvas
 as an image, and check your work with it rather than editing blind. Use
 `describe_sprite` for a one-call summary, `search_api_docs` before writing Lua, and
@@ -75,7 +79,13 @@ drawing it from memory, then refine by hand and check with `compare_to_reference
 until its worst areas are fixed. `clean_pixel_art` then makes it read as drawn.
 To build a scene, `split_into_layers` separates its parts, `extend_scene` widens it
 with its own texture, and `ambient_motion` brings it to life as a loop.
-For characters, `animate_parts` poses part layers. For maps, `make_seamless` then
+To recreate a character sheet, `split_sheet` makes one sprite per pose on one shared
+palette. To make a character act, stack keyed tools on its frames: `bob_body`
+(breathing, hops), `swing_part` (wings, arms), `draw_eyes` (looks, blinks, moods),
+and `lift_symbols` ("!", "?", hearts on their own layer). Expressions are easy to
+misread, so show 3-4 options when unsure. Keep a cast consistent with
+`check_consistency` and `match_palettes`, and reuse the `style` `draw_eyes` returns.
+For characters on part layers, `animate_parts` poses them. For maps, `make_seamless` then
 `make_autotiles`. `relight_scene` makes time-of-day versions, `make_normal_map`
 readies art for 2D lights, and `export_animation` writes a GIF or animated PNG.
 """
@@ -86,6 +96,7 @@ _TOOL_MODULES = (
     look,
     reference,
     scene,
+    character,
     rig,
     light,
     tiles,

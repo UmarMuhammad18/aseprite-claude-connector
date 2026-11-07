@@ -7,7 +7,7 @@ Kyle Ocheltree / OakTree Games.
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-178-orange)
+![tools](https://img.shields.io/badge/tools-187-orange)
 
 **Let Claude draw in your *live* Aseprite editor, see what it drew, and put the art straight into your Godot or Unity project. Every edit is one named undo.**
 
@@ -108,7 +108,22 @@ pip install aseprite-claude-connector && aseprite-claude-connector setup
 ```
 
 <details>
-<summary><b>Claude Desktop / any JSON-config client</b></summary>
+<summary><b>The Claude desktop app (a normal Claude chat)</b></summary>
+
+Add `--desktop` and setup registers the server with the Claude desktop app too:
+
+```bash
+pip install aseprite-claude-connector && aseprite-claude-connector setup --desktop
+```
+
+Then quit Claude fully (from the tray or menu bar too) and reopen it. The server runs
+on your computer, so this works in the desktop app on Windows and Mac, not in
+claude.ai in a browser or the phone app.
+
+</details>
+
+<details>
+<summary><b>Any other JSON-config client</b></summary>
 
 Install with the command above, using `setup --no-register`, then add:
 
@@ -167,7 +182,9 @@ Claude Code is running inside one, so it picks up the tools. That's the whole se
 
 From then on the server starts the relay itself and Aseprite connects on its own.
 Tools act on your active document; watch edits appear and press Ctrl-Z to undo each
-one. **File → Scripts → Claude Bridge** opens a status panel with live activity and
+one. The sprite Claude creates or opens stays its target even if you click another
+tab, so its edits never land in the wrong sprite; say "work on this one" to point it
+at the one you have open. **File → Scripts → Claude Bridge** opens a status panel with live activity and
 a Pause toggle.
 
 Using another MCP client? Run `aseprite-claude-connector setup --no-register` and add the
@@ -264,7 +281,7 @@ is an HTTP GET of PyPI's public JSON; nothing about you, your machine, or your
 art is sent.
 
 <!-- TOOLS:START -->
-## Tools (178)
+## Tools (187)
 
 Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), and — when it mutates — wrapped in a **named** `app.transaction`, so each edit is exactly one labeled undo step in the editor.
 
@@ -289,13 +306,15 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 
 </details>
 <details>
-<summary><b>Documents & session</b> (5)</summary>
+<summary><b>Documents & session</b> (7)</summary>
 
 - **`open_sprite`** — Open a sprite file and make it the active document; returns its filename, size, and frame/layer counts.
 - **`save_sprite`** — Save the active sprite to disk: to ``path`` if given (save-as; the document's filename follows it), else to its own filename — errors if the sprite is untitled and no ``path`` is given.
 - **`close_sprite`** — Close the active sprite.
 - **`set_active_sprite`** — Live editor only: make one of the open documents active, found by exact filename or basename match (e.g. "turret.aseprite").
-- **`list_sprites`** — Live editor only: list every open document — filename (or "(unsaved)"), size, frame/layer counts, unsaved-changes flag, and which one is active.
+- **`pin_sprite`** — Live editor only: choose the sprite Claude's edits go to.
+- **`save_all_sprites`** — Live editor only: save open work into ``folder`` as ``.aseprite`` files, so nothing is lost when tabs are closed.
+- **`list_sprites`** — Live editor only: list every open document — filename (or "(unsaved)"), size, frame/layer counts, tags, unsaved-changes flag, which one is active in the editor, and which one Claude's edits go to (``pinned``).
 
 </details>
 <details>

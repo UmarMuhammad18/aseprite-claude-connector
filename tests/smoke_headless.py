@@ -132,6 +132,15 @@ async def main() -> int:
         "batch_export",
         "batch_resize",
         "batch_apply_palette",
+        "split_sheet",
+        "draw_eyes",
+        "swing_part",
+        "bob_body",
+        "lift_symbols",
+        "check_consistency",
+        "match_palettes",
+        "pin_sprite",
+        "save_all_sprites",
     }
     missing = required - set(tools)
     assert not missing, f"missing tools: {missing}"
@@ -141,7 +150,7 @@ async def main() -> int:
     resource_uris = sorted(str(r.uri) for r in await mcp.list_resources())
     print(f"registered prompts ({len(prompt_names)}):", prompt_names)
     print(f"registered resources ({len(resource_uris)}):", resource_uris)
-    assert len(prompt_names) == 10, f"expected 10 prompts, got {prompt_names}"
+    assert len(prompt_names) == 11, f"expected 11 prompts, got {prompt_names}"
     assert len(resource_uris) == 6, f"expected 6 resources, got {resource_uris}"
 
     d = tempfile.mkdtemp(prefix="aselm_smoke_")
@@ -1135,6 +1144,8 @@ async def main() -> int:
         ("watch_changes", {}),
         ("set_active_sprite", {"filename": "x"}),
         ("list_sprites", {}),
+        ("pin_sprite", {}),
+        ("save_all_sprites", {"folder": d}),
     ):
         try:
             await mcp.call_tool(live_tool, args)
@@ -1616,6 +1627,173 @@ return J({ inside = pc.rgbaR(i:getPixel(5, 5)), outside = pc.rgbaR(i:getPixel(1,
     )
     shown = json.loads(_text(opened))
     check("Aseprite can open the timelapse", shown["frames"] >= 4 and shown["w"] > 16, shown)
+
+    # --- characters: a sheet split on one palette, then keyed acting, then consistency ---
+    from aseprite_claude_connector.raster import Raster as _Raster
+    from aseprite_claude_connector.raster import encode_png as _png
+
+    sheet_w, sheet_h = 120, 60
+    px = bytearray(b"\xff" * (sheet_w * sheet_h * 4))
+
+    def dab(x0, y0, w, h, rgb):
+        for y in range(y0, y0 + h):
+            for x in range(x0, x0 + w):
+                i = (y * sheet_w + x) * 4
+                px[i : i + 4] = bytes((*rgb, 255))
+
+    for cell in (0, 1):
+        ox = cell * 60
+        dab(ox + 15, 10, 30, 45, (52, 48, 60))  # body
+        dab(ox + 22, 18, 10, 10, (247, 193, 66))  # eye ring
+        dab(ox + 24, 20, 6, 6, (245, 243, 240))  # white
+        dab(ox + 26, 22, 2, 3, (24, 22, 28))  # pupil
+        dab(ox + 50, 4, 2, 6, (247, 193, 66))  # a floating "!"
+        dab(ox + 50, 12, 2, 2, (247, 193, 66))
+    dab(58, 30, 2, 10, (52, 48, 60))  # a bit of the neighbour poking over the cell edge
+    sheet_png = os.path.join(d, "sheet.png")
+    with open(sheet_png, "wb") as f:
+        f.write(_png(_Raster(sheet_w, sheet_h, bytes(px))))
+    split = payload(
+        await step(
+            "split_sheet",
+            {
+                "image_path": sheet_png,
+                "columns": 2,
+                "rows": 1,
+                "width": 60,
+                "colors": 8,
+                "names": ["pose_a", "pose_b"],
+                "out_dir": d,
+            },
+        )
+    )
+    pa, pb = (os.path.join(d, f"pose_{n}.aseprite") for n in "ab")
+    check(
+        "split_sheet writes one sprite per pose on one palette",
+        os.path.isfile(pa) and os.path.isfile(pb) and len(split["palette"]) <= 8,
+        split,
+    )
+    corners = json.loads(
+        _text(
+            await step(
+                "run_lua",
+                {
+                    "file": pa,
+                    "code": "local c = app.activeSprite.cels[1]\n"
+                    "local img = Image(app.activeSprite.width, app.activeSprite.height)\n"
+                    "img:drawImage(c.image, c.position)\n"
+                    "return J({ corner = app.pixelColor.rgbaA(img:getPixel(0, 0)),\n"
+                    "  edge = app.pixelColor.rgbaA(img:getPixel(59, 35)),\n"
+                    "  body = app.pixelColor.rgbaA(img:getPixel(30, 40)) })",
+                },
+            )
+        )
+    )
+    check(
+        "split_sheet clears the white sheet and the neighbour's edge, keeping the body",
+        corners == {"corner": 0, "edge": 0, "body": 255},
+        corners,
+    )
+    same = payload(await step("check_consistency", {"files": [pa, pb]}))
+    check("poses split together are consistent", same["verdict"] == "consistent", same)
+
+    marks = payload(
+        await step(
+            "lift_symbols",
+            {
+                "boxes": [[46, 1, 12, 16]],
+                "keys": [
+                    {"frame": 1, "symbols": [[0, 0]], "ms": 120},
+                    {"frame": 2, "symbols": [[0, -2]], "ms": 120},
+                    {"frame": 3, "symbols": [None], "ms": 120},
+                ],
+                "layer": "Art",
+                "file": pa,
+            },
+        )
+    )
+    check("lift_symbols puts the symbols on their own layer", marks["layer"] == "Effects", marks)
+    bobbed = payload(
+        await step(
+            "bob_body",
+            {
+                "feet_y": 50,
+                "keys": [{"frame": 1}, {"frame": 2, "dy": -1}, {"frame": 3, "dy": -2}],
+                "layer": "Art",
+                "file": pa,
+            },
+        )
+    )
+    check("bob_body keys three frames", bobbed["frames"] == [1, 2, 3], bobbed)
+    swung = payload(
+        await step(
+            "swing_part",
+            {
+                "outline": [[15, 30], [25, 30], [25, 50], [15, 50]],
+                "pivot": [22, 32],
+                "keys": [{"frame": 2, "angle": 10}, {"frame": 3, "angle": -10}],
+                "layer": "Art",
+                "file": pa,
+            },
+        )
+    )
+    check("swing_part turns the part on its frames", swung["frames"] == [2, 3], swung)
+    eyes = payload(
+        await step(
+            "draw_eyes",
+            {
+                "eyes": [{"x": 27.0, "y": 23.0, "rx": 3.0, "ry": 3.0}],
+                "keys": [
+                    {"frame": 1, "look": [-1, 0]},
+                    {"frame": 2, "look": [1, 0], "lid": 0.3, "brow": 0.3},
+                    {"frame": 3, "closed": True},
+                    {"frame": 4, "smile": 0.3, "ms": 200},
+                ],
+                "layer": "Art",
+                "file": pa,
+            },
+        )
+    )
+    check(
+        "draw_eyes makes the frames it needs and reports its style",
+        eyes["total"] == 4 and eyes["style"]["white"].startswith("#"),
+        eyes,
+    )
+    drift = json.loads(
+        _text(
+            await step(
+                "run_lua",
+                {
+                    "file": pb,
+                    "edit": True,
+                    "save": True,
+                    "code": "local pc = app.pixelColor\nlocal c = app.activeSprite.cels[1]\n"
+                    "local img = c.image:clone()\nlocal n = 0\n"
+                    "for it in img:pixels() do\n"
+                    "  local v = it()\n"
+                    "  if pc.rgbaA(v) > 0 and pc.rgbaR(v) < 80 then\n"
+                    "    it(pc.rgba(pc.rgbaR(v) + 6, pc.rgbaG(v) + 5, pc.rgbaB(v) + 6, 255))\n"
+                    "    n = n + 1\n"
+                    "  end\n"
+                    "end\nc.image = img\nreturn J({ n = n })",
+                },
+            )
+        )
+    )
+    off = payload(await step("check_consistency", {"files": [pa, pb]}))
+    check(
+        "check_consistency spots a pose whose dark colour drifted",
+        drift["n"] > 0 and off["near_duplicate_colors"],
+        off,
+    )
+    matched = payload(await step("match_palettes", {"files": [pa, pb]}))
+    check(
+        "match_palettes merges the drift",
+        matched["merged_groups"] >= 1 and any(c["pixels"] > 0 for c in matched["changed"]),
+        matched,
+    )
+    again = payload(await step("check_consistency", {"files": [pa, pb]}))
+    check("and the poses read as consistent again", again["verdict"] == "consistent", again)
 
     # --- MCP prompt renders its guidance ---
     try:

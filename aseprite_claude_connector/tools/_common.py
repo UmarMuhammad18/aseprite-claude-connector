@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 import re
+import secrets
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
 from ..backends import Backend, get_backend
 from ..config import load_config
-from ..lua import CHANGES_MARK, build_lua
+from ..lua import CHANGES_MARK, build_lua, lua_locals
 
 
 class ToolError(Exception):
@@ -39,6 +40,37 @@ class Rails:
 
 
 rails = Rails()
+
+
+@dataclass
+class Target:
+    """The sprite Claude is working on in the live editor, so an artist clicking
+    another tab can't redirect its edits. Each sprite Claude creates, opens, or picks
+    is marked with a hidden ``claude_target`` property holding ``pin``."""
+
+    pin: str | None = None
+
+
+target = Target()
+
+
+def new_pin() -> str:
+    return secrets.token_hex(6)
+
+
+_PIN_LUA = """
+do
+  local __pinned
+  for _, __sp in ipairs(app.sprites) do
+    if __sp.properties.claude_target == __PIN then __pinned = __sp break end
+  end
+  if not __pinned then
+    error("the sprite Claude was working on has been closed. Pick one with pin_sprite "
+      .. "(or pin_sprite(unpin=true) to follow whichever sprite is active).", 0)
+  end
+  if app.activeSprite ~= __pinned then app.activeSprite = __pinned end
+end
+"""
 
 JOURNAL_LIMIT = 500
 
@@ -71,6 +103,7 @@ def run(
     batchable: bool = False,
     capped: bool = True,
     backend: Backend | None = None,
+    follow_pin: bool = True,
 ):
     """Compose + execute a Lua tool body and return its parsed result.
 
@@ -79,7 +112,9 @@ def run(
     ``file`` is the target sprite and ``save`` defaults to ``mutates``. ``batchable``
     lets a tool that edits nothing still take part in ``edit_batch``. ``capped=False``
     skips the pixel cap for an edit that can't lose pixels. ``backend`` overrides the
-    configured one, for a read that has to bypass the live editor.
+    configured one, for a read that has to bypass the live editor. In the live
+    editor the body runs on the pinned sprite (see ``Target``) unless ``follow_pin``
+    is off, for the tools that choose or list sprites.
     """
     if _OUTSIDE_THE_SPRITE.search(body):
         if rails.capturing:
@@ -95,6 +130,8 @@ def run(
         dry_run=rails.dry_run,
         max_pixels=rails.cap() if capped else 0,
     )
+    if follow_pin and target.pin and backend.name == "live":
+        lua = lua_locals(__PIN=target.pin) + _PIN_LUA + lua
     do_save = (mutates if save is None else save) and not rails.dry_run
     res = backend.exec(lua, file=file, save=do_save)
     if not res.ok:

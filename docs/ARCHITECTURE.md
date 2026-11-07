@@ -116,6 +116,24 @@ Two empirical facts the implementation encodes:
 - `Dialog{...}:show{wait=false}` keeps the dialog open across execs; the button
   callbacks write the choice into `__almcp` for the poll tool.
 
+## The pinned sprite
+
+Every tool edits `app.activeSprite`, and in the live editor that's whatever tab the
+artist last clicked. So the server remembers which sprite Claude is working on.
+`create_sprite`, `open_sprite`, `set_active_sprite`, `pin_sprite`, and
+`split_sheet` mark a sprite with a hidden user property, `claude_target`, holding a
+random id, and keep that id in `target.pin` (`tools/_common.py`). Unsaved sprites
+are all called "Sprite", so a property is the only stable way to find one again.
+
+`run()` puts a short block in front of every live chunk: find the sprite with that
+property and make it active, or stop with an error if it's been closed. It runs
+before `build_lua`'s transaction and rails, which read `app.activeSprite`, so the
+undo step and the pixel cap belong to the right sprite. Tools that choose or list
+sprites pass `follow_pin=False`. Headless runs never pin: each has its own `file`.
+
+The switch is visible: the editor jumps back to Claude's sprite for each edit.
+`pin_sprite(unpin=True)` returns to following the active tab.
+
 ## Canvas vision
 
 `tools/look.py` returns pictures to the model as MCP image content. Lua renders a

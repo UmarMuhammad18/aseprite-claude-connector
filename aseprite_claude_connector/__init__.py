@@ -6,4 +6,4 @@ relay, one undo step per edit) or a headless ``aseprite --batch`` process, becau
 editor exposes for the active document.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"

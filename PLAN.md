@@ -1,6 +1,6 @@
 # Aseprite Connector: Fork Plan
 
-Last updated 31 Oct 2026
+Last updated 11 Nov 2026
 
 ## Summary
 
@@ -44,6 +44,7 @@ Three of the four candidates are MIT licensed, which lets us copy, change and re
 | [letsagents/aseprite-mcp](https://github.com/letsagents/aseprite-mcp) | TypeScript | MIT (LuoHan, 2026) | Yes | 12 Aug 2026 |
 | [rkdfx/aseprite-mcp](https://github.com/rkdfx/aseprite-mcp) | Python | MIT (2025) | Yes | 17 Apr 2026 |
 | [iborymagic/aseprite-mcp](https://github.com/iborymagic/aseprite-mcp) | TypeScript | None found | No, read only | 4 Jan 2026 |
+| [diivi/aseprite-mcp](https://github.com/diivi/aseprite-mcp) | Python | MIT | Yes | 3 Nov 2026 |
 
 What MIT asks of us: keep the original `LICENSE` file and copyright line in our fork. We can add our own name alongside it.
 
@@ -62,6 +63,19 @@ What MIT asks of us: keep the original `LICENSE` file and copyright line in our 
 | Shows Claude the canvas | No, PNGs written to disk | No | No |
 
 The things we'd still want from the others are small: letsagents has tidier per-module tests, which we can copy as a pattern.
+
+**The one to beat: diivi/aseprite-mcp.** We missed it when picking a base. As of 11 Nov 2026 it has 967 stars and 101 forks, far more than every other Aseprite server put together.
+
+| | diivi/aseprite-mcp | Ours |
+| --- | --- | --- |
+| Works in your open editor | No, batch mode on files | Yes, each edit is one Ctrl-Z |
+| Tools | 123 | 187 |
+| Shows Claude the canvas | Has preview and analysis tools | `look`, `look_animation`, before/after previews |
+| Game engine export | Sprite sheets | Godot, Unity, GameMaker, plus an Export to Game button |
+| Tests | About 30 test files | 12 test files plus a smoke test of every tool against real Aseprite |
+| README leads with | Finished art made by the tool: an animated room, a swordsman fighting a slime | Demos of single tools, mostly from before the fork |
+
+It wins on showing results, not on what it can do. Our README needs finished art made with our own tools, and a run of the same swordsman benchmark it uses, so people can compare like for like.
 
 ## What the Blender connector does that we should match
 
@@ -132,7 +146,7 @@ All built, checked against real Aseprite headless, and the core ones checked in 
 Claude (desktop app or Claude Code)
    |  tool calls  ↓        ↑  images back
 Our MCP server (Python)
-   ├─ Typed tools: 178, including look tools
+   ├─ Typed tools: 187, including look tools
    ├─ Relay, auto-started: WebSocket on this computer
    │     └─ live → Aseprite (open), via bridge extension, one undo per edit
    ├─ Docs search: Lua API and user manual
@@ -173,4 +187,4 @@ Each phase only starts once the one before passes its finish line. The Mac live 
 **Decisions and open questions**
 
 - Live exports: Claude's code gets full trust. Umar grants it in Aseprite's permission prompt the first time an export runs; we never write it to Aseprite's settings ourselves.
-- Renamed: the package, command and server are all `aseprite-claude-connector` now. It isn't on PyPI yet, so installs come from GitHub.
+- Renamed: the package, command and server are all `aseprite-claude-connector` now. It is on PyPI, so `pip install aseprite-claude-connector` works.

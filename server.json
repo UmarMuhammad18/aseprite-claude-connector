@@ -8,12 +8,12 @@
     "url": "https://github.com/UmarMuhammad18/aseprite-claude-connector",
     "source": "github"
   },
-  "version": "0.3.0",
+  "version": "0.4.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "aseprite-claude-connector",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "transport": {
         "type": "stdio"
       },

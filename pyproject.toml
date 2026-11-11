@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aseprite-claude-connector"
-version = "0.3.0"
+version = "0.4.0"
 description = "Let Claude draw in a running Aseprite, and export straight to Godot or Unity."
 readme = "README.md"
 requires-python = ">=3.10"

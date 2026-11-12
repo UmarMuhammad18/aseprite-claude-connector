@@ -11,6 +11,12 @@ Kyle Ocheltree / OakTree Games.
 
 **Let Claude draw in your *live* Aseprite editor, see what it drew, and put the art straight into your Godot or Unity project. Every edit is one named undo.**
 
+<p align="center"><img src="docs/showcase/dusk-castle.gif" width="960" alt="An animated pixel-art landscape at dusk: a knight by a campfire on a cliff, looking across a lake at a castle against the setting sun"></p>
+
+<p align="center"><sub>Painted and animated by Claude in a live Aseprite editor, through this server.<br>
+480×270, 16 layers, a 24-frame loop: drifting clouds lit from below, sun rays, mist, a lake that reflects the moving sky and castle, and a campfire that lights the cliff.<br>
+No image was imported. Claude checked each pass with <code>look</code> and <code>check_loop</code>, then wrote the GIF with <code>export_animation</code>.</sub></p>
+
 An open-source [Model Context Protocol](https://modelcontextprotocol.io) server for
 [Aseprite](https://www.aseprite.org/). It drives your **running editor** (all open
 documents, unsaved tabs, in-editor dialogs, even asking *you* to click a point on

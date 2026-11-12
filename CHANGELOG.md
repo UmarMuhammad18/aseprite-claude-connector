@@ -12,6 +12,12 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
 
 ## [Unreleased]
 
+### Fixed
+
+- `export_animation` and session recordings no longer tint art that has more than 256
+  colours. The GIF palette is now fitted to the picture, where it used to fall back to
+  a fixed colour cube that turned smooth shading green and purple.
+
 ## [0.4.0] — 2026-11-11
 
 ### Fixed

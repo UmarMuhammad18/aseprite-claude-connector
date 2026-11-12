@@ -136,28 +136,67 @@ def remap(src: Raster, colors: dict[tuple[int, int, int], tuple[int, int, int]])
     return Raster(src.width, src.height, bytes(out))
 
 
-class _NearestInCube(dict):
-    """Color bytes to an index in the 6x7x6 cube, worked out once per color."""
+def _median_cut(counts: dict[bytes, int], size: int) -> tuple[list[tuple[int, int, int]], dict]:
+    """Reduce ``counts`` (color bytes to how often each is used) to ``size`` colors.
+    The box with the widest spread in one channel is split at its weighted median,
+    so a rare bright color keeps its own entry and a smooth ramp keeps its steps."""
 
-    def __missing__(self, c):
-        index = (round(c[0] / 51) * 7 + round(c[1] * 6 / 255)) * 6 + round(c[2] / 51)
-        self[c] = index
-        return index
+    def spread(box: list[bytes]) -> tuple[int, int]:
+        best = (0, 0)
+        for channel in range(3):
+            values = [c[channel] for c in box]
+            width = max(values) - min(values)
+            if width > best[0]:
+                best = (width, channel)
+        return best
+
+    boxes = [list(counts)]
+    spreads = [spread(boxes[0])]
+    while len(boxes) < size:
+        widest = max(range(len(boxes)), key=lambda k: spreads[k][0])
+        width, channel = spreads[widest]
+        if width == 0:
+            break
+        box = sorted(boxes[widest], key=lambda c: c[channel])
+        half, run, cut = sum(counts[c] for c in box) / 2, 0, 1
+        for i, c in enumerate(box):
+            run += counts[c]
+            if run >= half:
+                cut = i + 1
+                break
+        # Keep the two halves apart in this channel, and neither one empty.
+        cut = min(max(cut, 1), len(box) - 1)
+        while cut < len(box) - 1 and box[cut][channel] == box[cut - 1][channel]:
+            cut += 1
+        if box[cut][channel] == box[cut - 1][channel]:
+            while cut > 1 and box[cut][channel] == box[cut - 1][channel]:
+                cut -= 1
+        boxes[widest : widest + 1] = [box[:cut], box[cut:]]
+        spreads[widest : widest + 1] = [spread(box[:cut]), spread(box[cut:])]
+    palette, lookup = [], {}
+    for index, box in enumerate(boxes):
+        weight = sum(counts[c] for c in box)
+        palette.append(
+            tuple(round(sum(c[ch] * counts[c] for c in box) / weight) for ch in range(3))
+        )
+        for c in box:
+            lookup[c] = index
+    return palette, lookup
 
 
 def _gif_palette(frames: list[Raster]) -> tuple[list[tuple[int, int, int]], dict]:
-    """A palette for these frames: the exact colors if they fit, or else a 6x7x6 color
-    cube. Returns the palette and a lookup from color bytes to index."""
-    seen: dict[bytes, int] = {}
+    """A palette for these frames: the exact colors if they fit in 256, or else the
+    256 that fit them best. Returns the palette and a lookup from color bytes to
+    index."""
+    counts: dict[bytes, int] = {}
     for frame in frames:
-        for i in range(0, len(frame.rgba), 4):
-            seen.setdefault(frame.rgba[i : i + 3], len(seen))
-        if len(seen) > 256:
-            cube = [
-                (r * 51, g * 255 // 6, b * 51) for r in range(6) for g in range(7) for b in range(6)
-            ]
-            return cube, _NearestInCube()
-    return [tuple(c) for c in seen], seen
+        rgba = frame.rgba
+        for i in range(0, len(rgba), 4):
+            c = rgba[i : i + 3]
+            counts[c] = counts.get(c, 0) + 1
+    if len(counts) <= 256:
+        return [tuple(c) for c in counts], {c: i for i, c in enumerate(counts)}
+    return _median_cut(counts, 256)
 
 
 def _lzw(indices: bytes, min_code: int) -> bytes:

@@ -7,7 +7,7 @@ import struct
 import pytest
 
 from aseprite_claude_connector.lua import CHANGES_MARK, build_lua
-from aseprite_claude_connector.raster import Raster, encode_gif, remap, strip
+from aseprite_claude_connector.raster import Raster, _gif_palette, encode_gif, remap, strip
 from aseprite_claude_connector.tools import _common
 from aseprite_claude_connector.tools.atlas import build_atlas, gamemaker_strips, pack_shelves
 from aseprite_claude_connector.tools.cleanup import marked, stray_report
@@ -207,12 +207,32 @@ def test_gif_table_reset_survives_a_long_noisy_frame():
     assert len(frames[0]) == 20000
 
 
-def test_gif_over_256_colors_falls_back_to_the_cube():
+def test_gif_over_256_colors_keeps_them_close():
     pixels = bytearray()
     for i in range(400):
         pixels += bytes((i % 256, i // 2 % 256, 255 - i % 256, 255))
-    data = encode_gif([Raster(20, 20, bytes(pixels))], 100)
-    assert len(_gif_frames(data)[2][0]) == 400
+    frame = Raster(20, 20, bytes(pixels))
+    data = encode_gif([frame], 100)
+    indices = _gif_frames(data)[2][0]
+    assert len(indices) == 400
+    # The palette is fitted to the picture, so no pixel lands far from its color. A
+    # fixed color cube put pixels up to 25 levels out and tinted smooth shading.
+    palette, lookup = _gif_palette([frame])
+    assert len(palette) == 256
+    for i in range(0, len(frame.rgba), 4):
+        want = frame.rgba[i : i + 3]
+        got = palette[lookup[want]]
+        assert max(abs(a - b) for a, b in zip(want, got, strict=True)) <= 4
+
+
+def test_gif_palette_keeps_a_rare_bright_color():
+    pixels = bytearray()
+    for i in range(2000):
+        pixels += bytes((i % 250, i * 7 % 250, 40 + i % 200, 255))
+    pixels += bytes((255, 255, 255, 255)) * 2
+    frame = Raster(77, 26, bytes(pixels))
+    palette, lookup = _gif_palette([frame])
+    assert min(palette[lookup[b"\xff\xff\xff"]]) >= 240
 
 
 def test_gamemaker_strip_names_carry_the_frame_count():

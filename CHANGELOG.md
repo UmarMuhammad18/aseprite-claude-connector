@@ -27,6 +27,7 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
 - `add_rim_light`: the edge of a layer that faces a light, on its own layer above it.
 - `add_fire`: a looping fire with embers that lean with the wind, with or without logs,
   in fire, blue, or green.
+- `add_mist`: a band of mist that drifts as a seamless loop and warms toward the sun.
 
 ### Fixed
 

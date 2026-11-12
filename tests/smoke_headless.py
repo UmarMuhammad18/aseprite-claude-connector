@@ -127,6 +127,7 @@ async def main() -> int:
         "add_rim_light",
         "paint_mountains",
         "add_fire",
+        "add_mist",
         "make_seamless",
         "make_autotiles",
         "create_slice",
@@ -1568,6 +1569,13 @@ return J({ ok = true })
     )
     blaze = payload(await step("add_fire", {"x": 8, "y": 30, "height": 10, "file": lk}))
     check("add_fire burns on every frame", blaze["frames"] == 4, blaze)
+    fog = payload(
+        await step(
+            "add_mist",
+            {"y": 19, "thickness": 8, "drift": -4, "above": "Water", "file": lk},
+        )
+    )
+    check("add_mist lies across the horizon", fog["rows"] == [15, 22], fog)
     moving = payload(
         await step(
             "paint_sky",

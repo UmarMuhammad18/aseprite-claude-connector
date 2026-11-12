@@ -7,6 +7,7 @@
 - ``add_glow`` — a pool of firelight or lantern light that can flicker.
 - ``add_rim_light`` — the edge of a layer that faces a light, picked out.
 - ``add_fire`` — a looping fire with embers.
+- ``add_mist`` — a band of mist that drifts.
 
 Each one writes a new layer and leaves the art it works from alone. See
 ``atmosphere.py`` for the image work.
@@ -24,6 +25,7 @@ from ..atmosphere import (
     cropped,
     fire_frames,
     glow,
+    mist_frames,
     mountains,
     reflection,
     rim_light,
@@ -480,3 +482,49 @@ def register(mcp):
             top=box[1],
         )
         return {**made, "source": layer, "bounds": list(box)}
+
+    @mcp.tool(annotations=ToolAnnotations(title="Add mist"))
+    def add_mist(
+        y: int,
+        thickness: int = 40,
+        density: float = 0.5,
+        drift: int = 0,
+        color: str = "#9a86c0",
+        sun_x: float | None = None,
+        warm: str = "#ffd9a0",
+        above: str | None = None,
+        layer: str = "Mist",
+        seed: int = 1,
+        file: str | None = None,
+    ) -> dict:
+        """Lay a band of mist across the scene, centred on row ``y`` and ``thickness``
+        rows deep: along a far shore, in a valley, over a marsh. It is thickest along
+        its middle and breaks up toward its edges, in a few see-through strengths of
+        ``color``; ``density`` (0-1) is how much of the band it fills. ``drift`` is how
+        many pixels it travels over the sprite's frames (negative for leftward; try 1
+        a frame), as a seamless loop. Near ``sun_x`` the mist takes on ``warm``, as
+        low sun lights it. It goes on a new layer named ``layer``, just above the
+        layer named ``above`` (the water, say, to keep it behind a foreground), or on
+        top. One undo step. Headless: pass ``file``."""
+        if not 4 <= thickness <= 512 or not 0 <= density <= 1:
+            raise ToolError("thickness must be 4..512 and density 0..1")
+        info = _info(file)
+        w, count = info["width"], info["frames"]
+        if abs(drift) > w:
+            raise ToolError(f"drift must be within {w} pixels either way")
+        moving = count if drift and count > 1 else 1
+        bands = mist_frames(
+            w, thickness, moving, drift if moving > 1 else 0, parse_color(color)[:3], density,
+            sun_x, parse_color(warm)[:3], seed,
+        )  # fmt: skip
+        made = _write(
+            bands,
+            list(range(1, count + 1)),
+            layer,
+            "Add mist",
+            file,
+            place="above" if above else "top",
+            names=[above] if above else None,
+            top=y - thickness // 2,
+        )
+        return {**made, "rows": [y - thickness // 2, y - thickness // 2 + thickness - 1]}

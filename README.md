@@ -4,16 +4,17 @@
 
 <p align="center"><img src="docs/showcase/dusk-castle.gif" width="960" alt="An animated pixel-art landscape at dusk: a knight by a campfire on a cliff, looking across a lake at a castle against the setting sun"></p>
 
-<p align="center"><sub>Painted and animated by Claude in a live Aseprite editor, through this server.<br>
-480×270, 16 layers, a 24-frame loop: drifting clouds lit from below, sun rays, mist, a lake that reflects the moving sky and castle, and a campfire that lights the cliff.<br>
-No image was imported. Claude checked each pass with <code>look</code> and <code>check_loop</code>, then wrote the GIF with <code>export_animation</code>.</sub></p>
+<p align="center"><sub>Painted and animated by Claude through this server. 480×270, 16 layers, a 24-frame loop.<br>
+The sky and its drifting clouds, the mountains, the lake, the mist, the fire and its light each come from one tool call:<br>
+<code>paint_sky</code>, <code>paint_mountains</code>, <code>reflect_in_water</code>, <code>add_mist</code>, <code>add_fire</code>, <code>add_glow</code>.
+The castle, knight, pines, tent, and small details such as the stars, smoke and fireflies were drawn with <code>run_lua</code>. No image was imported.</sub></p>
 
 [![PyPI](https://img.shields.io/pypi/v/aseprite-claude-connector)](https://pypi.org/project/aseprite-claude-connector/)
 [![CI](https://img.shields.io/github/actions/workflow/status/UmarMuhammad18/aseprite-claude-connector/ci.yml?label=CI)](https://github.com/UmarMuhammad18/aseprite-claude-connector/actions/workflows/ci.yml)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-193-orange)
+![tools](https://img.shields.io/badge/tools-194-orange)
 
 ## Install
 
@@ -40,7 +41,7 @@ Using the Claude desktop app or another client? See
   pictures, so Claude checks its work instead of trusting a tool result.
 - **Art goes straight into your game.** One action exports to a Godot or Unity project,
   with animations from tags, slices, and pivots already set up.
-- **193 typed tools.** Drawing, palettes, animation, tilemaps and autotiles, isometric
+- **194 typed tools.** Drawing, palettes, animation, tilemaps and autotiles, isometric
   shapes, skies, water and light, cleanup, and art QA.
 - **Safe by default.** A pixel cap, dry runs, one-undo batches, a Pause toggle in
   Aseprite, and sockets that only listen on your own computer.
@@ -74,9 +75,10 @@ Ocheltree / OakTree Games, MIT licensed.
   `export_animation` writes a GIF or animated PNG at any whole-number scale.
 - **Skies, water, and light.** `paint_sky` lays a dawn, day, sunset, or night sky with a
   sun, stars, and clouds that drift as a loop. `paint_mountains` stands hazy ranges on
-  the horizon, `reflect_in_water` mirrors the scene into a rippling lake, `add_fire`
-  lights a looping fire with embers, `add_glow` lights the scene from it, and
-  `add_rim_light` picks out the edge of a layer that faces the light.
+  the horizon, `reflect_in_water` mirrors the scene into a rippling lake, `add_mist`
+  drifts mist along a shore, `add_fire` lights a looping fire with embers, `add_glow`
+  lights the scene from it, and `add_rim_light` picks out the edge of a layer that
+  faces the light.
 - **Working together.** `add_reference_image`, `change_summary`, `explain_changes`, and
   session recording to a GIF.
 - **More export targets.** `export_gamemaker` strips and `pack_atlas` for several sprites
@@ -314,7 +316,7 @@ is an HTTP GET of PyPI's public JSON; nothing about you, your machine, or your
 art is sent.
 
 <!-- TOOLS:START -->
-## Tools (193)
+## Tools (194)
 
 Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), and — when it mutates — wrapped in a **named** `app.transaction`, so each edit is exactly one labeled undo step in the editor.
 
@@ -613,7 +615,7 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 
 </details>
 <details>
-<summary><b>Skies, water & light</b> (6)</summary>
+<summary><b>Skies, water & light</b> (7)</summary>
 
 - **`paint_sky`** — Paint a sky behind the art: ``dawn``, ``day``, ``sunset``, or ``night``, shaded in dithered bands from the top down to row ``horizon`` (the bottom edge by default).
 - **`paint_mountains`** — Paint mountain ranges standing on row ``horizon``: up to three ``ranges``, the far one palest and hazy at its foot, the near one dark.
@@ -621,6 +623,7 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 - **`reflect_in_water`** — Fill everything below row ``horizon`` with water that mirrors what is above it.
 - **`add_glow`** — Light the scene from a fire, lantern, or window at ``x``, ``y``: a pool of ``color`` that fades out by ``radius`` in dithered steps, on a new layer that adds its light to what is under it.
 - **`add_rim_light`** — Pick out the edge of ``layer`` that faces a light: a sunset behind a figure, a fire beside a tree.
+- **`add_mist`** — Lay a band of mist across the scene, centred on row ``y`` and ``thickness`` rows deep: along a far shore, in a valley, over a marsh.
 
 </details>
 <details>

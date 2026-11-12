@@ -91,9 +91,10 @@ For characters on part layers, `animate_parts` poses them. For maps, `make_seaml
 readies art for 2D lights, and `export_animation` writes a GIF or animated PNG.
 For a landscape, `paint_sky` lays the sky (with `drift`, its clouds move),
 `paint_mountains` stands ranges on the horizon, and `reflect_in_water` mirrors it all
-into a lake. `add_fire` lights a fire, `add_glow` lights the scene from it, and
-`add_rim_light` picks out the edge of a layer that faces a light. Give the sprite its
-frames first: these loop over however many it has.
+into a lake. `add_mist` drifts mist along a shore, `add_fire` lights a fire,
+`add_glow` lights the scene from it, and `add_rim_light` picks out the edge of a layer
+that faces a light. Give the sprite its frames first: these loop over however many it
+has.
 """
 
 # Tool modules (each exposes register(mcp)).

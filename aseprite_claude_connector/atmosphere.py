@@ -5,6 +5,7 @@ Aseprite needed).
   and stars. ``cloud_frames`` makes the clouds drift as a loop.
 - ``mountains`` — hazy ranges on the horizon, lit from the sun's side.
 - ``fire_frames`` — a looping fire with embers.
+- ``mist_frames`` — a band of mist that drifts as a loop.
 - ``reflection`` — the scene above a horizon mirrored into rippling water, one frame
   of a loop at a time.
 - ``glow`` — a pool of light round a fire, lantern, or window.
@@ -435,6 +436,7 @@ def fire_frames(
     h = int(tall * 3.4 + 8)
     cx, by = w // 2, h - 4
     rise = 3 * k
+    bend = max(-0.45, min(0.45, wind / half * 0.12))  # flames bend a little; embers travel
     out = []
     for f in range(frames):
         t = f / frames
@@ -466,12 +468,13 @@ def fire_frames(
             up = (by - 2 - y) / tall
             for x in range(cx - half - 2, cx + half + 3):
                 side = (x - cx) / half
-                a = noise.fbm(x * 0.21 / k, (y + f * rise) * 0.15 / k, 3)
-                b = noise.fbm(x * 0.21 / k, (y + (f - frames) * rise) * 0.15 / k, 3)
+                lick = x + math.sin(_TAU * t + up * 3) * 2.5 * k
+                a = noise.fbm(lick * 0.21 / k, (y + f * rise) * 0.15 / k, 3)
+                b = noise.fbm(lick * 0.21 / k, (y + (f - frames) * rise) * 0.15 / k, 3)
                 n = (((1 - t) * a + t * b) - 0.5) / level + 0.5
-                sway = math.sin(up * 4 - _TAU * t * 2) * 0.25 * up + wind / half * up * up * 0.4
+                sway = math.sin(up * 4 - _TAU * t * 2) * 0.25 * up + bend * up * up
                 v = 1.05 - (side - sway) ** 2 * (1 + up * 3.2) - max(0.0, up) ** 1.25
-                v += (n - 0.5) * 1.5 * (0.35 + up)
+                v += (n - 0.5) * 1.2 * (0.35 + up)
                 if v > 0.10:
                     put(x, y, tones[next((i for i, s in enumerate(_FLAME_STEPS) if v > s), 4)])
                 elif v > 0.02 and _threshold(x, y) < 0.5:
@@ -484,6 +487,56 @@ def fire_frames(
             put(ex, ey, tone, int(255 * (1 - u * 0.75)))
         out.append(Raster(w, h, bytes(px)))
     return out, (cx, by)
+
+
+def mist_frames(
+    width: int,
+    rows: int,
+    frames: int = 1,
+    drift: int = 0,
+    colour: Colour = (154, 134, 192),
+    density: float = 0.5,
+    sun_x: float | None = None,
+    warm: Colour = (255, 217, 160),
+    seed: int = 1,
+) -> list[Raster]:
+    """A band of mist ``rows`` deep, thickest along its middle and thinning to nothing
+    at its edges, in a few dithered strengths of ``colour``. Near ``sun_x`` it takes
+    on ``warm``. Over ``frames`` it travels ``drift`` pixels and loops, each bank
+    fading into the next."""
+    noise = _Noise(seed + 211)
+    span = abs(drift)
+    across = width + span * 2
+    cut = 0.36 - max(0.0, min(1.0, density)) * 0.2
+    field = [0.0] * (across * rows)
+    for y in range(rows):
+        thick = math.exp(-(((y - rows / 2) / (rows * 0.24)) ** 2))
+        for x in range(across):
+            field[y * across + x] = noise.fbm(x * 5.3 / width + 50, y * 4.1 / rows + 20, 4) * thick
+    between = tuple((a + b) // 2 for a, b in zip(colour, warm, strict=True))
+    out = []
+    for f in range(max(1, frames)):
+        t = f / max(1, frames)
+        moved = round(drift * t)
+        first = span - moved
+        second = first + (span if drift > 0 else -span)
+        level = math.hypot(1 - t, t)
+        px = bytearray(width * rows * 4)
+        for y in range(rows):
+            for x in range(width):
+                v = (1 - t) * field[y * across + first + x] + t * field[y * across + second + x]
+                a = ((v - 0.3) / level + 0.3 - cut) * 3.2
+                if a <= 0:
+                    continue
+                step = int(min(1.0, a) * 4 + _threshold(x, y))
+                if step <= 0:
+                    continue
+                near = 0.0 if sun_x is None else max(0.0, 1 - abs(x - sun_x) / (width * 0.4))
+                tone = warm if near > 0.55 else (between if near > 0.25 else colour)
+                i = (y * width + x) * 4
+                px[i : i + 4] = bytes((*tone, min(255, step * 38)))
+        out.append(Raster(width, rows, bytes(px)))
+    return out
 
 
 def _speck(x: int, y: int, z: int) -> float:

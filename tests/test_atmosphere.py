@@ -340,3 +340,31 @@ def test_add_fire_puts_its_base_where_asked(monkeypatch):
     assert 50 <= top + tall - 1 <= 54  # the stones sit a pixel or two under the base
     assert "COLUMNS = 3" in lua and kw["undo_label"] == "Add fire"
     assert '"glow_hint"' in str(res)
+
+
+def test_mist_is_thickest_along_its_middle_and_loops():
+    bands = mist_frames = atmosphere.mist_frames(120, 30, 8, -8, density=0.8)
+
+    def weight(band, y):
+        return sum(band.rgba[(y * 120 + x) * 4 + 3] for x in range(120))
+
+    assert weight(bands[0], 15) > weight(bands[0], 4) and weight(bands[0], 0) == 0
+    steps = [changed(mist_frames[i], mist_frames[(i + 1) % 8]) for i in range(8)]
+    assert min(steps) > 0 and steps[-1] <= max(steps[:-1]) * 1.5
+
+
+def test_mist_warms_toward_the_sun():
+    band = atmosphere.mist_frames(120, 30, density=1.0, sun_x=100)[0]
+    assert bytes((255, 217, 160)) in {band.rgba[(15 * 120 + x) * 4 :][:3] for x in range(90, 110)}
+    assert bytes((255, 217, 160)) not in {band.rgba[(15 * 120 + x) * 4 :][:3] for x in range(0, 30)}
+
+
+def test_add_mist_sits_above_the_layer_it_is_given(monkeypatch):
+    ran = []
+    mcp = _server(monkeypatch, block(96, 64, (0, 0, 95, 63)), ran)
+    asyncio.run(
+        mcp.call_tool("add_mist", {"y": 40, "thickness": 20, "drift": -3, "above": "Water"})
+    )
+    lua, kw = _edit(ran)
+    assert 'NAMES = "Water"' in lua and "TOP = 30" in lua and "H = 20" in lua
+    assert "COLUMNS = 3" in lua and kw["undo_label"] == "Add mist"

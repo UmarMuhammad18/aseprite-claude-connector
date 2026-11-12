@@ -121,6 +121,10 @@ async def main() -> int:
         "export_animation",
         "make_normal_map",
         "relight_scene",
+        "paint_sky",
+        "reflect_in_water",
+        "add_glow",
+        "add_rim_light",
         "make_seamless",
         "make_autotiles",
         "create_slice",
@@ -1506,6 +1510,57 @@ return J({ ok = true })
     check("make_normal_map writes its PNG", os.path.isfile(nmap))
     night = payload(await step("relight_scene", {"time": "night", "file": pz}))
     check("relight_scene writes night copies", "Body (night)" in night["layers"], night)
+
+    # atmosphere: a sky, its reflection in a lake, firelight, and a lit edge
+    lk = os.path.join(d, "lake.aseprite")
+    await step("create_sprite", {"width": 48, "height": 32, "color_mode": "rgb", "file": lk})
+    await step(
+        "run_lua",
+        {
+            "code": """
+local s = app.activeSprite
+for i = 2, 4 do s:newEmptyFrame() end
+local hill = s.layers[1]
+hill.name = "Hill"
+for n = 1, 4 do
+  local img = Image(s.width, s.height, ColorMode.RGB)
+  for y = 12, 19 do for x = 14 + n, 30 + n do img:drawPixel(x, y, Color(40, 44, 80)) end end
+  s:newCel(hill, n, img, Point(0, 0))
+end
+return J({ ok = true })
+""",
+            "save": True,
+            "file": lk,
+        },
+    )
+    painted = payload(
+        await step("paint_sky", {"time": "sunset", "horizon": 19, "sun": [36, 18], "file": lk})
+    )
+    check("paint_sky covers every frame", painted["frames"] == 4, painted)
+    water = payload(
+        await step(
+            "reflect_in_water",
+            {"horizon": 19, "layers": ["Sky", "Hill"], "sun_x": 36, "file": lk},
+        )
+    )
+    check("reflect_in_water fills the rows below the horizon", water["rows"] == 12, water)
+    pool = payload(
+        await step(
+            "add_glow",
+            {"x": 10, "y": 18, "radius": 9, "flicker": 1, "on_layers": ["Hill"], "file": lk},
+        )
+    )
+    check("add_glow makes an additive layer", pool["blend"] == "addition", pool)
+    rim = payload(await step("add_rim_light", {"layer": "Hill", "light": [36, 18], "file": lk}))
+    check("add_rim_light names its layer after the source", rim["layer"] == "Hill (rim)", rim)
+    stack = _text(await step("list_layers", {"file": lk}))
+    order = [stack.find(f'"{n}"') for n in ("Sky", "Hill", "Hill (rim)", "Water", "Glow")]
+    # list_layers reads from the top of the stack down.
+    check(
+        "the atmosphere layers stack sky, hill, rim, water, glow",
+        order == sorted(order, reverse=True),
+        stack,
+    )
 
     # tiles: a seamless texture, then the 47-tile set
     tl = os.path.join(d, "tiles.aseprite")

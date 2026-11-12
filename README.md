@@ -13,7 +13,7 @@ No image was imported. Claude checked each pass with <code>look</code> and <code
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-187-orange)
+![tools](https://img.shields.io/badge/tools-191-orange)
 
 ## Install
 
@@ -40,8 +40,8 @@ Using the Claude desktop app or another client? See
   pictures, so Claude checks its work instead of trusting a tool result.
 - **Art goes straight into your game.** One action exports to a Godot or Unity project,
   with animations from tags, slices, and pivots already set up.
-- **187 typed tools.** Drawing, palettes, animation, tilemaps and autotiles, isometric
-  shapes, scene tools, cleanup, and art QA.
+- **191 typed tools.** Drawing, palettes, animation, tilemaps and autotiles, isometric
+  shapes, skies, water and light, cleanup, and art QA.
 - **Safe by default.** A pixel cap, dry runs, one-undo batches, a Pause toggle in
   Aseprite, and sockets that only listen on your own computer.
 
@@ -72,6 +72,10 @@ Ocheltree / OakTree Games, MIT licensed.
   Tile. `make_normal_map` readies art for 2D lights, `relight_scene` makes dawn,
   sunset, and night versions, `clean_lines` tidies sketched strokes, and
   `export_animation` writes a GIF or animated PNG at any whole-number scale.
+- **Skies, water, and light.** `paint_sky` lays a dawn, day, sunset, or night sky with a
+  sun, clouds, and stars. `reflect_in_water` mirrors the scene into a rippling lake that
+  loops, `add_glow` lights it from a fire or lantern, and `add_rim_light` picks out the
+  edge of a layer that faces the light.
 - **Working together.** `add_reference_image`, `change_summary`, `explain_changes`, and
   session recording to a GIF.
 - **More export targets.** `export_gamemaker` strips and `pack_atlas` for several sprites
@@ -262,6 +266,8 @@ to Nearest for sharp pixels.
 - *"Swing his arm from the shoulder over 8 frames, with the forearm following."*
 - *"Make this grass tileable, then build an autotile set over dirt for my Godot project."*
 - *"Give me a night version with a lantern by the door, and a normal map for 2D lights."*
+- *"Paint a sunset sky with the sun low on the right, then turn the bottom third into a lake."*
+- *"Light the camp from the fire, and give the knight a rim of sunset light."*
 - *"Export the banner as a GIF at 4x."*
 - *"Find stray pixels, then make red, blue, and winter versions of this sprite."*
 - *"What did you change, and how would I do that by hand in Aseprite?"*
@@ -306,7 +312,7 @@ is an HTTP GET of PyPI's public JSON; nothing about you, your machine, or your
 art is sent.
 
 <!-- TOOLS:START -->
-## Tools (187)
+## Tools (191)
 
 Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), and — when it mutates — wrapped in a **named** `app.transaction`, so each edit is exactly one labeled undo step in the editor.
 
@@ -559,6 +565,130 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 - **`batch_export`** — Export every ``.aseprite`` in ``folder`` (first frame) to an image, optionally integer-upscaled by ``scale``.
 - **`batch_resize`** — Resize every ``.aseprite`` in ``folder`` (first frame, nearest-neighbor) and write images to ``out_dir``.
 - **`batch_apply_palette`** — Palette-lock every ``.aseprite`` in ``folder``: snap each sprite (first frame, alpha preserved) to a palette and export images to ``out_dir``.
+
+</details>
+<details>
+<summary><b>Animation helpers</b> (4)</summary>
+
+- **`inbetween`** — Fill in ``count`` frames between the key pose on ``from_frame`` and the one on the next frame, then return a picture of the result.
+- **`walk_cycle_template`** — Lay down a timed, tagged walk or run skeleton to draw over.
+- **`apply_timing`** — Set frame durations from a preset, over a tag or a frame range (every frame by default).
+- **`check_loop`** — Check whether an animation loops cleanly: compares its last frame with its first against the steps inside the loop.
+
+</details>
+<details>
+<summary><b>Part animation</b> (1)</summary>
+
+- **`animate_parts`** — Animate a character made of part layers like a cut-out puppet.
+
+</details>
+<details>
+<summary><b>Characters</b> (6)</summary>
+
+- **`draw_eyes`** — Redraw a character's eyes, frame by frame, to give it an expression: where it looks, blinks, sleepy or angry lids, a smile.
+- **`swing_part`** — Swing a wing, arm, tail or ear about its joint across frames.
+- **`bob_body`** — Breathing, hops and sways: everything above the row ``feet_y`` moves while the feet below it stay planted.
+- **`lift_symbols`** — Move floating symbols ("!", "?", Zzz, hearts, sparkles) off a character's layer onto a new layer, and animate them there.
+- **`check_consistency`** — Compare sprites of one character or set: the open sprites (live; ``only`` picks them by filename or tag), or ``files``.
+- **`match_palettes`** — Put sprites of one character or set on one shared palette: colours closer than ``tolerance`` that stand in for each other (one sprite uses one, another sprite the other) merge into whichever is used most, across the open sprites (live; ``on
+
+</details>
+<details>
+<summary><b>Art from a reference</b> (3)</summary>
+
+- **`split_sheet`** — Cut a character sheet (poses in a ``columns`` x ``rows`` grid) into one pixel-art sprite per pose, all at the same scale and on ONE shared palette of ``colors`` colours (or ``palette``), so the poses stay consistent with each other.
+- **`pixelate_reference`** — Turn a reference picture into pixel art on a new layer: the faithful way to recreate a photo or painting.
+- **`compare_to_reference`** — See how close the canvas is to a reference picture.
+
+</details>
+<details>
+<summary><b>Living scenes</b> (4)</summary>
+
+- **`ambient_motion`** — Bring a still scene to life as a seamless loop.
+- **`split_into_layers`** — Separate a picture into parts on their own layers, like armour and meadow, so each can be edited or animated alone.
+- **`extend_scene`** — Grow the canvas by ``left``/``right``/``top``/``bottom`` pixels and fill the new space on ``layer`` (the active one) by continuing its own texture, like turning a portrait scene into a wide banner.
+- **`clean_pixel_art`** — Make pixelated or noisy art read as drawn: every patch of one colour smaller than ``min_region`` pixels merges into the colour around it, if that colour is close (``tolerance``, 0-1; standout specks like flowers stay), and ``firm_edges`` da
+
+</details>
+<details>
+<summary><b>Skies, water & light</b> (4)</summary>
+
+- **`paint_sky`** — Paint a sky behind the art: ``dawn``, ``day``, ``sunset``, or ``night``, shaded in dithered bands from the top down to row ``horizon`` (the bottom edge by default).
+- **`reflect_in_water`** — Fill everything below row ``horizon`` with water that mirrors what is above it.
+- **`add_glow`** — Light the scene from a fire, lantern, or window at ``x``, ``y``: a pool of ``color`` that fades out by ``radius`` in dithered steps, on a new layer that adds its light to what is under it.
+- **`add_rim_light`** — Pick out the edge of ``layer`` that faces a light: a sunset behind a figure, a fire beside a tree.
+
+</details>
+<details>
+<summary><b>Time of day & normal maps</b> (2)</summary>
+
+- **`relight_scene`** — Show a scene at another time of day: ``dawn``, ``noon``, ``sunset``, or ``night``.
+- **`make_normal_map`** — Make a normal map so the art reacts to 2D lights in Godot and Unity: a torch moving past shades it.
+
+</details>
+<details>
+<summary><b>Seamless tiles & autotiles</b> (2)</summary>
+
+- **`make_seamless`** — Make a texture repeat with no visible edge, for ground, walls, or water tiles.
+- **`make_autotiles`** — Build the 47-tile autotile set for one terrain (``fill_layer``, like grass) over another (``base_layer``, like dirt, or clear), so a map painter picks the right edge and corner for every neighbour.
+
+</details>
+<details>
+<summary><b>Cleanup</b> (2)</summary>
+
+- **`find_stray_pixels`** — Find pixels and colors that look like accidents, and return a picture of them: the art in gray, with floating ``isolated`` pixels in red, ``orphan`` pixels (touching art but matching none of it) in yellow, and pixels of colors used ``rare``
+- **`recolor_variants`** — Recolor the sprite into team colors or seasons in one batch.
+
+</details>
+<details>
+<summary><b>Finishing</b> (2)</summary>
+
+- **`export_animation`** — Write the animation (or one ``tag``) as a looping ``.gif`` or animated ``.png`` at ``path``, scaled up ``scale`` times with sharp pixels (4 turns a 384x128 banner into 1536x512).
+- **`clean_lines`** — Turn rough sketched strokes into clean pixel-art lines: ``thin`` brings thick strokes down to one pixel, and the doubled corner pixels freehand lines leave are removed, as Aseprite's pixel-perfect brush would have drawn them.
+
+</details>
+<details>
+<summary><b>Godot export</b> (1)</summary>
+
+- **`export_godot`** — Export a horizontal sprite sheet AND a Godot 4 ``SpriteFrames`` ``.tres`` beside it, with one animation per tag, keeping each frame's timing, the tag's direction, and its repeat count.
+
+</details>
+<details>
+<summary><b>Export to Game</b> (1)</summary>
+
+- **`export_to_game`** — Export the sprite into a game project in one action, ready to select in the engine.
+
+</details>
+<details>
+<summary><b>Atlas packing</b> (2)</summary>
+
+- **`export_gamemaker`** — Write sprite strips GameMaker cuts up by itself: one ``<name>_<tag>_stripN.png`` per tag, or ``<name>_stripN.png`` with no tags.
+- **`pack_atlas`** — Pack several sprites into one texture, with every frame of each, plus a JSON map in the hash layout of Aseprite's sprite-sheet export.
+
+</details>
+<details>
+<summary><b>Safety rails</b> (3)</summary>
+
+- **`set_safety_rails`** — Set the safety rails for this session, or pass nothing to read them.
+- **`edit_batch`** — Run several editing tools as one undo step, so one Ctrl-Z reverts them all.
+- **`edit_in_selection`** — "Fix this bit": run editing tools so they change only what's inside the current selection, as one undo step.
+
+</details>
+<details>
+<summary><b>Working together</b> (5)</summary>
+
+- **`add_reference_image`** — Put a sketch or reference on a faded, locked layer on top of the sprite, across every frame, and keep the active layer as it was, so drawing lands on the art.
+- **`change_summary`** — A short list of what Claude changed this session, oldest first: each edit, how many times in a row, the frames and layers it touched, and pixels changed.
+- **`explain_changes`** — Say which Aseprite tool, menu, or shortcut would do what Claude just did, so you pick up the technique.
+- **`start_recording`** — Start recording this session: a picture of the active frame is kept after every edit, for ``stop_recording`` to turn into a GIF timelapse.
+- **`stop_recording`** — Stop recording and write the timelapse GIF to ``out_path``.
+
+</details>
+<details>
+<summary><b>Docs search</b> (2)</summary>
+
+- **`search_api_docs`** — Search Aseprite's Lua scripting API reference, bundled with this server.
+- **`search_manual`** — Search Aseprite's user manual: how features work in the editor, such as tilemaps, onion skinning, or slices.
 
 </details>
 <details>

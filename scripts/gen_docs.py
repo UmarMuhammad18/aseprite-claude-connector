@@ -52,6 +52,22 @@ CATEGORIES = [
     ("unity_export", "Unity export"),
     ("artqa", "Art QA"),
     ("batch", "Batch (whole folder)"),
+    ("motion", "Animation helpers"),
+    ("rig", "Part animation"),
+    ("character", "Characters"),
+    ("reference", "Art from a reference"),
+    ("scene", "Living scenes"),
+    ("atmosphere", "Skies, water & light"),
+    ("light", "Time of day & normal maps"),
+    ("tiles", "Seamless tiles & autotiles"),
+    ("cleanup", "Cleanup"),
+    ("finish", "Finishing"),
+    ("godot_export", "Godot export"),
+    ("game_export", "Export to Game"),
+    ("atlas", "Atlas packing"),
+    ("safety", "Safety rails"),
+    ("session_tools", "Working together"),
+    ("docs", "Docs search"),
     ("editor", "Undo / redo"),
     ("live", "Live editor (interactive)"),
     ("lua_escape", "Advanced"),
@@ -97,6 +113,9 @@ def render(by_module: dict, total: int) -> str:
         "step in the editor."
     )
     lines.append("")
+    missing = sorted(set(by_module) - {name for name, _ in CATEGORIES})
+    if missing:
+        raise SystemExit(f"add these tool modules to CATEGORIES: {', '.join(missing)}")
     for mod_name, title in CATEGORIES:
         tools = by_module.get(mod_name)
         if not tools:

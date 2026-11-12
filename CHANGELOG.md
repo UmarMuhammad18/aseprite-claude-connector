@@ -12,6 +12,17 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
 
 ## [Unreleased]
 
+### Added — skies, water, and light
+
+- `paint_sky`: a dawn, day, sunset, or night sky in dithered bands, with a sun the sky
+  glows round, clouds lit from its side, and stars.
+- `reflect_in_water`: everything above a horizon mirrored into water that ripples more
+  the nearer it comes, as a seamless loop over the sprite's frames, with a path of light
+  under the sun.
+- `add_glow`: a pool of fire or lantern light on a layer that adds to what is under it.
+  It can flicker, and can light chosen layers fully while the open air stays dark.
+- `add_rim_light`: the edge of a layer that faces a light, on its own layer above it.
+
 ### Fixed
 
 - `export_animation` and session recordings no longer tint art that has more than 256

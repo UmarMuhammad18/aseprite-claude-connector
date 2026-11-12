@@ -15,6 +15,7 @@ from .tools import (
     animate,
     artqa,
     atlas,
+    atmosphere,
     batch,
     brushes,
     canvas,
@@ -88,6 +89,9 @@ misread, so show 3-4 options when unsure. Keep a cast consistent with
 For characters on part layers, `animate_parts` poses them. For maps, `make_seamless` then
 `make_autotiles`. `relight_scene` makes time-of-day versions, `make_normal_map`
 readies art for 2D lights, and `export_animation` writes a GIF or animated PNG.
+For a landscape, `paint_sky` lays the sky, `reflect_in_water` mirrors the scene into
+a lake, `add_glow` lights it from a fire or lantern, and `add_rim_light` picks out the
+edge of a layer that faces the light.
 """
 
 # Tool modules (each exposes register(mcp)).
@@ -99,6 +103,7 @@ _TOOL_MODULES = (
     character,
     rig,
     light,
+    atmosphere,
     tiles,
     finish,
     docs,

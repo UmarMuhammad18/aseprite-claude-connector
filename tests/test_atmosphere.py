@@ -236,3 +236,107 @@ def test_a_layer_with_no_edge_toward_the_light_is_refused(monkeypatch):
     mcp = _server(monkeypatch, Raster(16, 16, bytes(16 * 16 * 4)), [])
     with pytest.raises(ToolError, match="no edge"):
         asyncio.run(mcp.call_tool("add_rim_light", {"layer": "Empty", "light": [200, 10]}))
+
+
+# --- drifting clouds, mountains, fire -----------------------------------------------
+
+
+def changed(a: Raster, b: Raster) -> int:
+    return sum(a.rgba[i : i + 4] != b.rgba[i : i + 4] for i in range(0, len(a.rgba), 4))
+
+
+def test_drifting_clouds_loop_without_a_jump():
+    frames = atmosphere.cloud_frames(96, 60, 8, 8, clouds=0.7)
+    assert (frames[0].width, frames[0].height) == (96, 61)
+    steps = [changed(frames[i], frames[(i + 1) % 8]) for i in range(8)]
+    assert min(steps) > 0
+    assert steps[-1] <= max(steps[:-1]) * 1.5  # the seam is a step like the others
+
+
+def test_clouds_leave_the_clear_sky_empty():
+    frame = atmosphere.cloud_frames(96, 60, 4, 4, clouds=0.5)[0]
+    alphas = {frame.rgba[i + 3] for i in range(0, len(frame.rgba), 4)}
+    assert alphas == {0, 255}
+
+
+def test_mountains_stand_on_the_horizon_and_leave_the_sky_clear():
+    land = atmosphere.mountains(120, 80, 60, "sunset", size=0.5)
+    assert all(px(land, x, 60)[3] == 255 for x in range(120))
+    assert all(px(land, x, 61)[3] == 0 for x in range(120))
+    assert all(px(land, x, 20)[3] == 0 for x in range(120))  # above the tallest peak
+
+
+def test_ranges_dip_to_let_the_sun_through():
+    def top(land, x):
+        return next(y for y in range(land.height) if px(land, x, y)[3])
+
+    flat = atmosphere.mountains(240, 80, 60, "sunset", trees=False)
+    dipped = atmosphere.mountains(240, 80, 60, "sunset", sun=(120, 58), trees=False)
+    assert top(dipped, 120) > top(flat, 120)
+    assert top(dipped, 5) == top(flat, 5)
+
+
+@pytest.mark.parametrize("time", list(atmosphere.LANDS))
+def test_mountains_keep_to_their_palette(time):
+    tones, caps = atmosphere.LANDS[time]
+    allowed = {bytes(atmosphere._rgb(c)) for row in tones for c in row} | {
+        bytes(atmosphere._rgb(c)) for c in caps
+    }
+    assert colours(atmosphere.mountains(96, 64, 50, time)) <= allowed
+
+
+def test_a_fire_loops_and_stays_in_its_palette():
+    frames, (cx, by) = atmosphere.fire_frames(20, 6, logs=False)
+    again, _ = atmosphere.fire_frames(20, 6, logs=False)
+    assert [f.rgba for f in frames] == [f.rgba for f in again]
+    assert frames[0].rgba != frames[3].rgba
+    allowed = {bytes(atmosphere._rgb(c)) for c in atmosphere.FLAMES["fire"]}
+    assert colours(frames[0]) <= allowed
+    assert px(frames[0], cx, by - 4)[3] == 255  # the heart of the fire, just above its base
+
+
+def test_wind_carries_the_embers():
+    def reach(wind):
+        frames, (cx, _) = atmosphere.fire_frames(20, 6, wind=wind, logs=False)
+        box = atmosphere.bounds(frames)
+        return box[0] - cx, box[2] - cx
+
+    assert reach(-20)[0] < reach(0)[0]
+    assert reach(20)[1] > reach(0)[1]
+
+
+def test_an_unknown_flame_palette_is_refused():
+    with pytest.raises(ValueError, match="palette must be one of"):
+        atmosphere.fire_frames(20, 4, palette="plaid")
+
+
+def test_paint_sky_puts_drifting_clouds_on_their_own_layer(monkeypatch):
+    ran = []
+    mcp = _server(monkeypatch, block(48, 30, (0, 0, 47, 29)), ran)
+    asyncio.run(mcp.call_tool("paint_sky", {"horizon": 20, "drift": 3, "clouds": 0.7}))
+    lua, kw = _edit(ran)
+    assert 'CLOUDS = "Clouds"' in lua and "local sky_picture = load_image()" in lua
+    assert "H = 21" in lua and kw["undo_label"] == "Paint sky: sunset"
+    assert len([1 for _, k in ran if k.get("mutates")]) == 1  # one undo step for both layers
+
+
+def test_paint_mountains_goes_above_the_sky_and_sends_only_its_rows(monkeypatch):
+    ran = []
+    mcp = _server(monkeypatch, block(96, 64, (0, 0, 95, 63)), ran)
+    asyncio.run(mcp.call_tool("paint_mountains", {"horizon": 50, "time": "night"}))
+    lua, kw = _edit(ran)
+    assert 'PLACE = "above"' in lua and 'NAMES = "Sky"' in lua and "LOW = true" in lua
+    assert int(lua.split("\nlocal H = ")[1].split("\n")[0]) < 51
+    assert kw["undo_label"] == "Paint mountains: night"
+
+
+def test_add_fire_puts_its_base_where_asked(monkeypatch):
+    ran = []
+    mcp = _server(monkeypatch, block(96, 64, (0, 0, 95, 63)), ran)
+    res = asyncio.run(mcp.call_tool("add_fire", {"x": 40, "y": 50, "height": 20}))
+    lua, kw = _edit(ran)
+    top = int(lua.split("\nlocal TOP = ")[1].split("\n")[0])
+    tall = int(lua.split("\nlocal H = ")[1].split("\n")[0])
+    assert 50 <= top + tall - 1 <= 54  # the stones sit a pixel or two under the base
+    assert "COLUMNS = 3" in lua and kw["undo_label"] == "Add fire"
+    assert '"glow_hint"' in str(res)

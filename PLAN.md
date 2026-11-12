@@ -69,7 +69,7 @@ The things we'd still want from the others are small: letsagents has tidier per-
 | | diivi/aseprite-mcp | Ours |
 | --- | --- | --- |
 | Works in your open editor | No, batch mode on files | Yes, each edit is one Ctrl-Z |
-| Tools | 123 | 191 |
+| Tools | 123 | 193 |
 | Shows Claude the canvas | Has preview and analysis tools | `look`, `look_animation`, before/after previews |
 | Game engine export | Sprite sheets | Godot, Unity, GameMaker, plus an Export to Game button |
 | Tests | About 30 test files | 12 test files plus a smoke test of every tool against real Aseprite |
@@ -146,7 +146,7 @@ All built, checked against real Aseprite headless, and the core ones checked in 
 Claude (desktop app or Claude Code)
    |  tool calls  ↓        ↑  images back
 Our MCP server (Python)
-   ├─ Typed tools: 191, including look tools
+   ├─ Typed tools: 193, including look tools
    ├─ Relay, auto-started: WebSocket on this computer
    │     └─ live → Aseprite (open), via bridge extension, one undo per edit
    ├─ Docs search: Lua API and user manual

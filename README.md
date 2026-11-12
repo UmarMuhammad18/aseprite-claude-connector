@@ -13,7 +13,7 @@ No image was imported. Claude checked each pass with <code>look</code> and <code
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-191-orange)
+![tools](https://img.shields.io/badge/tools-193-orange)
 
 ## Install
 
@@ -40,7 +40,7 @@ Using the Claude desktop app or another client? See
   pictures, so Claude checks its work instead of trusting a tool result.
 - **Art goes straight into your game.** One action exports to a Godot or Unity project,
   with animations from tags, slices, and pivots already set up.
-- **191 typed tools.** Drawing, palettes, animation, tilemaps and autotiles, isometric
+- **193 typed tools.** Drawing, palettes, animation, tilemaps and autotiles, isometric
   shapes, skies, water and light, cleanup, and art QA.
 - **Safe by default.** A pixel cap, dry runs, one-undo batches, a Pause toggle in
   Aseprite, and sockets that only listen on your own computer.
@@ -73,9 +73,10 @@ Ocheltree / OakTree Games, MIT licensed.
   sunset, and night versions, `clean_lines` tidies sketched strokes, and
   `export_animation` writes a GIF or animated PNG at any whole-number scale.
 - **Skies, water, and light.** `paint_sky` lays a dawn, day, sunset, or night sky with a
-  sun, clouds, and stars. `reflect_in_water` mirrors the scene into a rippling lake that
-  loops, `add_glow` lights it from a fire or lantern, and `add_rim_light` picks out the
-  edge of a layer that faces the light.
+  sun, stars, and clouds that drift as a loop. `paint_mountains` stands hazy ranges on
+  the horizon, `reflect_in_water` mirrors the scene into a rippling lake, `add_fire`
+  lights a looping fire with embers, `add_glow` lights the scene from it, and
+  `add_rim_light` picks out the edge of a layer that faces the light.
 - **Working together.** `add_reference_image`, `change_summary`, `explain_changes`, and
   session recording to a GIF.
 - **More export targets.** `export_gamemaker` strips and `pack_atlas` for several sprites
@@ -266,7 +267,8 @@ to Nearest for sharp pixels.
 - *"Swing his arm from the shoulder over 8 frames, with the forearm following."*
 - *"Make this grass tileable, then build an autotile set over dirt for my Godot project."*
 - *"Give me a night version with a lantern by the door, and a normal map for 2D lights."*
-- *"Paint a sunset sky with the sun low on the right, then turn the bottom third into a lake."*
+- *"Paint a sunset sky with drifting clouds and snowy mountains, then turn the bottom third into a lake."*
+- *"Light a campfire on the shore with the embers blowing left."*
 - *"Light the camp from the fire, and give the knight a rim of sunset light."*
 - *"Export the banner as a GIF at 4x."*
 - *"Find stray pixels, then make red, blue, and winter versions of this sprite."*
@@ -312,7 +314,7 @@ is an HTTP GET of PyPI's public JSON; nothing about you, your machine, or your
 art is sent.
 
 <!-- TOOLS:START -->
-## Tools (191)
+## Tools (193)
 
 Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`), and — when it mutates — wrapped in a **named** `app.transaction`, so each edit is exactly one labeled undo step in the editor.
 
@@ -611,9 +613,11 @@ Every tool is typed, annotated (`readOnlyHint`/`destructiveHint`/`idempotentHint
 
 </details>
 <details>
-<summary><b>Skies, water & light</b> (4)</summary>
+<summary><b>Skies, water & light</b> (6)</summary>
 
 - **`paint_sky`** — Paint a sky behind the art: ``dawn``, ``day``, ``sunset``, or ``night``, shaded in dithered bands from the top down to row ``horizon`` (the bottom edge by default).
+- **`paint_mountains`** — Paint mountain ranges standing on row ``horizon``: up to three ``ranges``, the far one palest and hazy at its foot, the near one dark.
+- **`add_fire`** — Light a fire with the middle of its base at ``x``, ``y``: flames ``height`` pixels tall that lick and sway, and embers that rise above them and lean with ``wind`` (pixels; negative blows left).
 - **`reflect_in_water`** — Fill everything below row ``horizon`` with water that mirrors what is above it.
 - **`add_glow`** — Light the scene from a fire, lantern, or window at ``x``, ``y``: a pool of ``color`` that fades out by ``radius`` in dithered steps, on a new layer that adds its light to what is under it.
 - **`add_rim_light`** — Pick out the edge of ``layer`` that faces a light: a sunset behind a figure, a fire beside a tree.

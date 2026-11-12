@@ -125,6 +125,8 @@ async def main() -> int:
         "reflect_in_water",
         "add_glow",
         "add_rim_light",
+        "paint_mountains",
+        "add_fire",
         "make_seamless",
         "make_autotiles",
         "create_slice",
@@ -1537,10 +1539,12 @@ return J({ ok = true })
         await step("paint_sky", {"time": "sunset", "horizon": 19, "sun": [36, 18], "file": lk})
     )
     check("paint_sky covers every frame", painted["frames"] == 4, painted)
+    ranges = payload(await step("paint_mountains", {"horizon": 19, "sun": [36, 18], "file": lk}))
+    check("paint_mountains stops at the horizon", ranges["peak_row"] < 19, ranges)
     water = payload(
         await step(
             "reflect_in_water",
-            {"horizon": 19, "layers": ["Sky", "Hill"], "sun_x": 36, "file": lk},
+            {"horizon": 19, "layers": ["Sky", "Mountains", "Hill"], "sun_x": 36, "file": lk},
         )
     )
     check("reflect_in_water fills the rows below the horizon", water["rows"] == 12, water)
@@ -1554,13 +1558,34 @@ return J({ ok = true })
     rim = payload(await step("add_rim_light", {"layer": "Hill", "light": [36, 18], "file": lk}))
     check("add_rim_light names its layer after the source", rim["layer"] == "Hill (rim)", rim)
     stack = _text(await step("list_layers", {"file": lk}))
-    order = [stack.find(f'"{n}"') for n in ("Sky", "Hill", "Hill (rim)", "Water", "Glow")]
+    names = ("Sky", "Mountains", "Hill", "Hill (rim)", "Water", "Glow")
+    order = [stack.find(f'"{n}"') for n in names]
     # list_layers reads from the top of the stack down.
     check(
-        "the atmosphere layers stack sky, hill, rim, water, glow",
+        "the atmosphere layers stack sky, mountains, hill, rim, water, glow",
         order == sorted(order, reverse=True),
         stack,
     )
+    blaze = payload(await step("add_fire", {"x": 8, "y": 30, "height": 10, "file": lk}))
+    check("add_fire burns on every frame", blaze["frames"] == 4, blaze)
+    moving = payload(
+        await step(
+            "paint_sky",
+            {
+                "time": "night",
+                "horizon": 19,
+                "drift": 4,
+                "clouds": 0.8,
+                "layer": "Sky 2",
+                "file": lk,
+            },
+        )
+    )
+    check(
+        "paint_sky gives drifting clouds their own layer", moving.get("clouds") == "Clouds", moving
+    )
+    drifted = payload(await step("check_loop", {"file": lk}))
+    check("the lake scene loops", drifted["verdict"] in ("smooth", "pingpong"), drifted)
 
     # tiles: a seamless texture, then the 47-tile set
     tl = os.path.join(d, "tiles.aseprite")

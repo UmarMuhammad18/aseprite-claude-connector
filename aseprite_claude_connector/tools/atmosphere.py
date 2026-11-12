@@ -1,9 +1,12 @@
 """Atmosphere.
 
-- ``paint_sky`` — a sky for a time of day, with a sun, clouds, and stars.
+- ``paint_sky`` — a sky for a time of day, with a sun, clouds that can drift, and
+  stars.
+- ``paint_mountains`` — hazy ranges on the horizon, lit from the sun's side.
 - ``reflect_in_water`` — the scene mirrored into rippling water below a horizon.
 - ``add_glow`` — a pool of firelight or lantern light that can flicker.
 - ``add_rim_light`` — the edge of a layer that faces a light, picked out.
+- ``add_fire`` — a looping fire with embers.
 
 Each one writes a new layer and leaves the art it works from alone. See
 ``atmosphere.py`` for the image work.
@@ -13,7 +16,19 @@ from __future__ import annotations
 
 from mcp.types import ToolAnnotations
 
-from ..atmosphere import SKIES, bounds, cropped, glow, reflection, rim_light, sky
+from ..atmosphere import (
+    FLAMES,
+    SKIES,
+    bounds,
+    cloud_frames,
+    cropped,
+    fire_frames,
+    glow,
+    mountains,
+    reflection,
+    rim_light,
+    sky,
+)
 from ..lua import lua_locals
 from ..raster import Raster
 from ._common import ToolError, parse_color, run
@@ -85,6 +100,8 @@ if PLACE == "bottom" then
 elseif anchor then
   l.parent = anchor.parent
   l.stackIndex = anchor.stackIndex + 1
+elseif LOW then
+  l.stackIndex = 1
 end
 if ADD then l.blendMode = BlendMode.ADDITION end
 local col = 0
@@ -94,6 +111,24 @@ for n in FRAMES:gmatch("%d+") do
   col = col + 1
 end
 return J({ layer = l.name, frames = col })
+"""
+
+# A still sky at the bottom of the stack with its drifting clouds on a layer above it.
+# ``sky_picture`` is loaded before the strip of cloud frames replaces ``load_image``.
+_SKY_AND_CLOUDS = """
+local s = app.activeSprite
+local strip = load_image()
+local sky = s:newLayer()
+sky.name = NAME
+sky.stackIndex = 1
+local clouds = s:newLayer()
+clouds.name = CLOUDS
+clouds.stackIndex = 2
+for n = 1, #s.frames do
+  s:newCel(sky, n, sky_picture, Point(0, 0))
+  s:newCel(clouds, n, Image(strip, Rectangle((n - 1) * W, 0, W, H)), Point(0, 0))
+end
+return J({ layer = sky.name, clouds = clouds.name, frames = #s.frames })
 """
 
 
@@ -128,9 +163,11 @@ def _write(
     left: int = 0,
     top: int = 0,
     add: bool = False,
+    low: bool = False,
 ) -> dict:
     """Put ``pictures`` on a new layer: one for each of ``frames``, or a single one
-    shown on all of them."""
+    shown on all of them. ``low`` puts it at the bottom when there is no layer in
+    ``names`` to go above."""
     w, h = pictures[0].width, pictures[0].height
     if w * h * len(pictures) > _MAX_PIXELS:
         raise ToolError(
@@ -148,6 +185,7 @@ def _write(
         LEFT=left,
         TOP=top,
         ADD=add,
+        LOW=low,
     )
     # Only a new layer is written, so no existing pixels can be lost.
     return run(body + _NEW_LAYER, mutates=True, undo_label=label, file=file, capped=False)
@@ -169,6 +207,7 @@ def register(mcp):
         sun: list[float] | None = None,
         clouds: float = 0.5,
         stars: float | None = None,
+        drift: int = 0,
         layer: str = "Sky",
         seed: int = 1,
         file: str | None = None,
@@ -178,9 +217,12 @@ def register(mcp):
         by default). ``sun`` is ``[x, y]`` for the sun or moon: the sky glows round it
         and the clouds are lit from its side. ``clouds`` is how much they cover (0-1, 0
         for none) and ``stars`` how many show (0-1; each time has its own default).
-        ``seed`` changes the cloud shapes. It goes on a new layer named ``layer`` at
-        the bottom of the stack, on every frame. Follow with ``reflect_in_water`` for a
-        lake. One undo step. Headless: pass ``file``."""
+        ``seed`` changes the cloud shapes. ``drift`` is how many pixels the clouds
+        travel over the sprite's frames (negative for leftward; try 1 per frame): they
+        then go on their own "Clouds" layer and loop seamlessly. The sky goes on a new
+        layer named ``layer`` at the bottom of the stack, on every frame. Follow with
+        ``paint_mountains`` and ``reflect_in_water`` for a lake. One undo step.
+        Headless: pass ``file``."""
         if time not in SKIES:
             raise ToolError(f"time must be one of: {', '.join(SKIES)}")
         if not 0 <= clouds <= 1 or (stars is not None and not 0 <= stars <= 1):
@@ -188,12 +230,119 @@ def register(mcp):
         info = _info(file)
         if horizon is not None and not 1 <= horizon < info["height"]:
             raise ToolError(f"horizon must be 1..{info['height'] - 1}")
-        picture = sky(
-            info["width"], info["height"], time, horizon, _point(sun, "sun"), clouds, stars, seed
+        w, h, count = info["width"], info["height"], info["frames"]
+        where = _point(sun, "sun")
+        line = horizon or h - 1
+        if not drift or count < 2 or clouds <= 0:
+            picture = sky(w, h, time, horizon, where, clouds, stars, seed)
+            frames = list(range(1, count + 1))
+            made = _write([picture], frames, layer, f"Paint sky: {time}", file, place="bottom")
+            return {**made, "time": time, "horizon": line}
+        if abs(drift) > w:
+            raise ToolError(f"drift must be within {w} pixels either way")
+        if w * (line + 1) * count > _MAX_PIXELS:
+            raise ToolError("too many pixels for drifting clouds; use fewer frames or drift=0")
+        still = sky(w, h, time, horizon, where, 0, stars, seed)
+        moving = cloud_frames(w, line, count, drift, time, where, clouds, seed)
+        body = (
+            pixels_loader(still)
+            + "local sky_picture = load_image()\n"
+            + pixels_loader(_strip(moving))
+            + lua_locals(NAME=layer, CLOUDS="Clouds", W=w, H=line + 1)
+            + _SKY_AND_CLOUDS
         )
-        frames = list(range(1, info["frames"] + 1))
-        made = _write([picture], frames, layer, f"Paint sky: {time}", file, place="bottom")
-        return {**made, "time": time, "horizon": horizon or info["height"] - 1}
+        made = run(body, mutates=True, undo_label=f"Paint sky: {time}", file=file, capped=False)
+        return {**made, "time": time, "horizon": line, "drift": drift}
+
+    @mcp.tool(annotations=ToolAnnotations(title="Paint mountains"))
+    def paint_mountains(
+        horizon: int,
+        time: str = "sunset",
+        sun: list[float] | None = None,
+        size: float = 0.5,
+        ranges: int = 3,
+        snow: bool = True,
+        trees: bool = True,
+        above: str = "Sky",
+        layer: str = "Mountains",
+        seed: int = 1,
+        file: str | None = None,
+    ) -> dict:
+        """Paint mountain ranges standing on row ``horizon``: up to three ``ranges``,
+        the far one palest and hazy at its foot, the near one dark. ``time`` is
+        ``dawn``, ``day``, ``sunset``, or ``night``, matching ``paint_sky``. The
+        tallest peak reaches ``size`` (0-1) of the way up from the horizon. With
+        ``sun`` at ``[x, y]``, faces toward it are lit and the ranges dip there so it
+        shows between them; without it the light comes from the right. ``snow`` caps
+        the far range and ``trees`` puts a treeline on the nearest. ``seed`` changes
+        the shapes. They go on a new layer named ``layer`` just above the layer named
+        ``above`` (the sky), or at the bottom if there is none. Follow with
+        ``reflect_in_water``. One undo step. Headless: pass ``file``."""
+        if time not in SKIES:
+            raise ToolError(f"time must be one of: {', '.join(SKIES)}")
+        if not 0 < size <= 1 or ranges not in (1, 2, 3):
+            raise ToolError("size must be above 0 and at most 1, and ranges 1, 2, or 3")
+        info = _info(file)
+        if not 4 <= horizon < info["height"]:
+            raise ToolError(f"horizon must be 4..{info['height'] - 1}")
+        picture = mountains(
+            info["width"], info["height"], horizon, time, _point(sun, "sun"), size, ranges,
+            snow, trees, seed,
+        )  # fmt: skip
+        box = bounds([picture])
+        box = (0, box[1], info["width"] - 1, box[3])
+        made = _write(
+            [cropped(picture, box)],
+            list(range(1, info["frames"] + 1)),
+            layer,
+            f"Paint mountains: {time}",
+            file,
+            place="above",
+            names=[above],
+            top=box[1],
+            low=True,
+        )
+        return {**made, "time": time, "horizon": horizon, "peak_row": box[1]}
+
+    @mcp.tool(annotations=ToolAnnotations(title="Add a fire"))
+    def add_fire(
+        x: int,
+        y: int,
+        height: int = 30,
+        wind: float = 0.0,
+        logs: bool = True,
+        palette: str = "fire",
+        layer: str = "Fire",
+        seed: int = 1,
+        file: str | None = None,
+    ) -> dict:
+        """Light a fire with the middle of its base at ``x``, ``y``: flames ``height``
+        pixels tall that lick and sway, and embers that rise above them and lean with
+        ``wind`` (pixels; negative blows left). It loops seamlessly over the sprite's
+        frames, so give it 8 or more; with one frame it is a still. ``logs`` lays
+        crossed logs and a ring of stones, for a campfire; leave them off for a torch
+        or a brazier. ``palette`` is ``fire``, ``blue``, or ``green``. It goes on a new
+        layer named ``layer`` on top. Follow with ``add_glow`` at the same place to
+        light what is round it. One undo step. Headless: pass ``file``."""
+        if not 6 <= height <= 200:
+            raise ToolError("height must be 6..200")
+        if palette not in FLAMES:
+            raise ToolError(f"palette must be one of: {', '.join(FLAMES)}")
+        info = _info(file)
+        count = info["frames"]
+        pictures, (cx, by) = fire_frames(height, count, wind, logs, palette, seed)
+        box = bounds(pictures)
+        made = _write(
+            [cropped(p, box) for p in pictures],
+            list(range(1, count + 1)),
+            layer,
+            "Add fire",
+            file,
+            left=x - cx + box[0],
+            top=y - by + box[1],
+        )
+        hint = {"x": x, "y": y - height // 4, "radius": height * 3}
+        return {**made, "palette": palette, "glow_hint": hint}
 
     @mcp.tool(annotations=ToolAnnotations(title="Reflect the scene in water"))
     def reflect_in_water(

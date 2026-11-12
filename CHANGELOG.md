@@ -15,13 +15,18 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
 ### Added — skies, water, and light
 
 - `paint_sky`: a dawn, day, sunset, or night sky in dithered bands, with a sun the sky
-  glows round, clouds lit from its side, and stars.
+  glows round, clouds lit from its side, and stars. With `drift` the clouds travel
+  across the sky as a seamless loop, on their own layer.
+- `paint_mountains`: up to three ranges on the horizon, paler and hazier with distance,
+  lit from the sun's side, with snow caps and a treeline.
 - `reflect_in_water`: everything above a horizon mirrored into water that ripples more
   the nearer it comes, as a seamless loop over the sprite's frames, with a path of light
   under the sun.
 - `add_glow`: a pool of fire or lantern light on a layer that adds to what is under it.
   It can flicker, and can light chosen layers fully while the open air stays dark.
 - `add_rim_light`: the edge of a layer that faces a light, on its own layer above it.
+- `add_fire`: a looping fire with embers that lean with the wind, with or without logs,
+  in fire, blue, or green.
 
 ### Fixed
 

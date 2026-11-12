@@ -1,15 +1,6 @@
 # aseprite-claude-connector
 
-A fork of [aseprite-live-mcp](https://github.com/oaktreegames/aseprite-live-mcp) by
-Kyle Ocheltree / OakTree Games.
-
-[![CI](https://img.shields.io/github/actions/workflow/status/UmarMuhammad18/aseprite-claude-connector/ci.yml?label=CI)](https://github.com/UmarMuhammad18/aseprite-claude-connector/actions/workflows/ci.yml)
-![license](https://img.shields.io/badge/license-MIT-green)
-![python](https://img.shields.io/badge/python-3.10%2B-blue)
-![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
-![tools](https://img.shields.io/badge/tools-187-orange)
-
-**Let Claude draw in your *live* Aseprite editor, see what it drew, and put the art straight into your Godot or Unity project. Every edit is one named undo.**
+**Let Claude draw in your open Aseprite, see what it drew, and put the art straight into your Godot or Unity project.**
 
 <p align="center"><img src="docs/showcase/dusk-castle.gif" width="960" alt="An animated pixel-art landscape at dusk: a knight by a campfire on a cliff, looking across a lake at a castle against the setting sun"></p>
 
@@ -17,15 +8,48 @@ Kyle Ocheltree / OakTree Games.
 480×270, 16 layers, a 24-frame loop: drifting clouds lit from below, sun rays, mist, a lake that reflects the moving sky and castle, and a campfire that lights the cliff.<br>
 No image was imported. Claude checked each pass with <code>look</code> and <code>check_loop</code>, then wrote the GIF with <code>export_animation</code>.</sub></p>
 
-An open-source [Model Context Protocol](https://modelcontextprotocol.io) server for
-[Aseprite](https://www.aseprite.org/). It drives your **running editor** (all open
-documents, unsaved tabs, in-editor dialogs, even asking *you* to click a point on
-the canvas) *and* runs **headless** (`aseprite --batch`) against files on disk.
-One-action **export to Godot or Unity**, **animation helpers** like in-betweening and
-walk cycles, **safety rails** with one-undo batches, a project-convention **art-QA
-sweep**, **isometric primitives**, and **tilemaps**.
+[![PyPI](https://img.shields.io/pypi/v/aseprite-claude-connector)](https://pypi.org/project/aseprite-claude-connector/)
+[![CI](https://img.shields.io/github/actions/workflow/status/UmarMuhammad18/aseprite-claude-connector/ci.yml?label=CI)](https://github.com/UmarMuhammad18/aseprite-claude-connector/actions/workflows/ci.yml)
+![license](https://img.shields.io/badge/license-MIT-green)
+![python](https://img.shields.io/badge/python-3.10%2B-blue)
+![MCP](https://img.shields.io/badge/MCP-tools%20·%20resources%20·%20prompts-8A2BE2)
+![tools](https://img.shields.io/badge/tools-187-orange)
 
-This fork adds:
+## Install
+
+You need Python 3.10+ and Aseprite 1.3+. One command installs the package, registers
+the server with Claude Code, and adds the Aseprite extension:
+
+```bash
+pip install aseprite-claude-connector && aseprite-claude-connector setup
+```
+
+Restart Aseprite, allow the connection once, and ask Claude:
+
+> *"Make a 32×32 potion sprite, animate it bubbling, and show me the loop."*
+
+Using the Claude desktop app or another client? See
+[other ways to install](#other-ways-to-install).
+
+## Why this one
+
+- **It works in your open editor.** Edits appear on your canvas as you watch, and each
+  one is a named undo step, so Ctrl-Z takes back exactly one thing Claude did. It also
+  runs headless against files on disk.
+- **Claude sees the canvas.** `look`, `look_animation`, and drawing previews return
+  pictures, so Claude checks its work instead of trusting a tool result.
+- **Art goes straight into your game.** One action exports to a Godot or Unity project,
+  with animations from tags, slices, and pivots already set up.
+- **187 typed tools.** Drawing, palettes, animation, tilemaps and autotiles, isometric
+  shapes, scene tools, cleanup, and art QA.
+- **Safe by default.** A pixel cap, dry runs, one-undo batches, a Pause toggle in
+  Aseprite, and sockets that only listen on your own computer.
+
+Built on [aseprite-live-mcp](https://github.com/oaktreegames/aseprite-live-mcp) by Kyle
+Ocheltree / OakTree Games, MIT licensed.
+
+<details>
+<summary><b>Everything this fork adds to aseprite-live-mcp</b></summary>
 
 - **Claude's eyes.** `look`, `look_animation`, and drawing previews return pictures, so
   Claude checks the canvas instead of trusting a tool result.
@@ -52,6 +76,8 @@ This fork adds:
   session recording to a GIF.
 - **More export targets.** `export_gamemaker` strips and `pack_atlas` for several sprites
   on one texture.
+
+</details>
 
 ## See it in action
 
@@ -104,14 +130,7 @@ The sheet's ten slices went to Unity in one action —
 [`examples/showcase/unity/`](examples/showcase/unity/) has the atlas PNG and its
 generated `.meta`: ten Multiple-mode sprites, rects y-flipped, every pivot baked.
 
-## Install
-
-Requires **Python 3.10+** and **Aseprite 1.3+**. One command installs the package,
-registers the server with Claude Code, and adds the Aseprite extension:
-
-```bash
-pip install aseprite-claude-connector && aseprite-claude-connector setup
-```
+## Other ways to install
 
 <details>
 <summary><b>The Claude desktop app (a normal Claude chat)</b></summary>
@@ -255,7 +274,7 @@ and doesn't claim to be. What it claims — and can defend:
 
 | Capability | Landscape | This project |
 |---|---|---|
-| Draw / layers / frames / palette / selection / export, dithering, gradients, outlines, filters, tweens, tilemaps | Well covered by the headless leaders (diivi ~113 tools, pixel-mcp, ext-sakamoro) and the commercial live server (Aseprite MCP Pro, Godot-first) | **Parity** — a curated, fully typed surface |
+| Draw / layers / frames / palette / selection / export, dithering, gradients, outlines, filters, tweens, tilemaps | Well covered by the headless leaders (diivi ~123 tools, pixel-mcp, ext-sakamoro) and the commercial live server (Aseprite MCP Pro, Godot-first) | **Parity** — a curated, fully typed surface |
 | **One-action Unity export** — sheet + `.meta` with per-slice pivots baked in | Every other Aseprite→Unity path we found is a separate engine-side importer; none export pivots | **Differentiator** ✅ |
 | **Art-QA sweep** incl. transparent sticker-padding measurement against your project conventions | We found no other server that lints sprite margins/padding as a packaged sweep | **Differentiator** ✅ |
 | **Isometric drawing primitives** (2:1 boxes/cylinders, auto face-shading, recessed panels) | The only iso primitives we've found in any Aseprite MCP we surveyed | **Differentiator** ✅ |

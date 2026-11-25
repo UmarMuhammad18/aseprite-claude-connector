@@ -16,6 +16,10 @@ on:
         description: "Version to check, like 0.3.0 (default: the latest on PyPI)"
         required: false
 
+# Least privilege: the jobs only read the repo.
+permissions:
+  contents: read
+
 jobs:
   install:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'

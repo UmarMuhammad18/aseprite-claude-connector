@@ -80,7 +80,8 @@ Linux, and Mac, without the repo, and checks it runs. The `Unity` workflow has r
 Unity import the exports once the repo has a Unity licence; see `unity/README.md`.
 
 CI also runs `ruff check .`, `ruff format --check .`, and `gen_docs.py --check`.
-Ruff isn't in the `dev` extra, so install it separately. Set
+Ruff isn't in the `dev` extra, so install the version CI pins:
+`pip install ruff==0.17.3` (bump it in `ci.yml` on purpose, with any fixes). Set
 `ASEPRITE_MCP_NO_UPDATE_CHECK=1` for local runs to skip the PyPI lookup.
 
 ## Rules

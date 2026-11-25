@@ -27,6 +27,10 @@ env:
   ASEPRITE_TAG: v1.3.17.2
   GODOT_TAG: 4.4.1-stable
 
+# Least privilege: the jobs only read the repo.
+permissions:
+  contents: read
+
 jobs:
   aseprite:
     strategy:

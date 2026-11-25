@@ -12,6 +12,17 @@ day; set `ASEPRITE_MCP_NO_UPDATE_CHECK=1` to disable). To upgrade:
 
 ## [Unreleased]
 
+### Fixed
+
+- `aseprite-claude-connector --help` and `--version` now answer and exit. Before, any
+  argument other than `setup` started the MCP server, so typing `--help` printed a
+  relay message and then waited silently.
+
+### Changed
+
+- CI now tests Python 3.14 as well, pins the ruff version it lints with, and gives
+  every workflow a read-only token.
+
 ## [0.5.0] — 2026-11-19
 
 ### Added — skies, water, and light

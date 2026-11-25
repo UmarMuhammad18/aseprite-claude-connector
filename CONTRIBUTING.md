@@ -17,7 +17,7 @@ standard install path).
 ## Before you submit
 
 ```bash
-ruff check . && ruff format --check .   # lint + format (CI enforces both)
+ruff check . && ruff format --check .   # lint + format (CI enforces both, with ruff==0.17.3)
 pytest                          # unit + wire-validation + a headless roundtrip (auto-skips if Aseprite is absent)
 python tests/smoke_headless.py  # full end-to-end sweep (all tools + resources + prompts) against a throwaway sprite
 ```

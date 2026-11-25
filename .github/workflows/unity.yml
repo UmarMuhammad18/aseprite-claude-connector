@@ -17,6 +17,10 @@ on:
       - "scripts/make_unity_fixtures.py"
       - "unity/**"
 
+# Least privilege: the jobs only read the repo.
+permissions:
+  contents: read
+
 jobs:
   import:
     runs-on: ubuntu-latest
